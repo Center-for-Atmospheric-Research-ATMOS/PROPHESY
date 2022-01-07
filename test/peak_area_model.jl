@@ -102,10 +102,10 @@ dKe2 = Ke[102]-Ke[101];
 dKe3 = Ke[202]-Ke[201];
 dKe4 = Ke[302]-Ke[301];
 
-A1 = dKe1*dropdims(sum(H[1:100,:],dims=1),dims=1);
-A2 = dKe2*dropdims(sum(H[101:200,:],dims=1),dims=1);
-A3 = dKe3*dropdims(sum(H[201:300,:],dims=1),dims=1);
-A4 = dKe4*dropdims(sum(H[301:400,:],dims=1),dims=1);
+A1 = 1.0dKe1*dropdims(sum(H[1:100,:],dims=1),dims=1);
+A2 = 1.0dKe2*dropdims(sum(H[101:200,:],dims=1),dims=1);
+A3 = 2.0dKe3*dropdims(sum(H[201:300,:],dims=1),dims=1);
+A4 = 2.0dKe4*dropdims(sum(H[301:400,:],dims=1),dims=1);
 
 A = Matrix{Cdouble}([A1 A2 A3 A4]');
 
@@ -165,10 +165,10 @@ end
 Γ_ρ_inv = diagm(1.0./γ_ρ);
 rankK = rank(A);
 
-A1_std = dKe1*sqrt.(dropdims(sum(H_std[1:100,:].^2,dims=1),dims=1));
-A2_std = dKe2*sqrt.(dropdims(sum(H_std[101:200,:].^2,dims=1),dims=1));
-A3_std = dKe3*sqrt.(dropdims(sum(H_std[201:300,:].^2,dims=1),dims=1));
-A4_std = dKe4*sqrt.(dropdims(sum(H_std[301:400,:].^2,dims=1),dims=1));
+A1_std = 1.0*dKe1*sqrt.(dropdims(sum(H_std[1:100,:].^2,dims=1),dims=1));
+A2_std = 1.0*dKe2*sqrt.(dropdims(sum(H_std[101:200,:].^2,dims=1),dims=1));
+A3_std = 2.0*dKe3*sqrt.(dropdims(sum(H_std[201:300,:].^2,dims=1),dims=1));
+A4_std = 2.0*dKe4*sqrt.(dropdims(sum(H_std[301:400,:].^2,dims=1),dims=1));
 A_std = Matrix{Cdouble}([A1_std A2_std A3_std A4_std]');
 γ_H = A_std # 1.0e-2A_std;
 γ = 1.0*σ_all # σ_noise*ones(Cdouble,Nke);
@@ -191,12 +191,12 @@ Ns = 25
 ρ_samples_nso_h = zeros(Cdouble,Nh*Ns,N);
 t_elapsed = @elapsed for i in 1:Nh
    d_H = CSV.File(string(model_folder,i,"/","H.csv"); delim=",", header=false) |> DataFrame;
-   H = Matrix{Cdouble}(d_H);
+   H = 10.0Matrix{Cdouble}(d_H);
 
-   A1 = dKe1*dropdims(sum(H[1:100,:],dims=1),dims=1);
-   A2 = dKe2*dropdims(sum(H[101:200,:],dims=1),dims=1);
-   A3 = dKe3*dropdims(sum(H[201:300,:],dims=1),dims=1);
-   A4 = dKe4*dropdims(sum(H[301:400,:],dims=1),dims=1);
+   A1 = 1.0*dKe1*dropdims(sum(H[1:100,:],dims=1),dims=1);
+   A2 = 1.0*dKe2*dropdims(sum(H[101:200,:],dims=1),dims=1);
+   A3 = 2.0*dKe3*dropdims(sum(H[201:300,:],dims=1),dims=1);
+   A4 = 2.0*dKe4*dropdims(sum(H[301:400,:],dims=1),dims=1);
 
    A = Matrix{Cdouble}([A1 A2 A3 A4]');
 

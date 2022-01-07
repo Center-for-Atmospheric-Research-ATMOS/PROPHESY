@@ -132,7 +132,7 @@ Nz0 = 50;
 z00 = 0.5;  # half height depth
 
 ħν_exp = 1.0*d_Na[1:3:end,5];
-Fν_exp = 1.0e-9d_Na[1:3:end,4];
+Fν_exp = 1.0*d_Na[1:3:end,4]; # 1.0e-9
 T_exp  = d_Na[1:3:end,9];
 μKe_exp = d_Na[1:3:end,8];
 Be_exp = [d_c1s_Ek[:,1]'; d_c1s_Ek[:,3]'; d_c1s_Ek[:,5]'; d_c1s_Ek[:,7]'; d_c1s_Ek[:,9]'];
