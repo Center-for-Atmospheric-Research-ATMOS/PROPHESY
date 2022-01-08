@@ -90,3 +90,56 @@ function EM_peaks(Bes::Array{Cdouble,1},PES::Array{Cdouble,1},τm::Array{Cdouble
    end
    EM_peaks(Xsample,τm,μm,σm,Ns)
 end
+
+
+"""
+I_nbl:   photo-electric signal (corrected for the baseline)
+Kes:     kinetic energy discretization points (regularly sub division)
+σ_I:     noise level in the measurement (standard deviation)
+Nbfgs:   number of iterations in the bounded BFGS loop
+Nsearch: maximum number of iteration for the line search
+"""
+function cross_section_spread_function(I_nbl::Array{Cdouble,1},Kes::Array{Cdouble,1},σ_I::Cdouble;Nbfgs::Int64=1000,Nsearch::Int64=10)
+   Ny = length(I_nbl)
+   if (length(Kes)!=Ny) throw("not the right amount of kinetic energies") end
+   dKe = Kes[2] - Kes[1];
+   R = dKe*sum(I_nbl);
+   σ_R = dKe*σ_I*sqrt(Ny);
+   D_2nd = diagm(Ny-2,Ny,1 => 2ones(Cdouble,Ny-2), 0 => -ones(Cdouble,Ny-2) ,2 => -ones(Cdouble,Ny-2));
+
+   # augmented measurement
+   Y = [I_nbl; 1.0; zeros(Cdouble,Ny-2)];
+
+   # augmented measurement operator (augmented => a priori in the operator)
+   Rreg = [R*Matrix{Cdouble}(I,Ny,Ny); dKe*ones(Cdouble,Ny)'; D_2nd];
+
+   # covariance matrix of the augmented measurements
+   ΓI = zeros(Cdouble,Ny+1+(Ny-2),Ny+1+(Ny-2));
+   ΓI[1:Ny,1:Ny] = σ_I^2*Matrix{Cdouble}(I,Ny,Ny);                # noise level in the measurment
+   ΓI[Ny+1,Ny+1] = (0.5/(Kes[1]-Kes[end]))^2;                     # accuracy of the numerical integration
+   ΓI[Ny+2:end,Ny+2:end] = 0.001^2*Matrix{Cdouble}(I,Ny-2,Ny-2);  # variance of the second order difference of the CS spread function
+   ΓI_inv = inv(ΓI);
+   W_inv  = inv(Rreg'*ΓI_inv*Rreg);
+
+   # optimization problem
+   function F(x::Array{Cdouble,1})
+       0.5*(Y-Rreg*x)'*ΓI_inv*(Y-Rreg*x)
+   end
+
+   function Fgrad(x::Array{Cdouble,1})
+       -Rreg'*ΓI_inv*(Y-Rreg*x)
+   end
+
+   X0 = zeros(Cdouble,Ny);
+   p0 = zeros(Cdouble,Ny);            # first descent direction
+   alpha_min = -4.0                   # smallest value of the length of the step
+   alpha_max = 4.0                    # smallest value of the length of the step 2000000.0
+   mu = 0.4                           # <0.5 parameter for the line search algorithm
+   # H0 = Matrix{Cdouble}(I,Ny,Ny)/R1;  # initial inverse Hessian matrix
+   H0 = W_inv
+   # define the constraints
+   lx = zeros(Cdouble,Ny);            # lower bounds
+   ux = Inf*ones(Cdouble,Ny);         # upper bounds
+   Xend,Hend,Xpath,Nlast = BFGSB(X0,H0,Nbfgs,alpha_min,alpha_max,mu,lx,ux,F,Fgrad,Nsearch);
+   Xend,Hend,Xpath,Nlast,R,σ_R
+end

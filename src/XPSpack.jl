@@ -28,7 +28,7 @@ export ΔΨλ, ΔΨσ                              # uncertainty: first order mo
 export ρ_tot_int, riemann, e_k, e_0, e_M     # other
 
 # data enhancement: baseline correction and peak fitting (requires sampling of the spectra)
-export baseline_removal, EM_peaks # in XPSutils.jl
+export baseline_removal, EM_peaks, cross_section_spread_function # in XPSutils.jl
 
 # objects modelling experiment and device
 export XPSexp, XPSdevice, XPSsetup
@@ -36,6 +36,8 @@ export XPSexp, XPSdevice, XPSsetup
 # include the implementation of the exported functions and objects
 include("XPSexp.jl")   # implements XPSexp object
 include("XPSmeas.jl")  # implement most function exported so far
-include("XPSutils.jl") # common algorithms used for data processing
+
+using NewtonMethod
+include("XPSutils.jl") # common algorithms used for data processing #TODO: move to XPSinv package
 
 end # module
