@@ -140,227 +140,43 @@ end
 ##
 ## cross section spread
 ##
-Y1 = [reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1); 1.0; zeros(Cdouble,Ny-2)];
-Y2 = [reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2); 1.0; zeros(Cdouble,Ny-2)];
-Y3 = [reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3); 1.0; zeros(Cdouble,Ny-2)];
-Y4 = [reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4); 1.0; zeros(Cdouble,Ny-2)];
-Y5 = [reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5); 1.0; zeros(Cdouble,Ny-2)];
 
-
-# using XPSinv
-# D_2nd = D2nd(N);
-# Ny
+# discretization step length for the different kinetic energy levels
 dKe1 = d_c1s_Ek[1,1]-d_c1s_Ek[2,1];
 dKe2 = d_c1s_Ek[1,3]-d_c1s_Ek[2,3];
 dKe3 = d_c1s_Ek[1,5]-d_c1s_Ek[2,5];
 dKe4 = d_c1s_Ek[1,7]-d_c1s_Ek[2,7];
 dKe5 = d_c1s_Ek[1,9]-d_c1s_Ek[2,9];
-R1 = dKe1*sum(d_c1s_Ek[:,2]-z_baseline_1);
-R2 = dKe2*sum(d_c1s_Ek[:,4]-z_baseline_2);
-R3 = dKe3*sum(d_c1s_Ek[:,6]-z_baseline_3);
-R4 = dKe4*sum(d_c1s_Ek[:,8]-z_baseline_4);
-R5 = dKe5*sum(d_c1s_Ek[:,10]-z_baseline_5);
 
-Rreg1 = [R1*Matrix{Cdouble}(I,Ny,Ny); dKe1*ones(Cdouble,Ny)'; D_2nd];
-Rreg2 = [R2*Matrix{Cdouble}(I,Ny,Ny); dKe2*ones(Cdouble,Ny)'; D_2nd];
-Rreg3 = [R3*Matrix{Cdouble}(I,Ny,Ny); dKe3*ones(Cdouble,Ny)'; D_2nd];
-Rreg4 = [R4*Matrix{Cdouble}(I,Ny,Ny); dKe4*ones(Cdouble,Ny)'; D_2nd];
-Rreg5 = [R5*Matrix{Cdouble}(I,Ny,Ny); dKe5*ones(Cdouble,Ny)'; D_2nd];
-
-ΓI1 = zeros(Cdouble,Ny+1+(Ny-2),Ny+1+(Ny-2));
-ΓI2 = zeros(Cdouble,Ny+1+(Ny-2),Ny+1+(Ny-2));
-ΓI3 = zeros(Cdouble,Ny+1+(Ny-2),Ny+1+(Ny-2));
-ΓI4 = zeros(Cdouble,Ny+1+(Ny-2),Ny+1+(Ny-2));
-ΓI5 = zeros(Cdouble,Ny+1+(Ny-2),Ny+1+(Ny-2));
-
+# standard deviation of the noise in the PE signal (can be estimated using SVD once the entire model is put together, but a rough approximation should be enough (make sure it's not too unstable))
 σ_I1 = 100.0;
 σ_I2 = 400.0;
 σ_I3 = 500.0;
 σ_I4 = 10.0;
 σ_I5 = 20.0;
 
-ΓI1[1:Ny,1:Ny] = σ_I1^2*Matrix{Cdouble}(I,Ny,Ny); # depends on the noise level
-ΓI1[Ny+1,Ny+1] = (0.5/(d_c1s_Ek[1,1]-d_c1s_Ek[end,1]))^2; # 0.01^2
-ΓI1[Ny+2:end,Ny+2:end] = 0.001^2*Matrix{Cdouble}(I,Ny-2,Ny-2);
+# number of iteration (main loop and inner loop of BFGS implementation)
+Nbfgs = 50;
+Nsearch = 10;
 
-ΓI2[1:Ny,1:Ny] = σ_I2^2*Matrix{Cdouble}(I,Ny,Ny); # depends on the noise level
-# ΓI2[1:Ny,1:Ny] = 100.0^2*Matrix{Cdouble}(I,Ny,Ny);
-ΓI2[Ny+1,Ny+1] = (0.5/(d_c1s_Ek[1,3]-d_c1s_Ek[end,3]))^2; # 0.01^2
-ΓI2[Ny+2:end,Ny+2:end] = 0.001^2*Matrix{Cdouble}(I,Ny-2,Ny-2);
+# estimate the cross section spread function and the overall integral for each spectrum)
+Xend1,Hend1,Xpath1,Nlast1,R1,σ_R1 = cross_section_spread_function(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1),reverse(d_c1s_Ek[:,1]),σ_I1;Nbfgs=Nbfgs,Nsearch=Nsearch)
+Xend2,Hend2,Xpath2,Nlast2,R2,σ_R2 = cross_section_spread_function(reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2),reverse(d_c1s_Ek[:,3]),σ_I2;Nbfgs=Nbfgs,Nsearch=Nsearch)
+Xend3,Hend3,Xpath3,Nlast3,R3,σ_R3 = cross_section_spread_function(reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3),reverse(d_c1s_Ek[:,5]),σ_I3;Nbfgs=Nbfgs,Nsearch=Nsearch)
+Xend4,Hend4,Xpath4,Nlast4,R4,σ_R4 = cross_section_spread_function(reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4),reverse(d_c1s_Ek[:,7]),σ_I4;Nbfgs=Nbfgs,Nsearch=Nsearch)
+Xend5,Hend5,Xpath5,Nlast5,R5,σ_R5 = cross_section_spread_function(reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5),reverse(d_c1s_Ek[:,9]),σ_I5;Nbfgs=Nbfgs,Nsearch=Nsearch)
 
-ΓI3[1:Ny,1:Ny] = σ_I3^2*Matrix{Cdouble}(I,Ny,Ny); # depends on the noise level
-# ΓI3[1:Ny,1:Ny] = 100.0^2*Matrix{Cdouble}(I,Ny,Ny);
-ΓI3[Ny+1,Ny+1] = (0.5/(d_c1s_Ek[1,5]-d_c1s_Ek[end,5]))^2; # 0.01^2
-ΓI3[Ny+2:end,Ny+2:end] = 0.001^2*Matrix{Cdouble}(I,Ny-2,Ny-2);
-
-ΓI4[1:Ny,1:Ny] = σ_I4^2*Matrix{Cdouble}(I,Ny,Ny); # depends on the noise level
-# ΓI4[1:Ny,1:Ny] = 100.0^2*Matrix{Cdouble}(I,Ny,Ny);
-ΓI4[Ny+1,Ny+1] = (0.5/(d_c1s_Ek[1,7]-d_c1s_Ek[end,7]))^2; # 0.01^2
-ΓI4[Ny+2:end,Ny+2:end] = 0.001^2*Matrix{Cdouble}(I,Ny-2,Ny-2);
-
-ΓI5[1:Ny,1:Ny] = σ_I5^2*Matrix{Cdouble}(I,Ny,Ny); # depends on the noise level
-# ΓI5[1:Ny,1:Ny] = 100.0^2*Matrix{Cdouble}(I,Ny,Ny);
-ΓI5[Ny+1,Ny+1] = (0.5/(d_c1s_Ek[1,9]-d_c1s_Ek[end,9]))^2; # 0.01^2
-ΓI5[Ny+2:end,Ny+2:end] = 0.001^2*Matrix{Cdouble}(I,Ny-2,Ny-2);
-
-ΓI1_inv = inv(ΓI1);
-W1 = Rreg1'*ΓI1_inv*Rreg1;
-W1_inv = inv(W1);
-
-ΓI2_inv = inv(ΓI2);
-W2 = Rreg2'*ΓI2_inv*Rreg2;
-W2_inv = inv(W2);
-
-ΓI3_inv = inv(ΓI3);
-W3 = Rreg3'*ΓI3_inv*Rreg3;
-W3_inv = inv(W3);
-
-ΓI4_inv = inv(ΓI4);
-W4 = Rreg4'*ΓI4_inv*Rreg4;
-W4_inv = inv(W4);
-
-ΓI5_inv = inv(ΓI5);
-W5 = Rreg5'*ΓI5_inv*Rreg5;
-W5_inv = inv(W5);
-
-
-σ_CS1_reg = W1_inv*Rreg1'*Y1;
-σ_CS2_reg = W2_inv*Rreg2'*Y2;
-σ_CS3_reg = W3_inv*Rreg3'*Y3;
-σ_CS4_reg = W4_inv*Rreg4'*Y4;
-σ_CS5_reg = W5_inv*Rreg5'*Y5;
-
-# σ_CS1_reg = reverse(d_c1s_Ek[:,2]-z_baseline_1)/R1;
-figure(); plot(σ_CS1_reg); plot(σ_CS2_reg); plot(σ_CS3_reg); plot(σ_CS4_reg); plot(σ_CS5_reg);
-# figure(); plot(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1))
-# figure(); plot(Rreg1*σ_CS1_reg)
-
-dKe1*sum(σ_CS1_reg)
-dKe2*sum(σ_CS2_reg)
-dKe3*sum(σ_CS3_reg)
-dKe4*sum(σ_CS4_reg)
-dKe5*sum(σ_CS5_reg)
-
-using NewtonMethod
-println("BFGS B")
-function F1(x_::Array{Cdouble,1})
-    0.5*(Y1-Rreg1*x_)'*ΓI1_inv*(Y1-Rreg1*x_)
-end
-function F2(x_::Array{Cdouble,1})
-    0.5*(Y2-Rreg2*x_)'*ΓI2_inv*(Y2-Rreg2*x_)
-end
-function F3(x_::Array{Cdouble,1})
-    0.5*(Y3-Rreg3*x_)'*ΓI3_inv*(Y3-Rreg3*x_)
-end
-function F4(x_::Array{Cdouble,1})
-    0.5*(Y4-Rreg4*x_)'*ΓI4_inv*(Y4-Rreg4*x_)
-end
-function F5(x_::Array{Cdouble,1})
-    0.5*(Y5-Rreg5*x_)'*ΓI5_inv*(Y5-Rreg5*x_)
-end
-
-function Fgrad1(x_::Array{Cdouble,1})
-    -Rreg1'*ΓI1_inv*(Y1-Rreg1*x_)
-end
-function Fgrad2(x_::Array{Cdouble,1})
-    -Rreg2'*ΓI2_inv*(Y2-Rreg2*x_)
-end
-function Fgrad3(x_::Array{Cdouble,1})
-    -Rreg3'*ΓI3_inv*(Y3-Rreg3*x_)
-end
-function Fgrad4(x_::Array{Cdouble,1})
-    -Rreg4'*ΓI4_inv*(Y4-Rreg4*x_)
-end
-function Fgrad5(x_::Array{Cdouble,1})
-    -Rreg5'*ΓI5_inv*(Y5-Rreg5*x_)
-end
-
-"""
-I_nbl:   photo-electric signal (corrected for the baseline)
-Kes:     kinetic energy discretization points (regularly sub division)
-σ_I:     noise level in the measurement (standard deviation)
-Nbfgs:   number of iterations in the bounded BFGS loop
-Nsearch: maximum number of iteration for the line search
-"""
-function cross_section_spread_function(I_nbl::Array{Cdouble,1},Kes::Array{Cdouble,1},σ_I::Cdouble;Nbfgs::Int64=1000,Nsearch::Int64=10)
-   Ny = length(I_nbl)
-   if (length(Kes)!=Ny) throw("not the right amount of kinetic energies") end
-   dKe = Kes[2] - Kes[1];
-   R = dKe*sum(I_nbl);
-   D_2nd = diagm(Ny-2,Ny,1 => 2ones(Cdouble,Ny-2), 0 => -ones(Cdouble,Ny-2) ,2 => -ones(Cdouble,Ny-2));
-
-   # augmented measurement
-   Y = [I_nbl; 1.0; zeros(Cdouble,Ny-2)];
-
-   # augmented measurement operator (augmented => a priori in the operator)
-   Rreg = [R*Matrix{Cdouble}(I,Ny,Ny); dKe*ones(Cdouble,Ny)'; D_2nd];
-
-   # covariance matrix of the augmented measurements
-   ΓI = zeros(Cdouble,Ny+1+(Ny-2),Ny+1+(Ny-2));
-   ΓI[1:Ny,1:Ny] = σ_I^2*Matrix{Cdouble}(I,Ny,Ny);                # noise level in the measurment
-   ΓI[Ny+1,Ny+1] = (0.5/(Kes[1]-Kes[end]))^2;                     # accuracy of the numerical integration
-   ΓI[Ny+2:end,Ny+2:end] = 0.001^2*Matrix{Cdouble}(I,Ny-2,Ny-2);  # variance of the second order difference of the CS spread function
-   ΓI_inv = inv(ΓI);
-   W_inv  = inv(Rreg'*ΓI_inv*Rreg);
-
-   # optimization problem
-   function F(x::Array{Cdouble,1})
-       0.5*(Y-Rreg*x)'*ΓI_inv*(Y-Rreg*x)
-   end
-
-   function Fgrad(x::Array{Cdouble,1})
-       -Rreg'*ΓI_inv*(Y-Rreg*x)
-   end
-
-   X0 = zeros(Cdouble,Ny);
-   p0 = zeros(Cdouble,Ny);            # first descent direction
-   alpha_min = -4.0                   # smallest value of the length of the step
-   alpha_max = 4.0                    # smallest value of the length of the step 2000000.0
-   mu = 0.4                           # <0.5 parameter for the line search algorithm
-   # H0 = Matrix{Cdouble}(I,Ny,Ny)/R1;  # initial inverse Hessian matrix
-   H0 = W_inv
-   # define the constraints
-   lx = zeros(Cdouble,Ny);            # lower bounds
-   ux = Inf*ones(Cdouble,Ny);         # upper bounds
-   # Xend,Hend,Xpath,Nlast = BFGSB(X0,H0,Nbfgs,alpha_min,alpha_max,mu,lx,ux,F,Fgrad,Nsearch);
-   BFGSB(X0,H0,Nbfgs,alpha_min,alpha_max,mu,lx,ux,F,Fgrad,Nsearch)
-end
-X0 = zeros(Cdouble,Ny); # 0.5σ_CS1_reg #
-p0 = zeros(Cdouble,Ny); # Fgrad(0.5σ_CS1_reg); # ones(Cdouble,Ny);             # first descent direction
-alpha_min = -4.0          # smallest value of the length of the step
-alpha_max = 4.0          # smallest value of the length of the step 2000000.0
-mu = 0.4                 # <0.5 parameter for the line search algorithm
-Nbfgs = 1000             # number of iterations
-Nsearch = 10             # maximum number of iteration for the line search
-H01 = Matrix{Cdouble}(I,Ny,Ny)/R1; # W1_inv;                   # initial Hessian matrix #0.000001*
-H02 = Matrix{Cdouble}(I,Ny,Ny)/R2;
-H03 = Matrix{Cdouble}(I,Ny,Ny)/R3;
-H04 = Matrix{Cdouble}(I,Ny,Ny)/R4;
-H05 = Matrix{Cdouble}(I,Ny,Ny)/R5;
-
-# define the constraints
-lx = zeros(Cdouble,Ny);
-ux = Inf*ones(Cdouble,Ny);
-# Xend1,Hend1,Xpath1,Nlast1 = BFGSB(X0,H01,Nbfgs,alpha_min,alpha_max,mu,lx,ux,F,Fgrad1,Nsearch);
-Xend1,Hend1,Xpath1,Nlast1 = cross_section_spread_function(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1),reverse(d_c1s_Ek[:,1]),σ_I1;Nbfgs=1000,Nsearch=10)
-# Xend2,Hend2,Xpath2,Nlast2 = BFGSB(X0,H02,Nbfgs,alpha_min,alpha_max,mu,lx,ux,F2,Fgrad2,Nsearch);
-Xend2,Hend2,Xpath2,Nlast2 = cross_section_spread_function(reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2),reverse(d_c1s_Ek[:,3]),σ_I2;Nbfgs=1000,Nsearch=10)
-# Xend3,Hend3,Xpath3,Nlast3 = BFGSB(X0,H03,Nbfgs,alpha_min,alpha_max,mu,lx,ux,F3,Fgrad3,Nsearch);
-Xend3,Hend3,Xpath3,Nlast3 = cross_section_spread_function(reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3),reverse(d_c1s_Ek[:,5]),σ_I3;Nbfgs=1000,Nsearch=10)
-# Xend4,Hend4,Xpath4,Nlast4 = BFGSB(X0,H04,Nbfgs,alpha_min,alpha_max,mu,lx,ux,F4,Fgrad4,Nsearch);
-Xend4,Hend4,Xpath4,Nlast4 = cross_section_spread_function(reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4),reverse(d_c1s_Ek[:,7]),σ_I4;Nbfgs=1000,Nsearch=10)
-# Xend5,Hend5,Xpath5,Nlast5 = BFGSB(X0,H05,Nbfgs,alpha_min,alpha_max,mu,lx,ux,F5,Fgrad5,Nsearch);
-Xend5,Hend5,Xpath5,Nlast5 = cross_section_spread_function(reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5),reverse(d_c1s_Ek[:,9]),σ_I5;Nbfgs=1000,Nsearch=10)
-dKe1*sum(Xend1)
-dKe2*sum(Xend2)
-dKe3*sum(Xend3)
-dKe4*sum(Xend4)
-dKe5*sum(Xend5)
 figure(); plot(Xend1); plot((reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1))/R1)
 figure(); plot(Xend2); plot((reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2))/R2)
 figure(); plot(Xend3); plot((reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3))/R3)
 figure(); plot(Xend4); plot((reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4))/R4)
 figure(); plot(Xend5); plot((reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5))/R5)
+
+100(R1\σ_R1)
+100(R2\σ_R2)
+100(R3\σ_R3)
+100(R4\σ_R4)
+100(R5\σ_R5)
 
 figure();
 plot(reverse(d_c1s_Ek[:,1]),Xend1)
@@ -375,134 +191,135 @@ plot(reverse(d_c1s_Ek[:,9]),Xend5)
 ##
 d_Na = CSV.File(string("data/","na_prop_prop_2_output(1).csv"); delim=",", header=true) |> DataFrame
 
+if false
+   ## number of integration points for the Simpsons rule
+   Nz0 = 50;
+   ## ρ_tot_int: total concentration. It should be mainly just water concentration
+   σ_z0 = 0.5; # [5 Å] width of the transition region
+   z00 = 0.5;  # half height depth
 
-## number of integration points for the Simpsons rule
-Nz0 = 50;
-## ρ_tot_int: total concentration. It should be mainly just water concentration
-σ_z0 = 0.5; # [5 Å] width of the transition region
-z00 = 0.5;  # half height depth
-
-ħν_exp = 1.0*d_Na[1:3:end,5];
-Fν_exp = 1.0*d_Na[1:3:end,4]; # 1.0e-9
-#WARNING: rectifying mirror current, maybe the gain to transform the current to photon flux is not the same for all photon energy!!!!!
-Fν_exp[4] = Fν_exp[4]/20.0;
-Fν_exp[5] = Fν_exp[5]/45.0;
-T_exp  = d_Na[1:3:end,9];
-μKe_exp = d_Na[1:3:end,8];
-Be_exp = [d_c1s_Ek[:,1]'; d_c1s_Ek[:,3]'; d_c1s_Ek[:,5]'; d_c1s_Ek[:,7]'; d_c1s_Ek[:,9]'];
-σν_exp_1 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
-σν_exp_2 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
-σν_exp_3 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
+   ħν_exp = 1.0*d_Na[1:3:end,5];
+   Fν_exp = 1.0*d_Na[1:3:end,4]; # 1.0e-9
+   #WARNING: rectifying mirror current, maybe the gain to transform the current to photon flux is not the same for all photon energy!!!!!
+   Fν_exp[4] = Fν_exp[4]/20.0;
+   Fν_exp[5] = Fν_exp[5]/45.0;
+   T_exp  = d_Na[1:3:end,9];
+   μKe_exp = d_Na[1:3:end,8];
+   Be_exp = [d_c1s_Ek[:,1]'; d_c1s_Ek[:,3]'; d_c1s_Ek[:,5]'; d_c1s_Ek[:,7]'; d_c1s_Ek[:,9]'];
+   σν_exp_1 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
+   σν_exp_2 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
+   σν_exp_3 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
 
 
-##
-##TODO: use one peak by one peak to create models and then data. Later, create bad models in the last two channels
-##
-for i in 1:5
-   x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
-   x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
-   x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
-   max_xx = maximum(x_dist_1+x_dist_2+x_dist_3);
-   σν_exp_1[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_1
-   σν_exp_2[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_2
-   σν_exp_3[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_3
+   ##
+   ##TODO: use one peak by one peak to create models and then data. Later, create bad models in the last two channels
+   ##
+   for i in 1:5
+      x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
+      x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
+      x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
+      max_xx = maximum(x_dist_1+x_dist_2+x_dist_3);
+      σν_exp_1[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_1
+      σν_exp_2[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_2
+      σν_exp_3[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_3
+   end
+
+   Fν_exp   .= 1.0;
+   T_exp    .= 1.0;
+   σν_exp_1 = σν_exp_1./σ_cs_orb.(ħν_exp,"C1s");
+   σν_exp_2 = σν_exp_2./σ_cs_orb.(ħν_exp,"C1s");
+   σν_exp_3 = σν_exp_3./σ_cs_orb.(ħν_exp,"C1s");
+
+   wsXPS_1 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_1;α_exp=1.0);
+   wsXPS_2 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_2;α_exp=1.0);
+   wsXPS_3 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_3;α_exp=1.0);
+
+
+   # depth discretization
+   N = 50;
+   Z_max = 10.0;
+   Zi = collect(range(0.0,Z_max,length=N));
+   H_1 = Ψ_lin_peaks(Zi,wsXPS_1;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
+   H_2 = Ψ_lin_peaks(Zi,wsXPS_2;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
+   H_3 = Ψ_lin_peaks(Zi,wsXPS_3;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
+   # figure(); imshow(H_1); colorbar()
+   # figure(); imshow(H_2); colorbar()
+   # figure(); imshow(H_3); colorbar()
+   H_mean_1,H_std_1 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_1;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
+   H_mean_2,H_std_2 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_2;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
+   H_mean_3,H_std_3 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_3;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
+
+   ##
+   ## profiles
+   ##
+
+   ρA_1 = logistic.(Zi.-2.0,0.0,1.0,2.0);
+   ρA_2 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(Zi.-1.0).^2. /(2.0*0.25^2));
+   ρA_3 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ exp.(-(Zi.-1.5).^2. /(2.0*0.5^2));
+   ρA_4 = exp.(-(Zi.-2.5).^2. /(2.0*0.5^2));
+
+
+   ##
+   ## generate spectra
+   ##
+   IA_1_clean_1 = H_1*ρA_1;
+   IA_2_clean_1 = H_1*ρA_2;
+   IA_3_clean_1 = H_1*ρA_3;
+   IA_4_clean_1 = H_1*ρA_4;
+
+   σ_noise = 0.0
+   IA_1_1 = IA_1_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
+   IA_2_1 = IA_2_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
+   IA_3_1 = IA_3_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
+   IA_4_1 = IA_4_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
+
+   figure();
+   for i in 1:wsXPS_1.Nν
+      scatter(wsXPS_1.Be[i,:],IA_1_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+      plot(wsXPS_1.Be[i,:],IA_1_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+   end
+   xlabel("B\$_e\$ [a.u.]")
+   ylabel("PE signal [a.u.]")
+   xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
+   title("simulated spectra")
+   ylim(0.0,1.1maximum(IA_1_1))
+
+
+   figure();
+   for i in 1:wsXPS_1.Nν
+      scatter(wsXPS_1.Be[i,:],IA_2_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+      plot(wsXPS_1.Be[i,:],IA_2_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+   end
+   xlabel("B\$_e\$ [a.u.]")
+   ylabel("PE signal [a.u.]")
+   xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
+   title("simulated spectra")
+   ylim(0.0,1.1maximum(IA_2_1))
+
+
+   figure();
+   for i in 1:wsXPS_1.Nν
+      scatter(wsXPS_1.Be[i,:],IA_3_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+      plot(wsXPS_1.Be[i,:],IA_3_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+   end
+   xlabel("B\$_e\$ [a.u.]")
+   ylabel("PE signal [a.u.]")
+   xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
+   title("simulated spectra")
+   ylim(0.0,1.1maximum(IA_3_1))
+
+
+   figure();
+   for i in 1:wsXPS_1.Nν
+      scatter(wsXPS_1.Be[i,:],IA_4_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+      plot(wsXPS_1.Be[i,:],IA_4_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+   end
+   xlabel("B\$_e\$ [a.u.]")
+   ylabel("PE signal [a.u.]")
+   xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
+   title("simulated spectra")
+   ylim(0.0,1.1maximum(IA_4_1))
 end
-
-Fν_exp   .= 1.0;
-T_exp    .= 1.0;
-σν_exp_1 = σν_exp_1./σ_cs_orb.(ħν_exp,"C1s");
-σν_exp_2 = σν_exp_2./σ_cs_orb.(ħν_exp,"C1s");
-σν_exp_3 = σν_exp_3./σ_cs_orb.(ħν_exp,"C1s");
-
-wsXPS_1 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_1;α_exp=1.0);
-wsXPS_2 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_2;α_exp=1.0);
-wsXPS_3 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_3;α_exp=1.0);
-
-
-# depth discretization
-N = 50;
-Z_max = 10.0;
-Zi = collect(range(0.0,Z_max,length=N));
-H_1 = Ψ_lin_peaks(Zi,wsXPS_1;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
-H_2 = Ψ_lin_peaks(Zi,wsXPS_2;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
-H_3 = Ψ_lin_peaks(Zi,wsXPS_3;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
-# figure(); imshow(H_1); colorbar()
-# figure(); imshow(H_2); colorbar()
-# figure(); imshow(H_3); colorbar()
-H_mean_1,H_std_1 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_1;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
-H_mean_2,H_std_2 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_2;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
-H_mean_3,H_std_3 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_3;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
-
-##
-## profiles
-##
-
-ρA_1 = logistic.(Zi.-2.0,0.0,1.0,2.0);
-ρA_2 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(Zi.-1.0).^2. /(2.0*0.25^2));
-ρA_3 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ exp.(-(Zi.-1.5).^2. /(2.0*0.5^2));
-ρA_4 = exp.(-(Zi.-2.5).^2. /(2.0*0.5^2));
-
-
-##
-## generate spectra
-##
-IA_1_clean_1 = H_1*ρA_1;
-IA_2_clean_1 = H_1*ρA_2;
-IA_3_clean_1 = H_1*ρA_3;
-IA_4_clean_1 = H_1*ρA_4;
-
-σ_noise = 0.0
-IA_1_1 = IA_1_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
-IA_2_1 = IA_2_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
-IA_3_1 = IA_3_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
-IA_4_1 = IA_4_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
-
-figure();
-for i in 1:wsXPS_1.Nν
-   scatter(wsXPS_1.Be[i,:],IA_1_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-   plot(wsXPS_1.Be[i,:],IA_1_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-end
-xlabel("B\$_e\$ [a.u.]")
-ylabel("PE signal [a.u.]")
-xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
-title("simulated spectra")
-ylim(0.0,1.1maximum(IA_1_1))
-
-
-figure();
-for i in 1:wsXPS_1.Nν
-   scatter(wsXPS_1.Be[i,:],IA_2_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-   plot(wsXPS_1.Be[i,:],IA_2_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-end
-xlabel("B\$_e\$ [a.u.]")
-ylabel("PE signal [a.u.]")
-xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
-title("simulated spectra")
-ylim(0.0,1.1maximum(IA_2_1))
-
-
-figure();
-for i in 1:wsXPS_1.Nν
-   scatter(wsXPS_1.Be[i,:],IA_3_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-   plot(wsXPS_1.Be[i,:],IA_3_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-end
-xlabel("B\$_e\$ [a.u.]")
-ylabel("PE signal [a.u.]")
-xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
-title("simulated spectra")
-ylim(0.0,1.1maximum(IA_3_1))
-
-
-figure();
-for i in 1:wsXPS_1.Nν
-   scatter(wsXPS_1.Be[i,:],IA_4_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-   plot(wsXPS_1.Be[i,:],IA_4_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-end
-xlabel("B\$_e\$ [a.u.]")
-ylabel("PE signal [a.u.]")
-xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
-title("simulated spectra")
-ylim(0.0,1.1maximum(IA_4_1))
 
 if SAVE_MODEL
    # sample the relative error in cross section and eal to generate measurement model with modelling error
