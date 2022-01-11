@@ -156,34 +156,86 @@ dKe5 = d_c1s_Ek[1,9]-d_c1s_Ek[2,9];
 σ_I5 = 20.0;
 
 # number of iteration (main loop and inner loop of BFGS implementation)
-Nbfgs = 50;
+Nbfgs = 10;
 Nsearch = 10;
+Nloop  = 10;
 
 # estimate the cross section spread function and the overall integral for each spectrum)
-Xend1,Hend1,Xpath1,Nlast1,R1,σ_R1 = cross_section_spread_function(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1),reverse(d_c1s_Ek[:,1]),σ_I1;Nbfgs=Nbfgs,Nsearch=Nsearch)
-Xend2,Hend2,Xpath2,Nlast2,R2,σ_R2 = cross_section_spread_function(reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2),reverse(d_c1s_Ek[:,3]),σ_I2;Nbfgs=Nbfgs,Nsearch=Nsearch)
-Xend3,Hend3,Xpath3,Nlast3,R3,σ_R3 = cross_section_spread_function(reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3),reverse(d_c1s_Ek[:,5]),σ_I3;Nbfgs=Nbfgs,Nsearch=Nsearch)
-Xend4,Hend4,Xpath4,Nlast4,R4,σ_R4 = cross_section_spread_function(reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4),reverse(d_c1s_Ek[:,7]),σ_I4;Nbfgs=Nbfgs,Nsearch=Nsearch)
-Xend5,Hend5,Xpath5,Nlast5,R5,σ_R5 = cross_section_spread_function(reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5),reverse(d_c1s_Ek[:,9]),σ_I5;Nbfgs=Nbfgs,Nsearch=Nsearch)
+# Xend1,Hend1,Xpath1,Nlast1,R1,σ_R1 = cross_section_spread_function(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1),reverse(d_c1s_Ek[:,1]),σ_I1;Nbfgs=Nbfgs,Nsearch=Nsearch)
+# Xend2,Hend2,Xpath2,Nlast2,R2,σ_R2 = cross_section_spread_function(reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2),reverse(d_c1s_Ek[:,3]),σ_I2;Nbfgs=Nbfgs,Nsearch=Nsearch)
+# Xend3,Hend3,Xpath3,Nlast3,R3,σ_R3 = cross_section_spread_function(reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3),reverse(d_c1s_Ek[:,5]),σ_I3;Nbfgs=Nbfgs,Nsearch=Nsearch)
+# Xend4,Hend4,Xpath4,Nlast4,R4,σ_R4 = cross_section_spread_function(reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4),reverse(d_c1s_Ek[:,7]),σ_I4;Nbfgs=Nbfgs,Nsearch=Nsearch)
+# Xend5,Hend5,Xpath5,Nlast5,R5,σ_R5 = cross_section_spread_function(reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5),reverse(d_c1s_Ek[:,9]),σ_I5;Nbfgs=Nbfgs,Nsearch=Nsearch)
 
-figure(); plot(Xend1); plot((reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1))/R1)
-figure(); plot(Xend2); plot((reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2))/R2)
-figure(); plot(Xend3); plot((reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3))/R3)
-figure(); plot(Xend4); plot((reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4))/R4)
-figure(); plot(Xend5); plot((reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5))/R5)
+Xend1,μ_XR1,Γ_XR1,R1,σ_R1,R_samples1 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1),reverse(d_c1s_Ek[:,1]),σ_I1;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
+Xend2,μ_XR2,Γ_XR2,R2,σ_R2,R_samples2 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2),reverse(d_c1s_Ek[:,3]),σ_I2;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
+Xend3,μ_XR3,Γ_XR3,R3,σ_R3,R_samples3 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3),reverse(d_c1s_Ek[:,5]),σ_I3;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
+Xend4,μ_XR4,Γ_XR4,R4,σ_R4,R_samples4 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4),reverse(d_c1s_Ek[:,7]),σ_I4;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
+Xend5,μ_XR5,Γ_XR5,R5,σ_R5,R_samples5 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5),reverse(d_c1s_Ek[:,9]),σ_I5;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
 
-100(R1\σ_R1)
-100(R2\σ_R2)
-100(R3\σ_R3)
-100(R4\σ_R4)
-100(R5\σ_R5)
+# E_XR1 = eigen(Γ_XR1);
+# E_XR2 = eigen(Γ_XR2);
+# E_XR3 = eigen(Γ_XR3);
+# E_XR4 = eigen(Γ_XR4);
+# E_XR5 = eigen(Γ_XR5);
+#
+# E_XR1.values[E_XR1.values.<0.0] .= 0.0;
+# E_XR2.values[E_XR2.values.<0.0] .= 0.0;
+# E_XR3.values[E_XR3.values.<0.0] .= 0.0;
+# E_XR4.values[E_XR4.values.<0.0] .= 0.0;
+# E_XR5.values[E_XR5.values.<0.0] .= 0.0;
+#
+# L_XR1 = E_XR1.vectors*diagm(sqrt.(E_XR1.values))*E_XR1.vectors';
+# L_XR2 = E_XR2.vectors*diagm(sqrt.(E_XR2.values))*E_XR2.vectors';
+# L_XR3 = E_XR3.vectors*diagm(sqrt.(E_XR3.values))*E_XR3.vectors';
+# L_XR4 = E_XR4.vectors*diagm(sqrt.(E_XR4.values))*E_XR4.vectors';
+# L_XR5 = E_XR5.vectors*diagm(sqrt.(E_XR5.values))*E_XR5.vectors';
+#
+# figure()
+# plot(μ_XR1 .+ L_XR1*randn(241,100))
+# plot(μ_XR2 .+ L_XR2*randn(241,100))
+# plot(μ_XR3 .+ L_XR3*randn(241,100))
+# plot(μ_XR4 .+ L_XR4*randn(241,100))
+# plot(μ_XR5 .+ L_XR5*randn(241,100))
 
 figure();
-plot(reverse(d_c1s_Ek[:,1]),Xend1)
-plot(reverse(d_c1s_Ek[:,3]),Xend2)
-plot(reverse(d_c1s_Ek[:,5]),Xend3)
-plot(reverse(d_c1s_Ek[:,7]),Xend4)
-plot(reverse(d_c1s_Ek[:,9]),Xend5)
+l_plot_1,       = plot(reverse(d_c1s_Ek[:,1]),Xend1[:,1])
+l_fill_1        = fill_between(reverse(d_c1s_Ek[:,1]),Xend1[:,1]-sqrt.(diag(Γ_XR1)),Xend1[:,1]+sqrt.(diag(Γ_XR1)),alpha=0.5,color="tab:blue")
+l_plot_2,       = plot(reverse(d_c1s_Ek[:,3]),Xend2[:,1])
+l_fill_2        = fill_between(reverse(d_c1s_Ek[:,3]),Xend2[:,1]-sqrt.(diag(Γ_XR2)),Xend2[:,1]+sqrt.(diag(Γ_XR2)),alpha=0.5,color="tab:orange")
+l_plot_3,       = plot(reverse(d_c1s_Ek[:,5]),Xend3[:,1])
+l_fill_3        = fill_between(reverse(d_c1s_Ek[:,5]),Xend3[:,1]-sqrt.(diag(Γ_XR3)),Xend3[:,1]+sqrt.(diag(Γ_XR3)),alpha=0.5,color="tab:green")
+l_plot_4,       = plot(reverse(d_c1s_Ek[:,7]),Xend4[:,1])
+l_fill_4        = fill_between(reverse(d_c1s_Ek[:,7]),Xend4[:,1]-sqrt.(diag(Γ_XR4)),Xend4[:,1]+sqrt.(diag(Γ_XR4)),alpha=0.5,color="tab:red")
+l_plot_5,       = plot(reverse(d_c1s_Ek[:,9]),Xend5[:,1])
+l_fill_5        = fill_between(reverse(d_c1s_Ek[:,9]),Xend5[:,1]-sqrt.(diag(Γ_XR5)),Xend5[:,1]+sqrt.(diag(Γ_XR5)),alpha=0.5,color="tab:purple")
+xlabel("binding energy [eV]",fontsize=12)
+ylabel("cross section spread function [eV\$^{-1}\$]",fontsize=12)
+legend([(l_plot_1,l_fill_1),(l_plot_2,l_fill_2),(l_plot_3,l_fill_3),(l_plot_4,l_fill_4),(l_plot_5,l_fill_5)],["\$\\hbar\\nu\$ = 60 eV"; "\$\\hbar\\nu\$ = 210 eV"; "\$\\hbar\\nu\$ = 410 eV"; "\$\\hbar\\nu\$ = 610 eV"; "\$\\hbar\\nu\$ = 910 eV";])
+tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
+# savefig("cross_section_spread_function.png")
+# savefig("cross_section_spread_function.pdf")
+
+
+
+figure(); plot(Xend1[:,1]); plot((reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1))/R1)
+figure(); plot(Xend2[:,1]); plot((reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2))/R2)
+figure(); plot(Xend3[:,1]); plot((reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3))/R3)
+figure(); plot(Xend4[:,1]); plot((reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4))/R4)
+figure(); plot(Xend5[:,1]); plot((reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5))/R5)
+
+# 100(R1\σ_R1)
+# 100(R2\σ_R2)
+# 100(R3\σ_R3)
+# 100(R4\σ_R4)
+# 100(R5\σ_R5)
+
+# figure();
+# plot(reverse(d_c1s_Ek[:,1]),Xend1)
+# plot(reverse(d_c1s_Ek[:,3]),Xend2)
+# plot(reverse(d_c1s_Ek[:,5]),Xend3)
+# plot(reverse(d_c1s_Ek[:,7]),Xend4)
+# plot(reverse(d_c1s_Ek[:,9]),Xend5)
 
 
 ##

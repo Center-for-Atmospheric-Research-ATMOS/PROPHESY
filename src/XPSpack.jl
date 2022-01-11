@@ -28,7 +28,7 @@ export ΔΨλ, ΔΨσ                              # uncertainty: first order mo
 export ρ_tot_int, riemann, e_k, e_0, e_M     # other
 
 # data enhancement: baseline correction and peak fitting (requires sampling of the spectra)
-export baseline_removal, EM_peaks, cross_section_spread_function # in XPSutils.jl
+export baseline_removal, EM_peaks, cross_section_spread_function, cross_section_spread_function_sample # in XPSutils.jl
 
 # objects modelling experiment and device
 export XPSexp, XPSdevice, XPSsetup
