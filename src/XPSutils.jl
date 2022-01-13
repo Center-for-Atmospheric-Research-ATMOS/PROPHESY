@@ -75,11 +75,11 @@ function EM_peaks(Bes::Array{Cdouble,1},PES::Array{Cdouble,1},τm::Array{Cdouble
    cumDist = cumsum(PES)/sum(PES);
    # the spectra probably have negative values and values bigger than 1, so they must be taken care of
    idx_neg = findlast(cumDist.<0.0)
-   if size(idx_neg)!=0
+   if !isnothing(idx_neg) # size(idx_neg)!=0
       cumDist[1:idx_neg].=0.0;
    end
    idx_pos = findfirst(cumDist.>1.0)
-   if size(idx_neg)!=0
+   if !isnothing(idx_pos) # size(idx_pos)!=0
       cumDist[idx_pos:end].=1.0;
    end
 
