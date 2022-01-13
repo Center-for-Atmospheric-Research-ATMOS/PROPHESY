@@ -109,32 +109,32 @@ if PLOT_FIG
    plot([x_all[1]; x_all[end]],zeros(Cdouble,2))
 end
 
-τm = [1.0/3.0; 1.0/3.0; 1.0/3.0];
-μm = [290.3; 291.9; 293.5];
-σm = [290.3; 291.9; 293.5]/500.0;
-
-NN = length(d_c1s_Ek[:,1]);
-τt = zeros(Cdouble,5,3)
-μt = zeros(Cdouble,5,3)
-σt = zeros(Cdouble,5,3)
-for i in 1:5
-   # estimate the peaks centers and spreads
-   τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[:,(2i)-1],d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]),τm,μm,σm,100)
-   # plt
-   x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
-   x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
-   x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
-   if PLOT_FIG
-      figure();
-      plot(d_c1s_Ek[:,(2i)-1],x_dist_1)
-      plot(d_c1s_Ek[:,(2i)-1],x_dist_2)
-      plot(d_c1s_Ek[:,(2i)-1],x_dist_3)
-      plot(d_c1s_Ek[:,(2i)-1],x_dist_1+x_dist_2+x_dist_3)
-      max_xx = maximum(x_dist_1+x_dist_2+x_dist_3);
-      max_dd = maximum(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]));
-      plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN])))
-   end
-end
+# τm = [1.0/3.0; 1.0/3.0; 1.0/3.0];
+# μm = [290.3; 291.9; 293.5];
+# σm = [290.3; 291.9; 293.5]/500.0;
+#
+# NN = length(d_c1s_Ek[:,1]);
+# τt = zeros(Cdouble,5,3)
+# μt = zeros(Cdouble,5,3)
+# σt = zeros(Cdouble,5,3)
+# for i in 1:5
+#    # estimate the peaks centers and spreads
+#    τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[:,(2i)-1],d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]),τm,μm,σm,100)
+#    # plt
+#    x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
+#    x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
+#    x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
+#    if PLOT_FIG
+#       figure();
+#       plot(d_c1s_Ek[:,(2i)-1],x_dist_1)
+#       plot(d_c1s_Ek[:,(2i)-1],x_dist_2)
+#       plot(d_c1s_Ek[:,(2i)-1],x_dist_3)
+#       plot(d_c1s_Ek[:,(2i)-1],x_dist_1+x_dist_2+x_dist_3)
+#       max_xx = maximum(x_dist_1+x_dist_2+x_dist_3);
+#       max_dd = maximum(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]));
+#       plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN])))
+#    end
+# end
 
 
 ##
@@ -243,135 +243,245 @@ figure(); plot(Xend5[:,1]); plot((reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5))
 ##
 d_Na = CSV.File(string("data/","na_prop_prop_2_output(1).csv"); delim=",", header=true) |> DataFrame
 
-if false
-   ## number of integration points for the Simpsons rule
-   Nz0 = 50;
-   ## ρ_tot_int: total concentration. It should be mainly just water concentration
-   σ_z0 = 0.5; # [5 Å] width of the transition region
-   z00 = 0.5;  # half height depth
+# check the computed areas
+sum(d_Na[1:3,3]) # /(R1/dKe1)
+sum(d_Na[4:6,3]) # /(R2/dKe2)
+sum(d_Na[7:9,3]) # /(R3/dKe3)
+sum(d_Na[10:12,3]) # /(R4/dKe4)
+sum(d_Na[13:15,3]) # /(R5/dKe5)
 
-   ħν_exp = 1.0*d_Na[1:3:end,5];
-   Fν_exp = 1.0*d_Na[1:3:end,4]; # 1.0e-9
-   #WARNING: rectifying mirror current, maybe the gain to transform the current to photon flux is not the same for all photon energy!!!!!
-   Fν_exp[4] = Fν_exp[4]/20.0;
-   Fν_exp[5] = Fν_exp[5]/45.0;
-   T_exp  = d_Na[1:3:end,9];
-   μKe_exp = d_Na[1:3:end,8];
-   Be_exp = [d_c1s_Ek[:,1]'; d_c1s_Ek[:,3]'; d_c1s_Ek[:,5]'; d_c1s_Ek[:,7]'; d_c1s_Ek[:,9]'];
-   σν_exp_1 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
-   σν_exp_2 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
-   σν_exp_3 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
+# normalized area
+sum(d_Na[1:3,10])
+sum(d_Na[4:6,10])
+sum(d_Na[7:9,10])
+sum(d_Na[10:12,10])
+sum(d_Na[13:15,10])
+
+# normalized computed values of the model
+# d_Na[1:3:end,4].*d_Na[1:3:end,7].*d_Na[1:3:end,9]
+(R1/dKe1)/(d_Na[1,4].*d_Na[1,7].*d_Na[1,9])
+(R2/dKe2)/(d_Na[4,4].*d_Na[4,7].*d_Na[4,9])
+(R3/dKe3)/(d_Na[7,4].*d_Na[7,7].*d_Na[7,9])
+(R4/dKe4)/(d_Na[10,4].*d_Na[10,7].*d_Na[10,9])
+(R5/dKe5)/(d_Na[13,4].*d_Na[13,7].*d_Na[13,9])
+
+(σ_R1/dKe1)/(d_Na[1,4].*d_Na[1,7].*d_Na[1,9])
+(σ_R2/dKe2)/(d_Na[4,4].*d_Na[4,7].*d_Na[4,9])
+(σ_R3/dKe3)/(d_Na[7,4].*d_Na[7,7].*d_Na[7,9])
+(σ_R4/dKe4)/(d_Na[10,4].*d_Na[10,7].*d_Na[10,9])
+(σ_R5/dKe5)/(d_Na[13,4].*d_Na[13,7].*d_Na[13,9])
 
 
-   ##
-   ##TODO: use one peak by one peak to create models and then data. Later, create bad models in the last two channels
-   ##
-   for i in 1:5
-      x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
-      x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
-      x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
+τm = [1.0/3.0; 1.0/3.0; 1.0/3.0];
+μm = [290.3; 291.9; 293.5];
+σm = [290.3; 291.9; 293.5]/500.0;
+
+NN = length(d_c1s_Ek[:,1]);
+τt = zeros(Cdouble,5,3)
+μt = zeros(Cdouble,5,3)
+σt = zeros(Cdouble,5,3)
+# μ_XR = [(R1/dKe1)*reverse(μ_XR1) (R2/dKe2)*reverse(μ_XR2) (R3/dKe3)*reverse(μ_XR3) (R4/dKe4)*reverse(μ_XR4) (R5/dKe5)*reverse(μ_XR5)];
+for i in 1:5
+   # estimate the peaks centers and spreads
+   # τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[:,(2i)-1],μ_XR[:,i],τm,μm,σm,100) # too many near zero values are skewing the estimation here: TODO: change the support of μ_XRi
+   τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[:,(2i)-1],d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]),τm,μm,σm,100)
+   # plt
+   x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
+   x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
+   x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
+   if PLOT_FIG
+      figure();
+      plot(d_c1s_Ek[:,(2i)-1],x_dist_1)
+      plot(d_c1s_Ek[:,(2i)-1],x_dist_2)
+      plot(d_c1s_Ek[:,(2i)-1],x_dist_3)
+      plot(d_c1s_Ek[:,(2i)-1],x_dist_1+x_dist_2+x_dist_3)
       max_xx = maximum(x_dist_1+x_dist_2+x_dist_3);
-      σν_exp_1[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_1
-      σν_exp_2[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_2
-      σν_exp_3[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_3
+      max_dd = maximum(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]));
+      plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN])))
    end
-
-   Fν_exp   .= 1.0;
-   T_exp    .= 1.0;
-   σν_exp_1 = σν_exp_1./σ_cs_orb.(ħν_exp,"C1s");
-   σν_exp_2 = σν_exp_2./σ_cs_orb.(ħν_exp,"C1s");
-   σν_exp_3 = σν_exp_3./σ_cs_orb.(ħν_exp,"C1s");
-
-   wsXPS_1 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_1;α_exp=1.0);
-   wsXPS_2 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_2;α_exp=1.0);
-   wsXPS_3 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_3;α_exp=1.0);
-
-
-   # depth discretization
-   N = 50;
-   Z_max = 10.0;
-   Zi = collect(range(0.0,Z_max,length=N));
-   H_1 = Ψ_lin_peaks(Zi,wsXPS_1;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
-   H_2 = Ψ_lin_peaks(Zi,wsXPS_2;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
-   H_3 = Ψ_lin_peaks(Zi,wsXPS_3;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
-   # figure(); imshow(H_1); colorbar()
-   # figure(); imshow(H_2); colorbar()
-   # figure(); imshow(H_3); colorbar()
-   H_mean_1,H_std_1 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_1;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
-   H_mean_2,H_std_2 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_2;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
-   H_mean_3,H_std_3 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_3;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
-
-   ##
-   ## profiles
-   ##
-
-   ρA_1 = logistic.(Zi.-2.0,0.0,1.0,2.0);
-   ρA_2 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(Zi.-1.0).^2. /(2.0*0.25^2));
-   ρA_3 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ exp.(-(Zi.-1.5).^2. /(2.0*0.5^2));
-   ρA_4 = exp.(-(Zi.-2.5).^2. /(2.0*0.5^2));
-
-
-   ##
-   ## generate spectra
-   ##
-   IA_1_clean_1 = H_1*ρA_1;
-   IA_2_clean_1 = H_1*ρA_2;
-   IA_3_clean_1 = H_1*ρA_3;
-   IA_4_clean_1 = H_1*ρA_4;
-
-   σ_noise = 0.0
-   IA_1_1 = IA_1_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
-   IA_2_1 = IA_2_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
-   IA_3_1 = IA_3_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
-   IA_4_1 = IA_4_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
-
-   figure();
-   for i in 1:wsXPS_1.Nν
-      scatter(wsXPS_1.Be[i,:],IA_1_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-      plot(wsXPS_1.Be[i,:],IA_1_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-   end
-   xlabel("B\$_e\$ [a.u.]")
-   ylabel("PE signal [a.u.]")
-   xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
-   title("simulated spectra")
-   ylim(0.0,1.1maximum(IA_1_1))
-
-
-   figure();
-   for i in 1:wsXPS_1.Nν
-      scatter(wsXPS_1.Be[i,:],IA_2_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-      plot(wsXPS_1.Be[i,:],IA_2_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-   end
-   xlabel("B\$_e\$ [a.u.]")
-   ylabel("PE signal [a.u.]")
-   xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
-   title("simulated spectra")
-   ylim(0.0,1.1maximum(IA_2_1))
-
-
-   figure();
-   for i in 1:wsXPS_1.Nν
-      scatter(wsXPS_1.Be[i,:],IA_3_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-      plot(wsXPS_1.Be[i,:],IA_3_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-   end
-   xlabel("B\$_e\$ [a.u.]")
-   ylabel("PE signal [a.u.]")
-   xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
-   title("simulated spectra")
-   ylim(0.0,1.1maximum(IA_3_1))
-
-
-   figure();
-   for i in 1:wsXPS_1.Nν
-      scatter(wsXPS_1.Be[i,:],IA_4_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-      plot(wsXPS_1.Be[i,:],IA_4_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
-   end
-   xlabel("B\$_e\$ [a.u.]")
-   ylabel("PE signal [a.u.]")
-   xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
-   title("simulated spectra")
-   ylim(0.0,1.1maximum(IA_4_1))
 end
+
+
+## number of integration points for the Simpsons rule
+Nz0 = 50;
+## ρ_tot_int: total concentration. It should be mainly just water concentration
+σ_z0 = 0.5; # [5 Å] width of the transition region
+z00 = 0.5;  # half height depth
+
+ħν_exp = 1.0*d_Na[1:3:end,5];
+Fν_exp = 1.0*d_Na[1:3:end,4]; # 1.0e-9
+#WARNING: rectifying mirror current, maybe the gain to transform the current to photon flux is not the same for all photon energy!!!!!
+Fν_exp[4] = Fν_exp[4]/20.0;
+Fν_exp[5] = Fν_exp[5]/45.0;
+T_exp  = d_Na[1:3:end,9];
+μKe_exp = d_Na[1:3:end,8];
+Be_exp = [d_c1s_Ek[:,1]'; d_c1s_Ek[:,3]'; d_c1s_Ek[:,5]'; d_c1s_Ek[:,7]'; d_c1s_Ek[:,9]'];
+σν_exp_1 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
+σν_exp_2 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
+σν_exp_3 = zeros(Cdouble,5,length(d_c1s_Ek[:,1]));
+
+
+##
+##TODO: use one peak by one peak to create models and then data. Later, create bad models in the last two channels
+##
+for i in 1:5
+   x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
+   x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
+   x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
+   max_xx = maximum(x_dist_1+x_dist_2+x_dist_3);
+   σν_exp_1[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_1
+   σν_exp_2[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_2
+   σν_exp_3[i,:] = (σ_cs_orb(ħν_exp[i],"C1s")/max_xx)*x_dist_3
+end
+
+Fν_exp   .= 1.0;
+T_exp    .= 1.0;
+σν_exp_1 = σν_exp_1./σ_cs_orb.(ħν_exp,"C1s");
+σν_exp_2 = σν_exp_2./σ_cs_orb.(ħν_exp,"C1s");
+σν_exp_3 = σν_exp_3./σ_cs_orb.(ħν_exp,"C1s");
+
+wsXPS_1 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_1;α_exp=1.0);
+wsXPS_2 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_2;α_exp=1.0);
+wsXPS_3 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_3;α_exp=1.0);
+
+
+# depth discretization
+N = 50;
+Z_max = 10.0;
+Zi = collect(range(0.0,Z_max,length=N));
+H_1 = Ψ_lin_peaks(Zi,wsXPS_1;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
+H_2 = Ψ_lin_peaks(Zi,wsXPS_2;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
+H_3 = Ψ_lin_peaks(Zi,wsXPS_3;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
+# figure(); imshow(H_1); colorbar()
+# figure(); imshow(H_2); colorbar()
+# figure(); imshow(H_3); colorbar()
+H_mean_1,H_std_1 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_1;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
+H_mean_2,H_std_2 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_2;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
+H_mean_3,H_std_3 = Ψ_lin_peaks_mean_and_std(Zi,wsXPS_3;Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
+
+##
+## peak area model
+##
+
+A1 = Matrix{Cdouble}([dKe1*dropdims(sum(H_1[1:wsXPS_1.Nbe,:],dims=1),dims=1) dKe2*dropdims(sum(H_1[wsXPS_1.Nbe+1:2wsXPS_1.Nbe,:],dims=1),dims=1) dKe3*dropdims(sum(H_1[2wsXPS_1.Nbe+1:3wsXPS_1.Nbe,:],dims=1),dims=1) dKe4*dropdims(sum(H_1[3wsXPS_1.Nbe+1:4wsXPS_1.Nbe,:],dims=1),dims=1) dKe5*dropdims(sum(H_1[4wsXPS_1.Nbe+1:5wsXPS_1.Nbe,:],dims=1),dims=1)]');
+A2 = Matrix{Cdouble}([dKe1*dropdims(sum(H_2[1:wsXPS_1.Nbe,:],dims=1),dims=1) dKe2*dropdims(sum(H_2[wsXPS_1.Nbe+1:2wsXPS_1.Nbe,:],dims=1),dims=1) dKe3*dropdims(sum(H_2[2wsXPS_1.Nbe+1:3wsXPS_1.Nbe,:],dims=1),dims=1) dKe4*dropdims(sum(H_2[3wsXPS_1.Nbe+1:4wsXPS_1.Nbe,:],dims=1),dims=1) dKe5*dropdims(sum(H_2[4wsXPS_1.Nbe+1:5wsXPS_1.Nbe,:],dims=1),dims=1)]');
+A3 = Matrix{Cdouble}([dKe1*dropdims(sum(H_3[1:wsXPS_1.Nbe,:],dims=1),dims=1) dKe2*dropdims(sum(H_3[wsXPS_1.Nbe+1:2wsXPS_1.Nbe,:],dims=1),dims=1) dKe3*dropdims(sum(H_3[2wsXPS_1.Nbe+1:3wsXPS_1.Nbe,:],dims=1),dims=1) dKe4*dropdims(sum(H_3[3wsXPS_1.Nbe+1:4wsXPS_1.Nbe,:],dims=1),dims=1) dKe5*dropdims(sum(H_3[4wsXPS_1.Nbe+1:5wsXPS_1.Nbe,:],dims=1),dims=1)]');
+
+A_std_1 = Matrix{Cdouble}([dKe1*sqrt.(dropdims(sum(H_std_1[1:wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe2*sqrt.(dropdims(sum(H_std_1[wsXPS_1.Nbe+1:2wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe3*sqrt.(dropdims(sum(H_std_1[2wsXPS_1.Nbe+1:3wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe4*sqrt.(dropdims(sum(H_std_1[3wsXPS_1.Nbe+1:4wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe5*sqrt.(dropdims(sum(H_std_1[4wsXPS_1.Nbe+1:5wsXPS_1.Nbe,:].^2,dims=1),dims=1))]');
+A_std_2 = Matrix{Cdouble}([dKe1*sqrt.(dropdims(sum(H_std_2[1:wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe2*sqrt.(dropdims(sum(H_std_2[wsXPS_1.Nbe+1:2wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe3*sqrt.(dropdims(sum(H_std_2[2wsXPS_1.Nbe+1:3wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe4*sqrt.(dropdims(sum(H_std_2[3wsXPS_1.Nbe+1:4wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe5*sqrt.(dropdims(sum(H_std_2[4wsXPS_1.Nbe+1:5wsXPS_1.Nbe,:].^2,dims=1),dims=1))]');
+A_std_3 = Matrix{Cdouble}([dKe1*sqrt.(dropdims(sum(H_std_3[1:wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe2*sqrt.(dropdims(sum(H_std_3[wsXPS_1.Nbe+1:2wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe3*sqrt.(dropdims(sum(H_std_3[2wsXPS_1.Nbe+1:3wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe4*sqrt.(dropdims(sum(H_std_3[3wsXPS_1.Nbe+1:4wsXPS_1.Nbe,:].^2,dims=1),dims=1)) dKe5*sqrt.(dropdims(sum(H_std_3[4wsXPS_1.Nbe+1:5wsXPS_1.Nbe,:].^2,dims=1),dims=1))]');
+
+A = A1+A2+A3;
+A_std = sqrt.(A_std_1.^2 + A_std_2.^2 + A_std_3.^2);
+
+figure()
+for i in 1:5
+   plot(Zi,A1[i,:])
+   fill_between(Zi,A1[i,:]-A_std_1[i,:],A1[i,:]+A_std_1[i,:],alpha=0.5)
+end
+
+figure()
+for i in 1:5
+   plot(Zi,A2[i,:])
+   fill_between(Zi,A2[i,:]-A_std_2[i,:],A2[i,:]+A_std_2[i,:],alpha=0.5)
+end
+
+figure()
+for i in 1:5
+   plot(Zi,A3[i,:])
+   fill_between(Zi,A3[i,:]-A_std_3[i,:],A3[i,:]+A_std_3[i,:],alpha=0.5)
+end
+
+# normalized area operator
+figure()
+for i in 1:5
+   plot(Zi,A[i,:])
+   fill_between(Zi,A[i,:]-A_std[i,:],A[i,:]+A_std[i,:],alpha=0.5)
+end
+
+# non-normalized area operator
+figure()
+for i in 1:5
+   plot(Zi,d_Na[3*(i-1)+1,4]*d_Na[3*(i-1)+1,9]*σ_cs_orb(ħν_exp[i],"C1s")*A[i,:])
+   fill_between(Zi,d_Na[3*(i-1)+1,4]*d_Na[3*(i-1)+1,9]*σ_cs_orb(ħν_exp[i],"C1s")*(A[i,:]-A_std[i,:]),d_Na[3*(i-1)+1,4]*d_Na[3*(i-1)+1,9]*σ_cs_orb(ħν_exp[i],"C1s")*(A[i,:]+A_std[i,:]),alpha=0.5)
+end
+
+
+##
+## profiles
+##
+
+ρA_1 = logistic.(Zi.-2.0,0.0,1.0,2.0);
+ρA_2 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(Zi.-1.0).^2. /(2.0*0.25^2));
+ρA_3 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ exp.(-(Zi.-1.5).^2. /(2.0*0.5^2));
+ρA_4 = exp.(-(Zi.-2.5).^2. /(2.0*0.5^2));
+
+
+##
+## generate spectra
+##
+IA_1_clean_1 = H_1*ρA_1;
+IA_2_clean_1 = H_1*ρA_2;
+IA_3_clean_1 = H_1*ρA_3;
+IA_4_clean_1 = H_1*ρA_4;
+
+R1s = A1*ρA_1
+r1s = R1s[2:end]./R1s[1:end-1];
+RR1s = r1s.*A1[2:end,:]-A1[1:end-1,:];
+
+σ_noise = 0.0
+IA_1_1 = IA_1_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
+IA_2_1 = IA_2_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
+IA_3_1 = IA_3_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
+IA_4_1 = IA_4_clean_1 + σ_noise*randn(wsXPS_1.Nke*wsXPS_1.Nbe);
+
+figure();
+for i in 1:wsXPS_1.Nν
+   scatter(wsXPS_1.Be[i,:],IA_1_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+   plot(wsXPS_1.Be[i,:],IA_1_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+end
+xlabel("B\$_e\$ [a.u.]")
+ylabel("PE signal [a.u.]")
+xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
+title("simulated spectra")
+ylim(0.0,1.1maximum(IA_1_1))
+
+
+figure();
+for i in 1:wsXPS_1.Nν
+   scatter(wsXPS_1.Be[i,:],IA_2_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+   plot(wsXPS_1.Be[i,:],IA_2_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+end
+xlabel("B\$_e\$ [a.u.]")
+ylabel("PE signal [a.u.]")
+xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
+title("simulated spectra")
+ylim(0.0,1.1maximum(IA_2_1))
+
+
+figure();
+for i in 1:wsXPS_1.Nν
+   scatter(wsXPS_1.Be[i,:],IA_3_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+   plot(wsXPS_1.Be[i,:],IA_3_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+end
+xlabel("B\$_e\$ [a.u.]")
+ylabel("PE signal [a.u.]")
+xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
+title("simulated spectra")
+ylim(0.0,1.1maximum(IA_3_1))
+
+
+figure();
+for i in 1:wsXPS_1.Nν
+   scatter(wsXPS_1.Be[i,:],IA_4_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+   plot(wsXPS_1.Be[i,:],IA_4_clean_1[(i-1)*wsXPS_1.Nbe+1:i*wsXPS_1.Nbe]) # ,color="tab:blue")
+end
+xlabel("B\$_e\$ [a.u.]")
+ylabel("PE signal [a.u.]")
+xlim(minimum(wsXPS_1.Be),maximum(wsXPS_1.Be))
+title("simulated spectra")
+ylim(0.0,1.1maximum(IA_4_1))
+# end
 
 if SAVE_MODEL
    # sample the relative error in cross section and eal to generate measurement model with modelling error
