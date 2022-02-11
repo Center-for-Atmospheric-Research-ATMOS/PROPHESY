@@ -109,33 +109,63 @@ if PLOT_FIG
    plot([x_all[1]; x_all[end]],zeros(Cdouble,2))
 end
 
-# τm = [1.0/3.0; 1.0/3.0; 1.0/3.0];
-# μm = [290.3; 291.9; 293.5];
-# σm = [290.3; 291.9; 293.5]/500.0;
-#
-# NN = length(d_c1s_Ek[:,1]);
-# τt = zeros(Cdouble,5,3)
-# μt = zeros(Cdouble,5,3)
-# σt = zeros(Cdouble,5,3)
-# for i in 1:5
-#    # estimate the peaks centers and spreads
-#    τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[:,(2i)-1],d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]),τm,μm,σm,100)
-#    # plt
-#    x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
-#    x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
-#    x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
-#    if PLOT_FIG
-#       figure();
-#       plot(d_c1s_Ek[:,(2i)-1],x_dist_1)
-#       plot(d_c1s_Ek[:,(2i)-1],x_dist_2)
-#       plot(d_c1s_Ek[:,(2i)-1],x_dist_3)
-#       plot(d_c1s_Ek[:,(2i)-1],x_dist_1+x_dist_2+x_dist_3)
-#       max_xx = maximum(x_dist_1+x_dist_2+x_dist_3);
-#       max_dd = maximum(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]));
-#       plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN])))
-#    end
-# end
+function Ψ_from_spectra(Be::Array{Cdouble,2},ħν_exp::Array{Cdouble,1},μKe_exp::Array{Cdouble,1},Zi::Array{Cdouble,1},I_C1s::Array{Cdouble,2},σ_I::Array{Cdouble,1},τm::Array{Cdouble,1},μm::Array{Cdouble,1},σm::Array{Cdouble,1};Ke_min::Cdouble=288.5,Ke_max::Cdouble=294.5,Nbfgs::Int64=10,Nsearch::Int64=10,Nloop::Int64=10)
+   #check dimensions
+   Nke,Nbe = size(Be)
+   if (Nke!=length(ħν_exp))
+      throw("Model from spectra: inputs' dimensions.")
+   end
+   if (Nke!=length(μKe_exp))
+      throw("Model from spectra: inputs' dimensions.")
+   end
+   if (size(Be)!=size(I_C1s))
+      throw("Model from spectra: inputs' dimensions.")
+   end
 
+   # baseline removal
+   D_2nd = diagm(Nbe-2,Nbe,1 => 2ones(Cdouble,Nbe-2), 0 => -ones(Cdouble,Nbe-2) ,2 => -ones(Cdouble,Nbe-2));
+   κb = 0.01;
+   λb = 1.0e5;
+   z_baseline = zeros(Cdouble,Nke,Nbe);
+   for i in 1:Nke
+      z_baseline[i,:] = baseline_removal(I_C1s[i,:],λb,κb,D_2nd);
+   end
+
+   # estimate the cross section spread function and the overall integral for each spectrum)
+   μ_XR = zeros(Cdouble,Nke,Nbe);
+   Γ_XR = zeros(Cdouble,Nke,Nbe,Nbe);
+   for i in 1:Nke
+      _,μ_XR[i,:],Γ_XR[i,:,:],R[i],σ_R[i],_ = cross_section_spread_function_sample(I_C1s[i,:]-z_baseline[i,:],Ke[i,:],σ_I[i];Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop,σ_2nd=0.001);
+   end
+
+   # estimate the Np Gaussian fits for each spectrum
+   Np = length(τm);
+   τt = zeros(Cdouble,Nke,Np);
+   μt = zeros(Cdouble,Nke,Np);
+   σt = zeros(Cdouble,Nke,Np);
+
+   for i in 1:Nke
+      # estimate the peaks centers and spreads
+      idx_up  = findlast(Ke[i,:].>Ke_min);
+      idx_low = findfirst(Ke[i,:].<Ke_max);
+      τt[i,:],μt[i,:],σt[i,:] = EM_peaks(Ke[i,idx_low:idx_up],μ_XR[i,idx_low:idx_up],τm,μm,σm,100)
+   end
+
+   # depth profile: normalized depth operator
+   Fν_exp = ones(Cdouble,Nke);
+   T_exp  = ones(Cdouble,Nke);
+   σν_exp = ones(Cdouble,Nke,Nbe);
+   wsXPS = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σν_exp_1;α_exp=1.0);
+   ## number of integration points for the Simpsons rule
+   Nz0 = 50;
+   ## ρ_tot_int: total concentration. It should be mainly just water concentration
+   σ_z0 = 0.5; # [5 Å] width of the transition region
+   z00 = 0.5;  # half height depth
+   H     = Ψ_lin_peaks(Zi,wsXPS;Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0);
+   H_mean,H_std = Ψ_lin_peaks_mean_and_std(Zi,wsXPS;Nz=Nz0,κ_cs=0.0,κ_eal=0.05,σ_z=σ_z0,z0=z00);
+   # TODO: sample EAL in a nice way: for each spectrum, the eal error is very much correlated, be it's not correlated between spectra
+   σ_cs_orb.(ħν_exp,"C1s");
+end
 
 ##
 ## cross section spread
@@ -161,42 +191,12 @@ Nsearch = 10;
 Nloop  = 10;
 
 # estimate the cross section spread function and the overall integral for each spectrum)
-# Xend1,Hend1,Xpath1,Nlast1,R1,σ_R1 = cross_section_spread_function(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1),reverse(d_c1s_Ek[:,1]),σ_I1;Nbfgs=Nbfgs,Nsearch=Nsearch)
-# Xend2,Hend2,Xpath2,Nlast2,R2,σ_R2 = cross_section_spread_function(reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2),reverse(d_c1s_Ek[:,3]),σ_I2;Nbfgs=Nbfgs,Nsearch=Nsearch)
-# Xend3,Hend3,Xpath3,Nlast3,R3,σ_R3 = cross_section_spread_function(reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3),reverse(d_c1s_Ek[:,5]),σ_I3;Nbfgs=Nbfgs,Nsearch=Nsearch)
-# Xend4,Hend4,Xpath4,Nlast4,R4,σ_R4 = cross_section_spread_function(reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4),reverse(d_c1s_Ek[:,7]),σ_I4;Nbfgs=Nbfgs,Nsearch=Nsearch)
-# Xend5,Hend5,Xpath5,Nlast5,R5,σ_R5 = cross_section_spread_function(reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5),reverse(d_c1s_Ek[:,9]),σ_I5;Nbfgs=Nbfgs,Nsearch=Nsearch)
+Xend1,μ_XR1,Γ_XR1,R1,σ_R1,R_samples1 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1),reverse(d_c1s_Ek[:,1]),σ_I1;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop,σ_2nd=0.001);
+Xend2,μ_XR2,Γ_XR2,R2,σ_R2,R_samples2 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2),reverse(d_c1s_Ek[:,3]),σ_I2;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop,σ_2nd=0.001);
+Xend3,μ_XR3,Γ_XR3,R3,σ_R3,R_samples3 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3),reverse(d_c1s_Ek[:,5]),σ_I3;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop,σ_2nd=0.002);
+Xend4,μ_XR4,Γ_XR4,R4,σ_R4,R_samples4 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4),reverse(d_c1s_Ek[:,7]),σ_I4;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop,σ_2nd=0.002);
+Xend5,μ_XR5,Γ_XR5,R5,σ_R5,R_samples5 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5),reverse(d_c1s_Ek[:,9]),σ_I5;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop,σ_2nd=0.005);
 
-Xend1,μ_XR1,Γ_XR1,R1,σ_R1,R_samples1 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1),reverse(d_c1s_Ek[:,1]),σ_I1;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
-Xend2,μ_XR2,Γ_XR2,R2,σ_R2,R_samples2 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2),reverse(d_c1s_Ek[:,3]),σ_I2;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
-Xend3,μ_XR3,Γ_XR3,R3,σ_R3,R_samples3 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3),reverse(d_c1s_Ek[:,5]),σ_I3;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
-Xend4,μ_XR4,Γ_XR4,R4,σ_R4,R_samples4 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4),reverse(d_c1s_Ek[:,7]),σ_I4;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
-Xend5,μ_XR5,Γ_XR5,R5,σ_R5,R_samples5 = cross_section_spread_function_sample(reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5),reverse(d_c1s_Ek[:,9]),σ_I5;Nbfgs=Nbfgs,Nsearch=Nsearch,N_sample=Nloop);
-
-# E_XR1 = eigen(Γ_XR1);
-# E_XR2 = eigen(Γ_XR2);
-# E_XR3 = eigen(Γ_XR3);
-# E_XR4 = eigen(Γ_XR4);
-# E_XR5 = eigen(Γ_XR5);
-#
-# E_XR1.values[E_XR1.values.<0.0] .= 0.0;
-# E_XR2.values[E_XR2.values.<0.0] .= 0.0;
-# E_XR3.values[E_XR3.values.<0.0] .= 0.0;
-# E_XR4.values[E_XR4.values.<0.0] .= 0.0;
-# E_XR5.values[E_XR5.values.<0.0] .= 0.0;
-#
-# L_XR1 = E_XR1.vectors*diagm(sqrt.(E_XR1.values))*E_XR1.vectors';
-# L_XR2 = E_XR2.vectors*diagm(sqrt.(E_XR2.values))*E_XR2.vectors';
-# L_XR3 = E_XR3.vectors*diagm(sqrt.(E_XR3.values))*E_XR3.vectors';
-# L_XR4 = E_XR4.vectors*diagm(sqrt.(E_XR4.values))*E_XR4.vectors';
-# L_XR5 = E_XR5.vectors*diagm(sqrt.(E_XR5.values))*E_XR5.vectors';
-#
-# figure()
-# plot(μ_XR1 .+ L_XR1*randn(241,100))
-# plot(μ_XR2 .+ L_XR2*randn(241,100))
-# plot(μ_XR3 .+ L_XR3*randn(241,100))
-# plot(μ_XR4 .+ L_XR4*randn(241,100))
-# plot(μ_XR5 .+ L_XR5*randn(241,100))
 
 figure();
 l_plot_1,       = plot(reverse(d_c1s_Ek[:,1]),Xend1[:,1])
@@ -218,24 +218,11 @@ tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
 
 
 
-figure(); plot(Xend1[:,1]); plot((reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1))/R1)
-figure(); plot(Xend2[:,1]); plot((reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2))/R2)
-figure(); plot(Xend3[:,1]); plot((reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3))/R3)
-figure(); plot(Xend4[:,1]); plot((reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4))/R4)
-figure(); plot(Xend5[:,1]); plot((reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5))/R5)
-
-# 100(R1\σ_R1)
-# 100(R2\σ_R2)
-# 100(R3\σ_R3)
-# 100(R4\σ_R4)
-# 100(R5\σ_R5)
-
-# figure();
-# plot(reverse(d_c1s_Ek[:,1]),Xend1)
-# plot(reverse(d_c1s_Ek[:,3]),Xend2)
-# plot(reverse(d_c1s_Ek[:,5]),Xend3)
-# plot(reverse(d_c1s_Ek[:,7]),Xend4)
-# plot(reverse(d_c1s_Ek[:,9]),Xend5)
+figure(); plot(reverse(d_c1s_Ek[:,1]),Xend1[:,1]); plot(reverse(d_c1s_Ek[:,1]),(reverse(d_c1s_Ek[:,2])-reverse(z_baseline_1))/R1)
+figure(); plot(reverse(d_c1s_Ek[:,3]),Xend2[:,1]); plot(reverse(d_c1s_Ek[:,3]),(reverse(d_c1s_Ek[:,4])-reverse(z_baseline_2))/R2)
+figure(); plot(reverse(d_c1s_Ek[:,5]),Xend3[:,1]); plot(reverse(d_c1s_Ek[:,5]),(reverse(d_c1s_Ek[:,6])-reverse(z_baseline_3))/R3)
+figure(); plot(reverse(d_c1s_Ek[:,7]),Xend4[:,1]); plot(reverse(d_c1s_Ek[:,7]),(reverse(d_c1s_Ek[:,8])-reverse(z_baseline_4))/R4)
+figure(); plot(reverse(d_c1s_Ek[:,9]),Xend5[:,1]); plot(reverse(d_c1s_Ek[:,9]),(reverse(d_c1s_Ek[:,10])-reverse(z_baseline_5))/R5)
 
 
 ##
@@ -271,36 +258,90 @@ sum(d_Na[13:15,10])
 (σ_R4/dKe4)/(d_Na[10,4].*d_Na[10,7].*d_Na[10,9])
 (σ_R5/dKe5)/(d_Na[13,4].*d_Na[13,7].*d_Na[13,9])
 
-
-τm = [1.0/3.0; 1.0/3.0; 1.0/3.0];
-μm = [290.3; 291.9; 293.5];
-σm = [290.3; 291.9; 293.5]/500.0;
-
+##
+## fit the spectra with Gaussians
+##
 NN = length(d_c1s_Ek[:,1]);
-τt = zeros(Cdouble,5,3)
-μt = zeros(Cdouble,5,3)
-σt = zeros(Cdouble,5,3)
-# μ_XR = [(R1/dKe1)*reverse(μ_XR1) (R2/dKe2)*reverse(μ_XR2) (R3/dKe3)*reverse(μ_XR3) (R4/dKe4)*reverse(μ_XR4) (R5/dKe5)*reverse(μ_XR5)];
-for i in 1:5
-   # estimate the peaks centers and spreads
-   # τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[:,(2i)-1],μ_XR[:,i],τm,μm,σm,100) # too many near zero values are skewing the estimation here: TODO: change the support of μ_XRi
-   τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[:,(2i)-1],d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]),τm,μm,σm,100)
-   # plt
-   x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
-   x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
-   x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
-   if PLOT_FIG
-      figure();
-      plot(d_c1s_Ek[:,(2i)-1],x_dist_1)
-      plot(d_c1s_Ek[:,(2i)-1],x_dist_2)
-      plot(d_c1s_Ek[:,(2i)-1],x_dist_3)
-      plot(d_c1s_Ek[:,(2i)-1],x_dist_1+x_dist_2+x_dist_3)
-      max_xx = maximum(x_dist_1+x_dist_2+x_dist_3);
-      max_dd = maximum(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]));
-      plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN])))
+μ_XR = [(R1/dKe1)*reverse(μ_XR1) (R2/dKe2)*reverse(μ_XR2) (R3/dKe3)*reverse(μ_XR3) (R4/dKe4)*reverse(μ_XR4) (R5/dKe5)*reverse(μ_XR5)];
+
+if false
+   # one Gaussian per peak: does not seem to fit well enough... or maybe it does... the residus are very similar in both cases
+   τm = [1.0/3.0; 1.0/3.0; 1.0/3.0];
+   μm = [290.3; 291.9; 293.5];
+   σm = [290.3; 291.9; 293.5]/500.0;
+
+   τt = zeros(Cdouble,5,3);
+   μt = zeros(Cdouble,5,3);
+   σt = zeros(Cdouble,5,3);
+
+   for i in 1:5
+      # estimate the peaks centers and spreads
+      idx_up  = findlast(d_c1s_Ek[:,(2i)-1].>288.5);
+      idx_low = findfirst(d_c1s_Ek[:,(2i)-1].<294.5);
+      τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[idx_low:idx_up,(2i)-1],μ_XR[idx_low:idx_up,i],τm,μm,σm,100) # too many near zero values are skewing the estimation here: TODO: change the support of μ_XRi
+      # τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[μ_XR[:,i].>0.05maximum(μ_XR[:,i]),(2i)-1],μ_XR[μ_XR[:,i].>0.05maximum(μ_XR[:,i]),i],τm,μm,σm,100)
+      # τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[:,(2i)-1],d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]),τm,μm,σm,100)
+      # plt
+      x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
+      x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
+      x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
+      if PLOT_FIG
+         figure();
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_1)
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_2)
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_3)
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_1+x_dist_2+x_dist_3)
+         max_xx = maximum(x_dist_1+x_dist_2+x_dist_3);
+         # max_dd = maximum(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]));
+         # plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN])))
+         max_dd = maximum(μ_XR[:,i]);
+         # plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*μ_XR[:,i]-(x_dist_1+x_dist_2+x_dist_3))
+         plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*μ_XR[:,i])
+      end
+   end
+else
+   # two gaussian per peak
+   τm = [1.0/6.0; 1.0/6.0; 1.0/6.0; 1.0/6.0; 1.0/6.0; 1.0/6.0];
+   μm = [290.3-0.1; 290.3+0.1; 291.9-0.2; 291.9+0.2; 293.3; 294.1];
+   σm = [290.3/1000.0; 290.3/1000.0; 291.9/1000.0; 291.9/1000.0; 293.5/1000.0; 293.5/1000.0];
+
+   τt = zeros(Cdouble,5,6);
+   μt = zeros(Cdouble,5,6);
+   σt = zeros(Cdouble,5,6);
+
+
+   for i in 1:5
+      # estimate the peaks centers and spreads
+      idx_up  = findlast(d_c1s_Ek[:,(2i)-1].>288.5);
+      idx_low = findfirst(d_c1s_Ek[:,(2i)-1].<294.5);
+      τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[idx_low:idx_up,(2i)-1],μ_XR[idx_low:idx_up,i],τm,μm,σm,100) # too many near zero values are skewing the estimation here: TODO: change the support of μ_XRi
+      # τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[μ_XR[:,i].>0.05maximum(μ_XR[:,i]),(2i)-1],μ_XR[μ_XR[:,i].>0.05maximum(μ_XR[:,i]),i],τm,μm,σm,100)
+      # τt[i,:],μt[i,:],σt[i,:] = EM_peaks(d_c1s_Ek[:,(2i)-1],d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]),τm,μm,σm,100)
+      # plt
+      x_dist_1 = (τt[i,1]/σt[i,1])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,1])/σt[i,1]).^2);
+      x_dist_2 = (τt[i,2]/σt[i,2])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,2])/σt[i,2]).^2);
+      x_dist_3 = (τt[i,3]/σt[i,3])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,3])/σt[i,3]).^2);
+      x_dist_4 = (τt[i,4]/σt[i,4])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,4])/σt[i,4]).^2);
+      x_dist_5 = (τt[i,5]/σt[i,5])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,5])/σt[i,5]).^2);
+      x_dist_6 = (τt[i,6]/σt[i,6])*exp.(-0.5*((d_c1s_Ek[:,(2i)-1].-μt[i,6])/σt[i,6]).^2);
+      if PLOT_FIG
+         figure();
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_1)
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_2)
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_3)
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_4)
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_5)
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_6)
+         plot(d_c1s_Ek[:,(2i)-1],x_dist_1+x_dist_2+x_dist_3+x_dist_4+x_dist_5+x_dist_6)
+         max_xx = maximum(x_dist_1+x_dist_2+x_dist_3+x_dist_4+x_dist_5+x_dist_6);
+         # max_dd = maximum(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN]));
+         # plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*(d_c1s_Ek[:,2i]-reverse(z_baseline[(i-1)*NN+1:i*NN])))
+         max_dd = maximum(μ_XR[:,i]);
+         plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*μ_XR[:,i])
+         # plot(d_c1s_Ek[:,(2i)-1],(max_xx/max_dd)*μ_XR[:,i]-(x_dist_1+x_dist_2+x_dist_3+x_dist_4+x_dist_5+x_dist_6))
+      end
    end
 end
-
 
 ## number of integration points for the Simpsons rule
 Nz0 = 50;

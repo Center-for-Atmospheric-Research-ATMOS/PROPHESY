@@ -41,9 +41,9 @@ folder_res = "./results/lin/4peaks/0.0020/"
 # data_folder = "./data/lin/4peaks/0.0200/";
 # folder_res = "./results/lin/4peaks/0.0200/"
 
-DATA1 = false;
+DATA1 = true;
 DATA2 = false;
-DATA3 = true;
+DATA3 = false;
 
 PLOT_MEAS_OP = false;
 
@@ -241,10 +241,20 @@ end
 μ_ρ = dropdims(mean(ρ_samples,dims=1),dims=1);
 σ_ρ = dropdims(std(ρ_samples,dims=1),dims=1);
 
-figure(); plot(Zi,μ_ρ); plot(Zi,ρA_1[idx_res]); fill_between(Zi,μ_ρ-σ_ρ,μ_ρ+σ_ρ,alpha=0.5,color="tab:pink")
-
-
-
+figure();
+l_plot_μ,= plot(Zi,μ_ρ,color="tab:pink");
+l_fill_est = fill_between(Zi,μ_ρ-σ_ρ,μ_ρ+σ_ρ,alpha=0.5,color="tab:pink");
+l_plot_gt, = plot(Zi,ρA_1[idx_res]);
+xlabel("depth [nm]");
+ylabel("normalized concentration \$\\frac{\\rho}{\\rho_{B}}\$");
+xlim(Zi[1],Zi[end]);
+ylim(0.0)
+# savefig("peak_area_model_estimate_CP_sample_data_computed_model_un_1.pdf")
+# savefig("peak_area_model_estimate_CP_sample_data_computed_model_un_1.png")
+# savefig("peak_area_model_estimate_CP_sample_data_computed_model_un_2.pdf")
+# savefig("peak_area_model_estimate_CP_sample_data_computed_model_un_2.png")
+# savefig("peak_area_model_estimate_CP_sample_data_computed_model_un_3.pdf")
+# savefig("peak_area_model_estimate_CP_sample_data_computed_model_un_3.png")
 
 ##
 ## more plotting

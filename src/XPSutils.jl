@@ -97,8 +97,9 @@ Kes:      kinetic energy discretization points (regularly sub division)
 σ_I:      noise level in the measurement (standard deviation)
 Nbfgs:    number of iterations in the bounded BFGS loop
 Nsearch:  maximum number of iteration for the line search
+σ_2nd:    regularization parameter, amplitutde of the second order difference (standard deviation)
 """
-function cross_section_spread_function(I_nbl::Array{Cdouble,1},Kes::Array{Cdouble,1},σ_I::Cdouble;Nbfgs::Int64=1000,Nsearch::Int64=10)
+function cross_section_spread_function(I_nbl::Array{Cdouble,1},Kes::Array{Cdouble,1},σ_I::Cdouble;Nbfgs::Int64=1000,Nsearch::Int64=10,σ_2nd::Cdouble=0.001)
    Ny = length(I_nbl)
    if (length(Kes)!=Ny) throw("not the right amount of kinetic energies") end
    dKe = Kes[2] - Kes[1];
@@ -117,7 +118,7 @@ function cross_section_spread_function(I_nbl::Array{Cdouble,1},Kes::Array{Cdoubl
    ΓI = zeros(Cdouble,Ny+1+(Ny-2),Ny+1+(Ny-2));
    ΓI[1:Ny,1:Ny] = σ_I^2*Matrix{Cdouble}(I,Ny,Ny);                # noise level in the measurment
    ΓI[Ny+1,Ny+1] = (0.5/(Kes[1]-Kes[end]))^2;                     # accuracy of the numerical integration
-   ΓI[Ny+2:end,Ny+2:end] = 0.001^2*Matrix{Cdouble}(I,Ny-2,Ny-2);  # variance of the second order difference of the CS spread function
+   ΓI[Ny+2:end,Ny+2:end] = σ_2nd^2*Matrix{Cdouble}(I,Ny-2,Ny-2);  # variance of the second order difference of the CS spread function
    ΓI_inv = inv(ΓI);
 
    # augmented measurement operator (augmented => a priori in the operator)
@@ -154,8 +155,9 @@ Kes:      kinetic energy discretization points (regularly sub division)
 Nbfgs:    number of iterations in the bounded BFGS loop
 Nsearch:  maximum number of iteration for the line search
 N_sample: number of samples (model R)
+σ_2nd:    regularization parameter, amplitutde of the second order difference (standard deviation)
 """
-function cross_section_spread_function_sample(I_nbl::Array{Cdouble,1},Kes::Array{Cdouble,1},σ_I::Cdouble;Nbfgs::Int64=1000,Nsearch::Int64=10,N_sample::Int64=100)
+function cross_section_spread_function_sample(I_nbl::Array{Cdouble,1},Kes::Array{Cdouble,1},σ_I::Cdouble;Nbfgs::Int64=1000,Nsearch::Int64=10,N_sample::Int64=100,σ_2nd::Cdouble=0.001)
    Ny = length(I_nbl)
    if (length(Kes)!=Ny) throw("not the right amount of kinetic energies") end
    dKe = Kes[2] - Kes[1];
@@ -177,7 +179,7 @@ function cross_section_spread_function_sample(I_nbl::Array{Cdouble,1},Kes::Array
    # covariance matrix of the augmented measurements
    ΓI = zeros(Cdouble,Ny+1+(Ny-2),Ny+1+(Ny-2));
    ΓI[Ny+1,Ny+1] = (0.5/(Kes[1]-Kes[end]))^2;                     # accuracy of the numerical integration
-   ΓI[Ny+2:end,Ny+2:end] = 0.001^2*Matrix{Cdouble}(I,Ny-2,Ny-2);  # variance of the second order difference of the CS spread function
+   ΓI[Ny+2:end,Ny+2:end] = σ_2nd^2*Matrix{Cdouble}(I,Ny-2,Ny-2);  # variance of the second order difference of the CS spread function
 
    # augmented measurement operator (augmented => a priori in the operator)
    Rreg = [R*Matrix{Cdouble}(I,Ny,Ny); dKe*ones(Cdouble,Ny)'; D_2nd];
