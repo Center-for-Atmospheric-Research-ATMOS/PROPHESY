@@ -258,7 +258,8 @@ end
 depthC1s = [data_dict[1].depth_nm[1]; data_dict[2].depth_nm[1]; data_dict[3].depth_nm[1]; data_dict[4].depth_nm[1]; data_dict[5].depth_nm[1]]
 depthO1s = [data_dict[6].depth_nm[1]; data_dict[7].depth_nm[1]; data_dict[8].depth_nm[1]; data_dict[9].depth_nm[1]]
 
-FluxC1s = [data_dict[1].F[1]; data_dict[2].F[1]; data_dict[3].F[1]; -1.0; data_dict[5].F[1]]
+# FluxC1s = [data_dict[1].F[1]; data_dict[2].F[1]; data_dict[3].F[1]; -1.0; data_dict[5].F[1]]
+FluxC1s = [data_dict[1].F[1]; data_dict[2].F[1]; data_dict[3].F[1]; data_dict[4].F[1]; data_dict[5].F[1]]
 FluxO1s = [data_dict[6].F[1]; data_dict[7].F[1]; data_dict[8].F[1]; data_dict[9].F[1]]
 
 CSC1s = [data_dict[1].cross_section[1]; data_dict[2].cross_section[1]; data_dict[3].cross_section[1]; data_dict[4].cross_section[1]; data_dict[5].cross_section[1]]
@@ -267,6 +268,8 @@ CSO1s = [data_dict[6].cross_section[1]; data_dict[7].cross_section[1]; data_dict
 Ke_C1s = [data_dict[1].Eph_eV[1]-data_dict[1].Eb_eV[1]; data_dict[2].Eph_eV[1]-data_dict[2].Eb_eV[1]; data_dict[3].Eph_eV[1]-data_dict[3].Eb_eV[1]; data_dict[4].Eph_eV[1]-data_dict[4].Eb_eV[1]; data_dict[5].Eph_eV[1]-data_dict[5].Eb_eV[1]]
 Ke_O1s = [data_dict[6].Eph_eV[1]-data_dict[6].Eb_eV[1]; data_dict[7].Eph_eV[1]-data_dict[7].Eb_eV[1]; data_dict[8].Eph_eV[1]-data_dict[8].Eb_eV[1]; data_dict[9].Eph_eV[1]-data_dict[9].Eb_eV[1]]
 
+Eph_C1s = [data_dict[1].Eph_eV[1]; data_dict[2].Eph_eV[1]; data_dict[3].Eph_eV[1]; data_dict[4].Eph_eV[1]; data_dict[5].Eph_eV[1]]
+
 AC1s = [CSs[1][4]; CSs[2][4]; CSs[3][4]; CSs[4][4]; CSs[5][4]]
 AO1s = [CSs[6][4]; CSs[7][4]; CSs[8][4]; CSs[9][4]]
 
@@ -274,5 +277,75 @@ ANC1s = AC1s./(FluxC1s.*CSC1s)
 ANO1s = AO1s./(FluxO1s.*CSO1s)
 
 
-figure(); scatter(depthC1s[ANC1s.>0.0],ANC1s[ANC1s.>0.0])
-figure(); scatter(depthO1s,ANO1s)
+figure(); scatter(depthC1s[ANC1s.>0.0],ANC1s[ANC1s.>0.0]); ylim(0.0,1.1maximum(ANC1s[ANC1s.>0.0])) # 0.9minimum(ANC1s[ANC1s.>0.0])
+figure(); scatter(depthO1s,ANO1s); ylim(0.0,1.1maximum(ANO1s))
+# depthC1s[1:end-1]-depthO1s
+
+ANC1s[1:4]./ANO1s[1:4]
+
+figure()
+ledgend_id = []
+for (i,data) in data_dict
+   if i<=4
+      global ledgend_id = [ledgend_id; i]
+      plot(pebl_dict[i][:,3],(pebl_dict[i][:,1]-pebl_dict[i][:,2])/(data.F[1]*data.cross_section[1]))
+   end
+end
+
+
+
+##
+## create measurement model
+##
+
+## number of integration points for the Simpsons rule
+Nz0 = 50;
+## ρ_tot_int: total concentration. It should be mainly just water concentration
+σ_z0 = 0.5; # [5 Å] width of the transition region
+z00 = 0.0 # -0.5;  # half height depth
+
+N = 50;
+Z_max = 10.0;
+Zi = collect(range(0.0,Z_max,length=N));
+# Zi = collect(range(-1.0,Z_max,length=N)); #WARNING: in the model, the integral starts for 0, a negative depth would amplify the signal, which does not make sense, but would contribute to the signal! One may need to define the distance travel trhough the sample from far enough from the surface or set a saturation for negative depths
+
+
+# CSs: Xend1,μ_XR1,Γ_XR1,R1,σ_R1,R_samples1
+XPS_peak = Dict{Int64,Tuple{XPSsetup,XPSsetup}}();
+H_dict     = Dict{Int64,Tuple{Array{Cdouble,2},Array{Cdouble,2}}}();
+for (i,data) in CSs
+   Ke = pebl_dict[i][:,3]
+   # x_dist_1 = data[4]*(τt[i,1]/(sqrt(2pi)*σt[i,1]))*exp.(-0.5*((Ke.-μt[i,1])/σt[i,1]).^2);
+   # x_dist_2 = data[4]*(τt[i,2]/(sqrt(2pi)*σt[i,2]))*exp.(-0.5*((Ke.-μt[i,2])/σt[i,2]).^2);
+   # # println(sum(x_dist_1+x_dist_2)*data_dict[i].Eb_step_eV[1])
+   # figure(i)
+   # plot(Ke,data[4]*data[1][:,1])
+   # plot(Ke,(pebl_dict[i][:,1]-pebl_dict[i][:,2]))
+   # fill_between(Ke,data[4]*(data[1][:,1]-sqrt.(diag(data[3]))),data[4]*(data[1][:,1]+sqrt.(diag(data[3]))),alpha=0.5,color="tab:blue")
+   # plot(Ke,x_dist_1)
+   # plot(Ke,x_dist_2)
+   # plot(Ke,x_dist_1+x_dist_2)
+
+   # cross section
+   σ1s_peak1 = zeros(Cdouble,1,length(Ke));
+   σ1s_peak2 = zeros(Cdouble,1,length(Ke));
+   σ1s_peak1[1,:] = data_dict[i].cross_section[1]*(τt[i,1]/(sqrt(2pi)*σt[i,1]))*exp.(-0.5*((Ke.-μt[i,1])/σt[i,1]).^2);
+   σ1s_peak2[1,:] = data_dict[i].cross_section[1]*(τt[i,2]/(sqrt(2pi)*σt[i,2]))*exp.(-0.5*((Ke.-μt[i,2])/σt[i,2]).^2);
+   # photon flux
+   Fν_exp = [data_dict[i].F[1]]
+   # photon energy
+   ħν_exp = [1.0data_dict[i].Eph_eV[1]]
+   # unknown transmission
+   T_exp = [1.0];
+   # central kinetic energy
+   μKe_exp = [1.0(data_dict[i].Eph_eV[1]-data_dict[i].Eb_eV[1])];
+   # binding energy
+   Be_exp = zeros(Cdouble,1,length(Ke));
+   Be_exp[1,:] = ħν_exp.-Ke;
+   setindex!(XPS_peak,(XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak1;α_exp=1.0),XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak2;α_exp=1.0)),i) #WARNING: not the right depths!!!!!!
+   # wsXPS_1 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak1;α_exp=1.0);
+   # create the measurement model
+   setindex!(H_dict,(Ψ_lin_peaks(Zi,XPS_peak[i][1];Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0),Ψ_lin_peaks(Zi,XPS_peak[i][2];Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0)),i);
+   figure(i)
+   subplot(121); imshow(H_dict[i][1]); colorbar(); subplot(122); imshow(H_dict[i][2]); colorbar()
+end
