@@ -60,7 +60,7 @@ end
 ##
 ## baseline removal
 ##
-pebl_dict = Dict{Int64,Array{Cdouble,2}}();
+pebl_dict = Dict{Int64,Array{Cdouble,2}}(); # [PE; BL; Eb]
 for (i,data) in data_dict
    Ny = length(data[:,1]);
    D_2nd = diagm(Ny-2,Ny,1 => 2ones(Cdouble,Ny-2), 0 => -ones(Cdouble,Ny-2) ,2 => -ones(Cdouble,Ny-2));
@@ -313,24 +313,16 @@ Zi = collect(range(0.0,Z_max,length=N));
 # CSs: Xend1,μ_XR1,Γ_XR1,R1,σ_R1,R_samples1
 XPS_peak = Dict{Int64,Tuple{XPSsetup,XPSsetup}}();
 H_dict     = Dict{Int64,Tuple{Array{Cdouble,2},Array{Cdouble,2}}}();
+H_std_dict = Dict{Int64,Tuple{Array{Cdouble,2},Array{Cdouble,2}}}();
 for (i,data) in CSs
-   Ke = pebl_dict[i][:,3]
-   # x_dist_1 = data[4]*(τt[i,1]/(sqrt(2pi)*σt[i,1]))*exp.(-0.5*((Ke.-μt[i,1])/σt[i,1]).^2);
-   # x_dist_2 = data[4]*(τt[i,2]/(sqrt(2pi)*σt[i,2]))*exp.(-0.5*((Ke.-μt[i,2])/σt[i,2]).^2);
-   # # println(sum(x_dist_1+x_dist_2)*data_dict[i].Eb_step_eV[1])
-   # figure(i)
-   # plot(Ke,data[4]*data[1][:,1])
-   # plot(Ke,(pebl_dict[i][:,1]-pebl_dict[i][:,2]))
-   # fill_between(Ke,data[4]*(data[1][:,1]-sqrt.(diag(data[3]))),data[4]*(data[1][:,1]+sqrt.(diag(data[3]))),alpha=0.5,color="tab:blue")
-   # plot(Ke,x_dist_1)
-   # plot(Ke,x_dist_2)
-   # plot(Ke,x_dist_1+x_dist_2)
+   # emitted electron's kinetic energy
+   Ke = data_dict[i].Eph_eV[1].-pebl_dict[i][:,3]
 
    # cross section
    σ1s_peak1 = zeros(Cdouble,1,length(Ke));
    σ1s_peak2 = zeros(Cdouble,1,length(Ke));
-   σ1s_peak1[1,:] = data_dict[i].cross_section[1]*(τt[i,1]/(sqrt(2pi)*σt[i,1]))*exp.(-0.5*((Ke.-μt[i,1])/σt[i,1]).^2);
-   σ1s_peak2[1,:] = data_dict[i].cross_section[1]*(τt[i,2]/(sqrt(2pi)*σt[i,2]))*exp.(-0.5*((Ke.-μt[i,2])/σt[i,2]).^2);
+   σ1s_peak1[1,:] = data_dict[i].cross_section[1]*(τt[i,1]/(sqrt(2pi)*σt[i,1]))*exp.(-0.5*((pebl_dict[i][:,3].-μt[i,1])/σt[i,1]).^2);
+   σ1s_peak2[1,:] = data_dict[i].cross_section[1]*(τt[i,2]/(sqrt(2pi)*σt[i,2]))*exp.(-0.5*((pebl_dict[i][:,3].-μt[i,2])/σt[i,2]).^2);
    # photon flux
    Fν_exp = [data_dict[i].F[1]]
    # photon energy
@@ -341,11 +333,117 @@ for (i,data) in CSs
    μKe_exp = [1.0(data_dict[i].Eph_eV[1]-data_dict[i].Eb_eV[1])];
    # binding energy
    Be_exp = zeros(Cdouble,1,length(Ke));
-   Be_exp[1,:] = ħν_exp.-Ke;
+   Be_exp[1,:] = pebl_dict[i][:,3] # ħν_exp.-Ke;
    setindex!(XPS_peak,(XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak1;α_exp=1.0),XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak2;α_exp=1.0)),i) #WARNING: not the right depths!!!!!!
+   XPS_peak[i][1].λe .= data_dict[i].depth_nm[1]
+   XPS_peak[i][2].λe .= data_dict[i].depth_nm[1]
    # wsXPS_1 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak1;α_exp=1.0);
-   # create the measurement model
+   # create the measurement model and uncertainty model
    setindex!(H_dict,(Ψ_lin_peaks(Zi,XPS_peak[i][1];Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0),Ψ_lin_peaks(Zi,XPS_peak[i][2];Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0)),i);
+   _,H_std_1 = Ψ_lin_peaks_mean_and_std(Zi,XPS_peak[i][1];Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
+   _,H_std_2 = Ψ_lin_peaks_mean_and_std(Zi,XPS_peak[i][2];Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
+   setindex!(H_std_dict,(H_std_1,H_std_2),i)
    figure(i)
-   subplot(121); imshow(H_dict[i][1]); colorbar(); subplot(122); imshow(H_dict[i][2]); colorbar()
+   subplot(141); imshow(H_dict[i][1]); colorbar();
+   subplot(142); imshow(H_std_dict[i][1]); colorbar();
+   subplot(143); imshow(H_dict[i][2]); colorbar();
+   subplot(144); imshow(H_std_dict[i][2]); colorbar();
 end
+
+
+##
+## peak area model
+##
+
+Apeak1_C1s = zeros(Cdouble,4,N);
+[Apeak1_C1s[i,:] = dropdims(sum(H_dict[i][1],dims=1),dims=1)*data_dict[i].Eb_step_eV[1]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4]
+Apeak2_C1s = zeros(Cdouble,4,N);
+[Apeak2_C1s[i,:] = dropdims(sum(H_dict[i][2],dims=1),dims=1)*data_dict[i].Eb_step_eV[1]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4]
+
+Apeak1_O1s = zeros(Cdouble,4,N);
+[Apeak1_O1s[i,:] = dropdims(sum(H_dict[i+5][1],dims=1),dims=1)*data_dict[i+5].Eb_step_eV[1]/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4]
+Apeak2_O1s = zeros(Cdouble,4,N);
+[Apeak2_O1s[i,:] = dropdims(sum(H_dict[i+5][2],dims=1),dims=1)*data_dict[i+5].Eb_step_eV[1]/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4]
+
+
+Apeak1_C1s_std = zeros(Cdouble,4,N);
+[Apeak1_C1s_std[i,:] = data_dict[i].Eb_step_eV[1]*sqrt.(dropdims(sum(H_std_dict[i][1].^2,dims=1),dims=1))/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4]
+Apeak2_C1s_std = zeros(Cdouble,4,N);
+[Apeak2_C1s_std[i,:] = data_dict[i].Eb_step_eV[1]*sqrt.(dropdims(sum(H_std_dict[i][2].^2,dims=1),dims=1))/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4]
+
+Apeak1_O1s_std = zeros(Cdouble,4,N);
+[Apeak1_O1s_std[i,:] = data_dict[i+5].Eb_step_eV[1]*sqrt.(dropdims(sum(H_std_dict[i+5][1].^2,dims=1),dims=1))/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4]
+Apeak2_O1s_std = zeros(Cdouble,4,N);
+[Apeak2_O1s_std[i,:] = data_dict[i+5].Eb_step_eV[1]*sqrt.(dropdims(sum(H_std_dict[i+5][2].^2,dims=1),dims=1))/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4]
+
+figure()
+for i in 1:4
+   plot(Zi,Apeak1_C1s[i,:])
+   fill_between(Zi,Apeak1_C1s[i,:]-Apeak1_C1s_std[i,:],Apeak1_C1s[i,:]+Apeak1_C1s_std[i,:],alpha=0.5) #,color="tab:blue"
+end
+
+figure()
+for i in 1:4
+   plot(Zi,Apeak2_C1s[i,:])
+   fill_between(Zi,Apeak2_C1s[i,:]-Apeak2_C1s_std[i,:],Apeak2_C1s[i,:]+Apeak2_C1s_std[i,:],alpha=0.5)
+end
+
+
+figure()
+for i in 1:4
+   plot(Zi,Apeak1_O1s[i,:])
+   fill_between(Zi,Apeak1_O1s[i,:]-Apeak1_O1s_std[i,:],Apeak1_O1s[i,:]+Apeak1_O1s_std[i,:],alpha=0.5) #,color="tab:blue"
+end
+
+figure()
+for i in 1:4
+   plot(Zi,Apeak2_O1s[i,:])
+   fill_between(Zi,Apeak2_O1s[i,:]-Apeak2_O1s_std[i,:],Apeak2_O1s[i,:]+Apeak2_O1s_std[i,:],alpha=0.5)
+end
+
+F_peak1_C1s = svd(Apeak1_C1s, full=true);
+F_peak2_C1s = svd(Apeak2_C1s, full=true);
+
+figure(); plot(Zi,F_peak1_C1s.Vt[1:4,:]')
+figure(); plot(Zi,F_peak2_C1s.Vt[1:4,:]')
+
+σ_all = zeros(Cdouble,9);
+[σ_all[i] = σ_I[i]*sqrt(size(pebl_dict[i],1))*data_dict[i].Eb_step_eV[1]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:9]
+
+figure()
+ledgend_id = []
+for (i,data) in data_dict
+   if i<=4
+      global ledgend_id = [ledgend_id; i]
+      plot(pebl_dict[i][:,3],(pebl_dict[i][:,1]-pebl_dict[i][:,2])/(data.F[1]*data.cross_section[1])) #
+   end
+end
+
+
+# AC1s = [CSs[1][4]; CSs[2][4]; CSs[3][4]; CSs[4][4]; CSs[5][4]]
+# AO1s = [CSs[6][4]; CSs[7][4]; CSs[8][4]; CSs[9][4]]
+#
+# ANC1s = AC1s./(FluxC1s.*CSC1s)
+# ANO1s = AO1s./(FluxO1s.*CSO1s)
+
+# ρ_water = 6.02214076e23*1000000.0/18.01528; molecules mol^-1 g m^-3 g^-1 mol ~ molecules m^{-3}
+
+##
+## relative peak area model
+##
+
+# check which peak to used for water (use the liquid water peak, not the gaz phase)
+# now the data are the ratio between C1s peak area normalized by the photon flux and the cross section,
+# and the O1s peak area normalized by the photon flux and the cross section
+# Y = (A1C1s/Fσ)/(A1O1s/Fσ) : does not depend on α or T
+y_all = ANC1s[1:4]./ANO1s;
+
+# that's the model! Use that to estimate the relative concentration (w.r.t. water concntration)
+RApeak1 = Apeak1_C1s./depthO1s # it's also relative to the bulk concentration of water -> model for estimating ρA/ρwater
+
+# M_SDS = 288.372 # [g/mol]
+# C_DSD = 0.05    # mol/L
+# 2.0*0.7144 # [g/L]
+# relative concentration SDS to water: 2.0*0.7144/1000.0=0.0014288
+# σ_all
+# [println(σ_I[i]*sqrt(size(pebl_dict[i],1))*data_dict[i].Eb_step_eV[1]*(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]*depthO1s[i])/(data_dict[i].F[1]*data_dict[i].cross_section[1])) for i in 1:4]
