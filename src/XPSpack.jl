@@ -19,6 +19,7 @@ export Ψij_distribution!, mean_and_std_map   # variability in the measurement o
 export mean_and_std_map_peaks, mean_and_std_map_lin_peaks
 export Ψ_lin_peaks_mean_and_std
 export Ψij_distribution_lin!, Ψij_distribution_lin_0!, Ψij_distribution_lin_M!, mean_and_std_map_lin # more variability estimation
+export Ψ_lin_peaks_area
 
 # other uncertainty
 export δintegrals                            # for the estimation of the error due to the discretization of the concentraion profiles
@@ -36,6 +37,7 @@ export XPSexp, XPSdevice, XPSsetup
 # include the implementation of the exported functions and objects
 include("XPSexp.jl")   # implements XPSexp object
 include("XPSmeas.jl")  # implement most function exported so far
+include("peakArea.jl") # encapulsation: peak area model
 
 using NewtonMethod
 include("XPSutils.jl") # common algorithms used for data processing #TODO: move to XPSinv package

@@ -1,10 +1,18 @@
-"""baseline correction from Baek 2015 (it's an application of IRLS)
-Baek SJ, Park A, Ahn YJ, Choo J. Baseline correction using asymmetrically reweighted penalized least squares smoothing. Analyst. 2015;140(1):250-7.
-y: raw spectra (as in still with the baseline)
-λ: regularization parameter (so far, for my cases, 1.0e5 was looking good)
-κ: the asymmetry parameter p is recommended to set between 0.001 and 0.1
-D: the second order difference matrix (or any orther regularization matrix)
-Nmax: max number of iterations"""
+"""
+   baseline correction from Baek 2015 (it's an application of IRLS)
+   Baek SJ, Park A, Ahn YJ, Choo J. Baseline correction using asymmetrically reweighted penalized least squares smoothing. Analyst. 2015;140(1):250-7.
+
+   y: raw spectra (as in still with the baseline)
+
+   λ: regularization parameter (so far, for my cases, 1.0e5 was looking good)
+
+   κ: the asymmetry parameter p is recommended to set between 0.001 and 0.1
+
+   D: the second order difference matrix (or any orther regularization matrix)
+
+   Nmax: max number of iterations
+
+"""
 function baseline_removal(y::Array{Cdouble,1},λ::Cdouble,κ::Cdouble,D::Array{Cdouble,2},Nmax::Int64=50)
    H = λ*D'*D
    Ny = length(y)
@@ -29,12 +37,14 @@ function baseline_removal(y::Array{Cdouble,1},λ::Cdouble,κ::Cdouble,D::Array{C
    z
 end
 
-"""X: samples from the probability distribution to be fitted with M (=length(τm)) modes
-τm:  the inital probability of a point of the spectra to belong to one of the different peaks
-μm:  initial mean of the peaks (the modes)
-σm:  initial standard deviation of the peaks (width of the modes)
-Nt:  number of iterations for the EM algorithm (se Dempster 77)
-Dempster AP, Laird NM, Rubin DB. Maximum likelihood from incomplete data via the EM algorithm. Journal of the Royal Statistical Society: Series B (Methodological). 1977 Sep;39(1):1-22"""
+"""
+   X: samples from the probability distribution to be fitted with M (=length(τm)) modes
+   τm:  the inital probability of a point of the spectra to belong to one of the different peaks
+   μm:  initial mean of the peaks (the modes)
+   σm:  initial standard deviation of the peaks (width of the modes)
+   Nt:  number of iterations for the EM algorithm (se Dempster 77)
+   Dempster AP, Laird NM, Rubin DB. Maximum likelihood from incomplete data via the EM algorithm. Journal of the Royal Statistical Society: Series B (Methodological). 1977 Sep;39(1):1-22
+"""
 function EM_peaks(X::Array{Cdouble,1},τm::Array{Cdouble,1},μm::Array{Cdouble,1},σm::Array{Cdouble,1},Nt::Int64=10)
    n = length(X)
    M = length(τm)
@@ -92,12 +102,14 @@ function EM_peaks(Bes::Array{Cdouble,1},PES::Array{Cdouble,1},τm::Array{Cdouble
 end
 
 """
-I_nbl:    photo-electric signal (corrected for the baseline)
-Kes:      kinetic energy discretization points (regularly sub division)
-σ_I:      noise level in the measurement (standard deviation)
-Nbfgs:    number of iterations in the bounded BFGS loop
-Nsearch:  maximum number of iteration for the line search
-σ_2nd:    regularization parameter, amplitutde of the second order difference (standard deviation)
+
+   I_nbl:    photo-electric signal (corrected for the baseline)
+   Kes:      kinetic energy discretization points (regularly sub division)
+   σ_I:      noise level in the measurement (standard deviation)
+   Nbfgs:    number of iterations in the bounded BFGS loop
+   Nsearch:  maximum number of iteration for the line search
+   σ_2nd:    regularization parameter, amplitutde of the second order difference (standard deviation)
+
 """
 function cross_section_spread_function(I_nbl::Array{Cdouble,1},Kes::Array{Cdouble,1},σ_I::Cdouble;Nbfgs::Int64=1000,Nsearch::Int64=10,σ_2nd::Cdouble=0.001)
    Ny = length(I_nbl)
