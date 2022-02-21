@@ -76,9 +76,9 @@ end
 
 for (_,data) in pebl_dict
    figure();
-   # plot(data[:,3],data[:,1]-data[:,2])
-   plot(data[:,3],data[:,1])
-   plot(data[:,3],data[:,2])
+   plot(data[:,3],data[:,1]-data[:,2])
+   # plot(data[:,3],data[:,1])
+   # plot(data[:,3],data[:,2])
 end
 
 
@@ -252,9 +252,6 @@ if PLOT_FIG
 end
 
 
-
-#TODO: plot normalied area w.r.t. depth
-
 depthC1s = [data_dict[1].depth_nm[1]; data_dict[2].depth_nm[1]; data_dict[3].depth_nm[1]; data_dict[4].depth_nm[1]; data_dict[5].depth_nm[1]]
 depthO1s = [data_dict[6].depth_nm[1]; data_dict[7].depth_nm[1]; data_dict[8].depth_nm[1]; data_dict[9].depth_nm[1]]
 
@@ -281,7 +278,7 @@ figure(); scatter(depthC1s[ANC1s.>0.0],ANC1s[ANC1s.>0.0]); ylim(0.0,1.1maximum(A
 figure(); scatter(depthO1s,ANO1s); ylim(0.0,1.1maximum(ANO1s))
 # depthC1s[1:end-1]-depthO1s
 
-ANC1s[1:4]./ANO1s[1:4]
+# ANC1s[1:4]./ANO1s[1:4]
 
 figure()
 ledgend_id = []
@@ -312,6 +309,8 @@ Zi = collect(range(0.0,Z_max,length=N));
 
 # CSs: Xend1,μ_XR1,Γ_XR1,R1,σ_R1,R_samples1
 XPS_peak = Dict{Int64,Tuple{XPSsetup,XPSsetup}}();
+XPS_peak1 = Dict{Int64,XPSsetup}();
+XPS_peak2 = Dict{Int64,XPSsetup}();
 H_dict     = Dict{Int64,Tuple{Array{Cdouble,2},Array{Cdouble,2}}}();
 H_std_dict = Dict{Int64,Tuple{Array{Cdouble,2},Array{Cdouble,2}}}();
 for (i,data) in CSs
@@ -335,19 +334,12 @@ for (i,data) in CSs
    Be_exp = zeros(Cdouble,1,length(Ke));
    Be_exp[1,:] = pebl_dict[i][:,3] # ħν_exp.-Ke;
    setindex!(XPS_peak,(XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak1;α_exp=1.0),XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak2;α_exp=1.0)),i) #WARNING: not the right depths!!!!!!
+   setindex!(XPS_peak1,XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak1;α_exp=1.0),i)
+   setindex!(XPS_peak2,XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak2;α_exp=1.0),i)
    XPS_peak[i][1].λe .= data_dict[i].depth_nm[1]
    XPS_peak[i][2].λe .= data_dict[i].depth_nm[1]
-   # wsXPS_1 = XPSsetup(ħν_exp,Fν_exp,μKe_exp,T_exp,Be_exp,σ1s_peak1;α_exp=1.0);
-   # create the measurement model and uncertainty model
-   setindex!(H_dict,(Ψ_lin_peaks(Zi,XPS_peak[i][1];Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0),Ψ_lin_peaks(Zi,XPS_peak[i][2];Nz=Nz0,σ_z=σ_z0,z0=z00,κ_cs=0.0,κ_eal=0.0)),i);
-   _,H_std_1 = Ψ_lin_peaks_mean_and_std(Zi,XPS_peak[i][1];Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
-   _,H_std_2 = Ψ_lin_peaks_mean_and_std(Zi,XPS_peak[i][2];Nz=Nz0,κ_cs=0.05,κ_eal=0.05,σ_z=σ_z0,z0=z00);
-   setindex!(H_std_dict,(H_std_1,H_std_2),i)
-   figure(i)
-   subplot(141); imshow(H_dict[i][1]); colorbar();
-   subplot(142); imshow(H_std_dict[i][1]); colorbar();
-   subplot(143); imshow(H_dict[i][2]); colorbar();
-   subplot(144); imshow(H_std_dict[i][2]); colorbar();
+   XPS_peak1[i].λe   .= data_dict[i].depth_nm[1]
+   XPS_peak2[i].λe   .= data_dict[i].depth_nm[1]
 end
 
 
@@ -355,26 +347,31 @@ end
 ## peak area model
 ##
 
+Hpeak1,Apeak1 = Ψ_lin_peaks_area(Zi,XPS_peak1;σ_z=σ_z0,z0=z00,κ_cs=0.05,κ_eal=0.05)
+Hpeak2,Apeak2 = Ψ_lin_peaks_area(Zi,XPS_peak2;σ_z=σ_z0,z0=z00,κ_cs=0.05,κ_eal=0.05)
+
+# normalize by the flux and the cross section
 Apeak1_C1s = zeros(Cdouble,4,N);
-[Apeak1_C1s[i,:] = dropdims(sum(H_dict[i][1],dims=1),dims=1)*data_dict[i].Eb_step_eV[1]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4]
+Apeak1_C1s_std = zeros(Cdouble,4,N);
+[Apeak1_C1s[i,:]     = Apeak1[i][1]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4];
+[Apeak1_C1s_std[i,:] = Apeak1[i][2]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4];
+
 Apeak2_C1s = zeros(Cdouble,4,N);
-[Apeak2_C1s[i,:] = dropdims(sum(H_dict[i][2],dims=1),dims=1)*data_dict[i].Eb_step_eV[1]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4]
+Apeak2_C1s_std = zeros(Cdouble,4,N);
+[Apeak2_C1s[i,:]     = Apeak2[i][1]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4];
+[Apeak2_C1s_std[i,:] = Apeak2[i][2]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4];
 
 Apeak1_O1s = zeros(Cdouble,4,N);
-[Apeak1_O1s[i,:] = dropdims(sum(H_dict[i+5][1],dims=1),dims=1)*data_dict[i+5].Eb_step_eV[1]/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4]
-Apeak2_O1s = zeros(Cdouble,4,N);
-[Apeak2_O1s[i,:] = dropdims(sum(H_dict[i+5][2],dims=1),dims=1)*data_dict[i+5].Eb_step_eV[1]/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4]
-
-
-Apeak1_C1s_std = zeros(Cdouble,4,N);
-[Apeak1_C1s_std[i,:] = data_dict[i].Eb_step_eV[1]*sqrt.(dropdims(sum(H_std_dict[i][1].^2,dims=1),dims=1))/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4]
-Apeak2_C1s_std = zeros(Cdouble,4,N);
-[Apeak2_C1s_std[i,:] = data_dict[i].Eb_step_eV[1]*sqrt.(dropdims(sum(H_std_dict[i][2].^2,dims=1),dims=1))/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:4]
-
 Apeak1_O1s_std = zeros(Cdouble,4,N);
-[Apeak1_O1s_std[i,:] = data_dict[i+5].Eb_step_eV[1]*sqrt.(dropdims(sum(H_std_dict[i+5][1].^2,dims=1),dims=1))/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4]
+[Apeak1_O1s[i,:]     = Apeak1[i+5][1]/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4];
+[Apeak1_O1s_std[i,:] = Apeak1[i+5][2]/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4];
+
+Apeak2_O1s = zeros(Cdouble,4,N);
 Apeak2_O1s_std = zeros(Cdouble,4,N);
-[Apeak2_O1s_std[i,:] = data_dict[i+5].Eb_step_eV[1]*sqrt.(dropdims(sum(H_std_dict[i+5][2].^2,dims=1),dims=1))/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4]
+[Apeak2_O1s[i,:]     = Apeak2[i+5][1]/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4];
+[Apeak2_O1s_std[i,:] = Apeak2[i+5][2]/(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]) for i in 1:4];
+
+
 
 figure()
 for i in 1:4
@@ -401,32 +398,13 @@ for i in 1:4
    fill_between(Zi,Apeak2_O1s[i,:]-Apeak2_O1s_std[i,:],Apeak2_O1s[i,:]+Apeak2_O1s_std[i,:],alpha=0.5)
 end
 
+# check the structure of the null space: the basis that can be used to reconstruct the depth profile (that's what the data can say)
 F_peak1_C1s = svd(Apeak1_C1s, full=true);
 F_peak2_C1s = svd(Apeak2_C1s, full=true);
 
 figure(); plot(Zi,F_peak1_C1s.Vt[1:4,:]')
 figure(); plot(Zi,F_peak2_C1s.Vt[1:4,:]')
 
-σ_all = zeros(Cdouble,9);
-[σ_all[i] = σ_I[i]*sqrt(size(pebl_dict[i],1))*data_dict[i].Eb_step_eV[1]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:9]
-
-figure()
-ledgend_id = []
-for (i,data) in data_dict
-   if i<=4
-      global ledgend_id = [ledgend_id; i]
-      plot(pebl_dict[i][:,3],(pebl_dict[i][:,1]-pebl_dict[i][:,2])/(data.F[1]*data.cross_section[1])) #
-   end
-end
-
-
-# AC1s = [CSs[1][4]; CSs[2][4]; CSs[3][4]; CSs[4][4]; CSs[5][4]]
-# AO1s = [CSs[6][4]; CSs[7][4]; CSs[8][4]; CSs[9][4]]
-#
-# ANC1s = AC1s./(FluxC1s.*CSC1s)
-# ANO1s = AO1s./(FluxO1s.*CSO1s)
-
-# ρ_water = 6.02214076e23*1000000.0/18.01528; molecules mol^-1 g m^-3 g^-1 mol ~ molecules m^{-3}
 
 ##
 ## relative peak area model
@@ -438,12 +416,106 @@ end
 # Y = (A1C1s/Fσ)/(A1O1s/Fσ) : does not depend on α or T
 y_all = ANC1s[1:4]./ANO1s;
 
-# that's the model! Use that to estimate the relative concentration (w.r.t. water concntration)
-RApeak1 = Apeak1_C1s./depthO1s # it's also relative to the bulk concentration of water -> model for estimating ρA/ρwater
+# transform the peak area noise to normalized area noise
+σ_all = zeros(Cdouble,9);
+# [σ_all[i] = σ_I[i]*sqrt(size(pebl_dict[i],1))*data_dict[i].Eb_step_eV[1]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:9]
+[σ_all[i] = CSs[i][5]/(data_dict[i].F[1]*data_dict[i].cross_section[1]) for i in 1:9]
 
-# M_SDS = 288.372 # [g/mol]
-# C_DSD = 0.05    # mol/L
-# 2.0*0.7144 # [g/L]
-# relative concentration SDS to water: 2.0*0.7144/1000.0=0.0014288
-# σ_all
-# [println(σ_I[i]*sqrt(size(pebl_dict[i],1))*data_dict[i].Eb_step_eV[1]*(data_dict[i+5].F[1]*data_dict[i+5].cross_section[1]*depthO1s[i])/(data_dict[i].F[1]*data_dict[i].cross_section[1])) for i in 1:4]
+# relative area noise
+σ_rel =  σ_all[1:4]./ANO1s # quite a good estimation of the noise level, I am happily surprised!
+σ_rel[4] = 2.0σ_rel[4]; #
+
+# that's the model! Use that to estimate the relative concentration (w.r.t. water concntration)
+RApeak1 = Apeak1_C1s./depthO1s;         # it's also relative to the bulk concentration of water -> model for estimating ρA/ρwater
+RApeak1_std = Apeak1_C1s_std./depthO1s;
+
+D_1st = D1st(N);
+D_2nd = D2nd(N);
+B = zeros(Cdouble,2,N); B[1,1] = 1.0; B[2,end] = 1.0
+γ = σ_rel.^2
+Γ_inv = diagm(1.0./γ);
+δ_D = 100000.0*(abs.(D_1st*logistic.(Zi.-z00,0.0,1.0,σ_z0)) + abs.(D_1st*logistic.(Zi.-1.0,0.0,1.0,σ_z0)) + abs.(D_1st*logistic.(Zi.-3.0,0.0,1.0,σ_z0)));
+ι_D = 100000.0*(abs.(D_2nd*logistic.(Zi.-z00,0.0,1.0,σ_z0)) + abs.(D_2nd*logistic.(Zi.-1.0,0.0,1.0,σ_z0)) + abs.(D_2nd*logistic.(Zi.-3.0,0.0,1.0,σ_z0)));
+ι_D .= 0.5;
+γ_D = (ι_D .+ 0.01maximum(ι_D)).^2;
+Γ_D_inv = diagm(1.0./γ_D);
+ρ0 = 0.5;
+γ0 = 1.0^2 # 0.01^2
+ρB = 0.5;
+γB = 1.0^2
+ρ_bar = [ρ0;ρB];
+γ_ρ = [γ0;γB];
+Γ_ρ_inv = diagm(1.0./γ_ρ);
+rankK = rank(RApeak1);
+
+
+ρ_clean_nso,_,F = iterative_nso(rankK,RApeak1,Γ_inv,D_2nd,Γ_D_inv,B,Γ_ρ_inv,y_all,ρ_bar);
+
+Ns = 50
+ρ_samples_nso_h = zeros(Cdouble,Ns,N);
+for j in 1:Ns
+   ρ_samples_nso_h[j,:],_,_ = iterative_nso(rankK,RApeak1,Γ_inv,D_2nd,Γ_D_inv,B,Γ_ρ_inv,y_all+γ.*randn(4),ρ_bar);
+end
+μ_ρ_nso_h = dropdims(mean(ρ_samples_nso_h,dims=1),dims=1)
+σ_ρ_nso_h = dropdims(std(ρ_samples_nso_h,dims=1),dims=1) # NOTE: the data are apparently good enough because the uncertainty in the estimation born by the data is fairly small, the model uncertainty is probably to be blamed for the bad reconstruction
+
+# figure(); plot(Zi,ρ_clean_nso)
+
+
+AA = [RApeak1; Matrix{Cdouble}(I,N,N); D_2nd; B];
+W_stop = ones(Cdouble,N);
+τ0 = 1.0e-10 # 1.0e-10
+x0 = zeros(Cdouble,N) # ρA_1[idx_res]
+s0 = AA*x0
+N_max_iter = 200000 # 0;
+r_n_tol=0.1*1.0
+r_y_tol=0.1*0.005;
+
+
+Ns = 50 # 0;
+ρ_samples = zeros(Cdouble,Ns,N);
+
+ρ_samples[1,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all,ρ0,ρB,AA,γ,RApeak1_std,γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+t_elapsed = @elapsed for i in 2:Ns
+   # idx = shuffle_data(Nke,Npeak;Nmin=Nmin);
+   # A = [H[idx,:]; Matrix{Cdouble}(I,N,N); D_2nd; B];
+   x0 = zeros(Cdouble,N)
+   s0 = AA*x0
+   # ρ_samples[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,IA_1[idx],ρ0,ρB,A,γ[idx],γ_H[idx,:],γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+   ρ_samples[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all+sqrt.(γ).*randn(4),ρ0,ρB,AA,γ,RApeak1_std,γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+end
+
+μ_ρ = dropdims(mean(ρ_samples,dims=1),dims=1);
+σ_ρ = dropdims(std(ρ_samples,dims=1),dims=1);
+
+
+
+figure(); plot(Zi,ρ_clean_nso); plot(Zi,ρ_samples[1,:])
+
+figure();
+l_plot,        = plot(Zi,ρ_samples[1,:],color="tab:blue");
+l_plot_μ,      = plot(Zi,μ_ρ,color="tab:pink");
+# l_plot_μ_nso,  = plot(Zi,μ_ρ_nso_h,color="tab:olive");
+l_fill_est     = fill_between(Zi,μ_ρ-σ_ρ,μ_ρ+σ_ρ,alpha=0.5,color="tab:pink");
+# l_fill_est_nso = fill_between(Zi,μ_ρ_nso_h-σ_ρ_nso_h,μ_ρ_nso_h+σ_ρ_nso_h,alpha=0.5,color="tab:olive");
+xlabel("depth [nm]");
+ylabel("normalized concentration \$\\frac{\\rho_{\\mathrm{SDS}}}{\\rho_{\\mathrm{bulk\\, water}}}\$");
+xlim(Zi[1],Zi[end]);
+ylim(-0.005)
+legend([l_plot,(l_plot_μ,l_fill_est)],["CP estimation","data sampling: CP estimation"])
+# legend([l_plot,(l_plot_μ,l_fill_est),(l_plot_μ_nso,l_fill_est_nso)],["CP estimation","data sampling: CP estimation","data sampling: NSO estimation"])
+# savefig("SDS_concentration_profile_from_C1sO1s.png")
+# savefig("SDS_concentration_profile_from_C1sO1s.pdf")
+
+figure()
+# scatter(y_all,RApeak1*ρ_clean_nso)
+plot(y_all,y_all)
+scatter(y_all,RApeak1*ρ_samples[1,:],color="tab:blue")
+scatter(y_all,RApeak1*μ_ρ,color="tab:pink")
+legend(["1:1","CP estimation","data sampling: CP estimation"])
+xlim(0.015)
+ylim(0.015)
+xlabel("data")
+ylabel("reconstructed data")
+# savefig("SDS_data_vs_reconstruction_from_C1sO1s.png")
+# savefig("SDS_data_vs_reconstruction_from_C1sO1s.pdf")
