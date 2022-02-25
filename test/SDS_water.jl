@@ -427,7 +427,7 @@ y_all = ANC1s[1:4]./ANO1s;
 
 # that's the model! Use that to estimate the relative concentration (w.r.t. water concntration)
 RApeak1 = Apeak1_C1s./depthO1s;         # it's also relative to the bulk concentration of water -> model for estimating ρA/ρwater
-RApeak1_std = Apeak1_C1s_std./depthO1s;
+RApeak1_std = 0.01Apeak1_C1s_std./depthO1s;
 
 D_1st = D1st(N);
 D_2nd = D2nd(N);
@@ -437,6 +437,7 @@ B = zeros(Cdouble,2,N); B[1,1] = 1.0; B[2,end] = 1.0
 δ_D = 100000.0*(abs.(D_1st*logistic.(Zi.-z00,0.0,1.0,σ_z0)) + abs.(D_1st*logistic.(Zi.-1.0,0.0,1.0,σ_z0)) + abs.(D_1st*logistic.(Zi.-3.0,0.0,1.0,σ_z0)));
 ι_D = 100000.0*(abs.(D_2nd*logistic.(Zi.-z00,0.0,1.0,σ_z0)) + abs.(D_2nd*logistic.(Zi.-1.0,0.0,1.0,σ_z0)) + abs.(D_2nd*logistic.(Zi.-3.0,0.0,1.0,σ_z0)));
 ι_D .= 0.5;
+ι_D .= 0.005;
 γ_D = (ι_D .+ 0.01maximum(ι_D)).^2;
 Γ_D_inv = diagm(1.0./γ_D);
 ρ0 = 0.5;
@@ -481,7 +482,6 @@ t_elapsed = @elapsed for i in 2:Ns
    # A = [H[idx,:]; Matrix{Cdouble}(I,N,N); D_2nd; B];
    x0 = zeros(Cdouble,N)
    s0 = AA*x0
-   # ρ_samples[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,IA_1[idx],ρ0,ρB,A,γ[idx],γ_H[idx,:],γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
    ρ_samples[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all+sqrt.(γ).*randn(4),ρ0,ρB,AA,γ,RApeak1_std,γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
 end
 
@@ -489,21 +489,15 @@ end
 σ_ρ = dropdims(std(ρ_samples,dims=1),dims=1);
 
 
-
-figure(); plot(Zi,ρ_clean_nso); plot(Zi,ρ_samples[1,:])
-
 figure();
 l_plot,        = plot(Zi,ρ_samples[1,:],color="tab:blue");
 l_plot_μ,      = plot(Zi,μ_ρ,color="tab:pink");
-# l_plot_μ_nso,  = plot(Zi,μ_ρ_nso_h,color="tab:olive");
 l_fill_est     = fill_between(Zi,μ_ρ-σ_ρ,μ_ρ+σ_ρ,alpha=0.5,color="tab:pink");
-# l_fill_est_nso = fill_between(Zi,μ_ρ_nso_h-σ_ρ_nso_h,μ_ρ_nso_h+σ_ρ_nso_h,alpha=0.5,color="tab:olive");
 xlabel("depth [nm]");
 ylabel("normalized concentration \$\\frac{\\rho_{\\mathrm{SDS}}}{\\rho_{\\mathrm{bulk\\, water}}}\$");
 xlim(Zi[1],Zi[end]);
 ylim(-0.005)
 legend([l_plot,(l_plot_μ,l_fill_est)],["CP estimation","data sampling: CP estimation"])
-# legend([l_plot,(l_plot_μ,l_fill_est),(l_plot_μ_nso,l_fill_est_nso)],["CP estimation","data sampling: CP estimation","data sampling: NSO estimation"])
 # savefig("SDS_concentration_profile_from_C1sO1s.png")
 # savefig("SDS_concentration_profile_from_C1sO1s.pdf")
 
@@ -519,3 +513,203 @@ xlabel("data")
 ylabel("reconstructed data")
 # savefig("SDS_data_vs_reconstruction_from_C1sO1s.png")
 # savefig("SDS_data_vs_reconstruction_from_C1sO1s.pdf")
+
+
+##
+## simulated data
+##
+
+ρA_1 = logistic.(Zi.-2.0,0.0,1.0,2.0);
+ρA_2 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(Zi.-1.0).^2. /(2.0*0.25^2));
+ρA_3 = logistic.(Zi.-2.0,0.0,1.0,2.0) .+ exp.(-(Zi.-1.5).^2. /(2.0*0.5^2));
+ρA_4 = exp.(-(Zi.-2.5).^2. /(2.0*0.5^2));
+
+
+y_all_1 = RApeak1*ρA_1
+y_all_2 = RApeak1*ρA_2
+y_all_3 = RApeak1*ρA_3
+y_all_4 = RApeak1*ρA_4
+
+
+
+Ns = 50 # 0;
+ρ_samples_1 = zeros(Cdouble,Ns,N);
+ρ0_1 = 0.035; γ0_1 = 0.001^2
+ρB_1 = 1.0; γB_1 = 0.001^2
+γ_1 = (1.0e-4)^2*ones(Cdouble,4);
+N_max_iter = 200000
+γ_D_1 = (0.05(1.0e-6 .+D_2nd*ρA_1)).^2 # 0.0000001*γ_D
+ρ_samples_1[1,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_1,ρ0_1,ρB_1,AA,γ_1,RApeak1_std,γ_D_1,γ0_1,γB_1,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+t_elapsed = @elapsed for i in 2:Ns
+   # idx = shuffle_data(Nke,Npeak;Nmin=Nmin);
+   # A = [H[idx,:]; Matrix{Cdouble}(I,N,N); D_2nd; B];
+   x0 = zeros(Cdouble,N)
+   s0 = AA*x0
+   ρ_samples_1[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_1+sqrt.(γ_1).*randn(4),ρ0_1,ρB_1,AA,γ_1,RApeak1_std,γ_D_1,γ0_1,γB_1,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+end
+
+μ_ρ_1 = dropdims(mean(ρ_samples_1,dims=1),dims=1);
+σ_ρ_1 = dropdims(std(ρ_samples_1,dims=1),dims=1);
+
+
+figure();
+l_plot,        = plot(Zi,ρ_samples_1[1,:],color="tab:blue");
+l_plot_μ,      = plot(Zi,μ_ρ_1,color="tab:pink");
+l_fill_est     = fill_between(Zi,μ_ρ_1-σ_ρ_1,μ_ρ_1+σ_ρ_1,alpha=0.5,color="tab:pink");
+l_plot_gt,     = plot(Zi,ρA_1,color="tab:green");
+xlabel("depth [nm]");
+ylabel("normalized concentration \$\\frac{\\rho_{\\mathrm{X}}}{\\rho_{\\mathrm{bulk\\, water}}}\$");
+xlim(Zi[1],Zi[end]);
+ylim(-0.005)
+legend([l_plot,(l_plot_μ,l_fill_est),l_plot_gt],["CP estimation","data sampling: CP estimation","GT"])
+# savefig("X1_concentration_profile_from_C1sO1s.png")
+# savefig("X1_concentration_profile_from_C1sO1s.pdf")
+
+
+figure()
+plot(y_all_1,y_all_1)
+scatter(y_all_1,RApeak1*ρ_samples_1[1,:],color="tab:blue")
+legend(["1:1","CP estimation","data sampling: CP estimation"])
+xlim(0.015)
+ylim(0.015)
+xlabel("data")
+ylabel("reconstructed data")
+# savefig("X1_data_vs_reconstruction_from_C1sO1s.png")
+# savefig("X1_data_vs_reconstruction_from_C1sO1s.pdf")
+
+
+
+Ns = 50 # 0;
+ρ_samples_2 = zeros(Cdouble,Ns,N);
+ρ0_2 = 0.035; γ0_2 = 0.001^2
+ρB_2 = 1.0; γB_2 = 0.001^2
+γ_2 = (1.0e-4)^2*ones(Cdouble,4);
+N_max_iter = 200000
+γ_D_2 = (0.05(1.0e-6 .+D_2nd*ρA_2)).^2
+ρ_samples_2[1,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_2,ρ0_2,ρB_2,AA,γ_2,RApeak1_std,γ_D_2,γ0_2,γB_2,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+t_elapsed = @elapsed for i in 2:Ns
+   # idx = shuffle_data(Nke,Npeak;Nmin=Nmin);
+   # A = [H[idx,:]; Matrix{Cdouble}(I,N,N); D_2nd; B];
+   x0 = zeros(Cdouble,N)
+   s0 = AA*x0
+   ρ_samples_2[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_2+sqrt.(γ_2).*randn(4),ρ0_2,ρB_2,AA,γ_2,RApeak1_std,γ_D_2,γ0_2,γB_2,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+end
+
+μ_ρ_2 = dropdims(mean(ρ_samples_2,dims=1),dims=1);
+σ_ρ_2 = dropdims(std(ρ_samples_2,dims=1),dims=1);
+
+
+figure();
+l_plot,        = plot(Zi,ρ_samples_2[1,:],color="tab:blue");
+l_plot_μ,      = plot(Zi,μ_ρ_2,color="tab:pink");
+l_fill_est     = fill_between(Zi,μ_ρ_2-σ_ρ_2,μ_ρ_2+σ_ρ_2,alpha=0.5,color="tab:pink");
+l_plot_gt,     = plot(Zi,ρA_2,color="tab:green");
+xlabel("depth [nm]");
+ylabel("normalized concentration \$\\frac{\\rho_{\\mathrm{X}}}{\\rho_{\\mathrm{bulk\\, water}}}\$");
+xlim(Zi[1],Zi[end]);
+ylim(-0.005)
+legend([l_plot,(l_plot_μ,l_fill_est),l_plot_gt],["CP estimation","data sampling: CP estimation","GT"])
+# savefig("X2_concentration_profile_from_C1sO1s.png")
+# savefig("X2_concentration_profile_from_C1sO1s.pdf")
+
+figure()
+plot(y_all_2,y_all_2)
+scatter(y_all_2,RApeak1*ρ_samples_2[1,:],color="tab:blue")
+legend(["1:1","CP estimation","data sampling: CP estimation"])
+xlim(0.015)
+ylim(0.015)
+xlabel("data")
+ylabel("reconstructed data")
+# savefig("X2_data_vs_reconstruction_from_C1sO1s.png")
+# savefig("X2_data_vs_reconstruction_from_C1sO1s.pdf")
+
+
+
+
+Ns = 50 # 0;
+ρ_samples_3 = zeros(Cdouble,Ns,N);
+ρ0_3 = 0.035; γ0_3 = 0.001^2
+ρB_3 = 1.0; γB_3 = 0.001^2
+γ_3 = (1.0e-4)^2*ones(Cdouble,4); # (1.0e-3)^2*ones(Cdouble,4); #
+N_max_iter = 200000
+γ_D_3 = (0.05(1.0e-6 .+D_2nd*ρA_3)).^2
+ρ_samples_3[1,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_3,ρ0_3,ρB_3,AA,γ_3,RApeak1_std,γ_D_3,γ0_3,γB_3,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+t_elapsed = @elapsed for i in 2:Ns
+   # idx = shuffle_data(Nke,Npeak;Nmin=Nmin);
+   # A = [H[idx,:]; Matrix{Cdouble}(I,N,N); D_2nd; B];
+   x0 = zeros(Cdouble,N)
+   s0 = AA*x0
+   ρ_samples_3[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_3+sqrt.(γ_3).*randn(4),ρ0_3,ρB_3,AA,γ_3,RApeak1_std,γ_D_3,γ0_3,γB_3,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+end
+
+μ_ρ_3 = dropdims(mean(ρ_samples_3,dims=1),dims=1);
+σ_ρ_3 = dropdims(std(ρ_samples_3,dims=1),dims=1);
+
+
+figure();
+l_plot,        = plot(Zi,ρ_samples_3[1,:],color="tab:blue");
+l_plot_μ,      = plot(Zi,μ_ρ_3,color="tab:pink");
+l_fill_est     = fill_between(Zi,μ_ρ_3-σ_ρ_3,μ_ρ_3+σ_ρ_3,alpha=0.5,color="tab:pink");
+l_plot_gt,     = plot(Zi,ρA_3,color="tab:green");
+xlabel("depth [nm]");
+ylabel("normalized concentration \$\\frac{\\rho_{\\mathrm{X}}}{\\rho_{\\mathrm{bulk\\, water}}}\$");
+xlim(Zi[1],Zi[end]);
+ylim(-0.005)
+legend([l_plot,(l_plot_μ,l_fill_est),l_plot_gt],["CP estimation","data sampling: CP estimation","GT"])
+# savefig("X3_concentration_profile_from_C1sO1s.png")
+# savefig("X3_concentration_profile_from_C1sO1s.pdf")
+
+figure()
+plot(y_all_3,y_all_3)
+scatter(y_all_3,RApeak1*ρ_samples_3[1,:],color="tab:blue")
+legend(["1:1","CP estimation","data sampling: CP estimation"])
+xlim(0.015)
+ylim(0.015)
+xlabel("data")
+ylabel("reconstructed data")
+# savefig("X3_data_vs_reconstruction_from_C1sO1s.png")
+# savefig("X3_data_vs_reconstruction_from_C1sO1s.pdf")
+
+
+Ns = 50 # 0;
+ρ_samples_4 = zeros(Cdouble,Ns,N);
+ρ0_4 = 0.035; γ0_4 = 0.001^2
+ρB_4 = 0.0; γB_4 = 0.001^2
+γ_4 = (1.0e-4)^2*ones(Cdouble,4);
+N_max_iter = 200000
+γ_D_4 = (0.05(1.0e-6 .+D_2nd*ρA_4)).^2
+ρ_samples_4[1,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_4,ρ0_4,ρB_4,AA,γ_4,RApeak1_std,γ_D_4,γ0_4,γB_4,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+t_elapsed = @elapsed for i in 2:Ns
+   # idx = shuffle_data(Nke,Npeak;Nmin=Nmin);
+   # A = [H[idx,:]; Matrix{Cdouble}(I,N,N); D_2nd; B];
+   x0 = zeros(Cdouble,N)
+   s0 = AA*x0
+   ρ_samples_4[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_4+sqrt.(γ_4).*randn(4),ρ0_4,ρB_4,AA,γ_4,RApeak1_std,γ_D_4,γ0_4,γB_4,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+end
+
+μ_ρ_4 = dropdims(mean(ρ_samples_4,dims=1),dims=1);
+σ_ρ_4 = dropdims(std(ρ_samples_4,dims=1),dims=1);
+
+figure();
+l_plot,        = plot(Zi,ρ_samples_4[1,:],color="tab:blue");
+l_plot_μ,      = plot(Zi,μ_ρ_4,color="tab:pink");
+l_fill_est     = fill_between(Zi,μ_ρ_4-σ_ρ_4,μ_ρ_4+σ_ρ_4,alpha=0.5,color="tab:pink");
+l_plot_gt,     = plot(Zi,ρA_4,color="tab:green");
+xlabel("depth [nm]");
+ylabel("normalized concentration \$\\frac{\\rho_{\\mathrm{X}}}{\\rho_{\\mathrm{bulk\\, water}}}\$");
+xlim(Zi[1],Zi[end]);
+ylim(-0.005)
+legend([l_plot,(l_plot_μ,l_fill_est),l_plot_gt],["CP estimation","data sampling: CP estimation","GT"])
+# savefig("X4_concentration_profile_from_C1sO1s.png")
+# savefig("X4_concentration_profile_from_C1sO1s.pdf")
+
+figure()
+plot(y_all_4,y_all_4)
+scatter(y_all_4,RApeak1*ρ_samples_4[1,:],color="tab:blue")
+legend(["1:1","CP estimation","data sampling: CP estimation"])
+xlim(0.015)
+ylim(0.015)
+xlabel("data")
+ylabel("reconstructed data")
+# savefig("X4_data_vs_reconstruction_from_C1sO1s.png")
+# savefig("X4_data_vs_reconstruction_from_C1sO1s.pdf")
