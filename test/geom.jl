@@ -37,11 +37,21 @@ using XPSinv
 
 μ0 = 1.0; # radius of the microjet
 λe = 2.0e-3μ0; # EAL
+L = 3μ0;
 
 r = collect(0.0:0.02:μ0);
 θ = collect(range(0.0,2π,length=256)) ; #collect(0:0.1:2π);
 y = 0.0
+K = 256;
+Y = 0.0μ0 .+ collect(range(-0.5L,0.5L,length=K));
 
+function dist_polar(r::Cdouble,θ::Cdouble,y::Cdouble,x0::Cdouble,y0::Cdouble,z0::Cdouble)
+    R0 = sqrt(z0^2+x0^2);
+    θ0 = atan(x0,z0);
+    A = -(R0*r*cos(θ-θ0) - r^2)*sqrt(R0^2 - 2R0*r*cos(θ-θ0) + r^2 + (y0-y)^2)/(R0^2 - 2R0*r*cos(θ-θ0) + r^2)
+    B = (1.0 + (y0-y)^2/(R0^2 - 2R0*r*cos(θ-θ0) + r^2))*(μ0^2 - (R0^2*r^2*(sin(θ-θ0))^2)/(R0^2 - 2R0*r*cos(θ-θ0) + r^2))
+    A+sqrt(B)
+end
 
 function dist_polar(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Cdouble,x0::Cdouble,y0::Cdouble,z0::Cdouble)
     R0 = sqrt(z0^2+x0^2);
@@ -142,7 +152,8 @@ ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(0.0, 1.0), textcoords="a
 
 
 ## measurement model
-r_surf = collect(range(μ0-5λe,μ0,length=51));
+N = 51;
+r_surf = collect(range(μ0-5λe,μ0,length=N));
 
 DD_meas_far = dist_polar(r_surf,θ,y,x0_far,y0_far,z0_far);
 # DD_meas = dist_polar_simple(r_surf,θ,y,x0_far,y0_far,z0_far);
@@ -216,3 +227,109 @@ ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(0.0, 1.0), textcoords="a
 
 # savefig("gain_cylinder_near.png")
 # savefig("gain_cylinder_near.pdf")
+
+
+## compute the complete model
+
+J = 257;
+θ0_far  = atan(x0_far,z0_far);
+θ_far   = collect(range(θ0_far-π/2.0,θ0_far+π/2.0,length=J));
+θ0_near = atan(x0_near,z0_near);
+θ_near  = collect(range(θ0_near-π/2.0,θ0_near+π/2.0,length=J));
+
+Arn = 0.5*[r_surf[2]-r_surf[1]; r_surf[3:end]-r_surf[1:end-2]; r_surf[end]-r_surf[end-1]];
+Aθj_far = 0.5*[θ_far[2]-θ_far[1]; θ_far[3:end]-θ_far[1:end-2]; θ_far[end]-θ_far[end-1]];
+Aθj_near = 0.5*[θ_near[2]-θ_near[1]; θ_near[3:end]-θ_near[1:end-2]; θ_near[end]-θ_near[end-1]];
+Ayk = 0.5*[Y[2]-Y[1]; Y[3:end]-Y[1:end-2]; Y[end]-Y[end-1]];
+
+H_far = zeros(Cdouble,N,J,K);
+H_near = zeros(Cdouble,N,J,K);
+for k in 1:K
+    H_far[:,:,k] = exp.(-dist_polar(r_surf,θ_far,Y[k],x0_far,y0_far,z0_far)/λe)
+    H_near[:,:,k] = exp.(-dist_polar(r_surf,θ_near,Y[k],x0_near,y0_near,z0_near)/λe)
+end
+H_far = H_far.*r_surf;
+H_near = H_near.*r_surf;
+
+H_n_far  = zeros(Cdouble,N);
+H_n_near = zeros(Cdouble,N);
+for n in 1:N
+    H_n_far[n] = Arn[n]*Aθj_far'*H_far[n,:,:]*Ayk
+    H_n_near[n] = Arn[n]*Aθj_near'*H_near[n,:,:]*Ayk
+end
+
+
+# compare to planar model (need to normalize)
+H_z = Arn.*exp.(-(μ0.-r_surf)/λe);
+H_z_far_min = Arn.*exp.(-(μ0.-r_surf)/(0.5436*λe));
+H_z_far_max = Arn.*exp.(-(μ0.-r_surf)/(0.9193*λe));
+H_z_near_min = Arn.*exp.(-(μ0.-r_surf)/(0.4034*λe));
+H_z_near_max = Arn.*exp.(-(μ0.-r_surf)/(0.8364*λe));
+
+
+figure();
+plot(r_surf,H_n_far/maximum(H_n_far), label="cylinder: far \$\\lambda_e\$", color="tab:blue");
+plot(r_surf,H_n_near/maximum(H_n_near), label="cylinder: near \$\\lambda_e\$", color="tab:green");
+plot(r_surf,H_z/maximum(H_z), label="planar approximation \$\\lambda_e\$", color="tab:orange");
+s = @sprintf "planar approximation limits (far)" #  \$[%.2f\\lambda_e,%.2f\\lambda_e]\$" r_eal_min_far r_eal_max_far
+fill_between(r_surf,H_z_far_min/maximum(H_z_far_min),H_z_far_max/maximum(H_z_far_max),alpha=0.5,color="tab:red",label=s)
+s = @sprintf "planar approximation limits (near)" #  \$[%.2f\\lambda_e,%.2f\\lambda_e]\$" r_eal_min_near r_eal_max_near
+fill_between(r_surf,H_z_near_min/maximum(H_z_near_min),H_z_near_max/maximum(H_z_near_max),alpha=0.5,color="tab:pink",label=s)
+legend()
+xlabel("radius [\$\\mu m\$]")
+ylabel("normalized gain")
+
+
+
+# simulate some data (one point in the kinetic energy spectrum for four different concentration profiles)
+ρA_1 = logistic.(1000.0reverse(μ0.-r_surf).-2.0,0.0,1.0,2.0);
+ρA_2 = logistic.(1000.0reverse(μ0.-r_surf).-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(1000.0reverse(μ0.-r_surf).-1.0).^2. /(2.0*0.25^2));
+ρA_3 = logistic.(1000.0reverse(μ0.-r_surf).-2.0,0.0,1.0,2.0) .+ exp.(-(1000.0reverse(μ0.-r_surf).-1.5).^2. /(2.0*0.5^2));
+ρA_4 = exp.(-(1000.0reverse(μ0.-r_surf).-2.5).^2. /(2.0*0.5^2));
+
+# figure();
+# plot(r_surf,reverse(ρA_1))
+# plot(r_surf,reverse(ρA_2))
+# plot(r_surf,reverse(ρA_3))
+# plot(r_surf,reverse(ρA_4))
+
+# for each cases (cylindrical near and far, and planar), simulate the acquisition of one datum for each profile
+M_far  = [H_n_far'*reverse(ρA_1); H_n_far'*reverse(ρA_2); H_n_far'*reverse(ρA_3); H_n_far'*reverse(ρA_4)];
+M_near = [H_n_near'*reverse(ρA_1); H_n_near'*reverse(ρA_2); H_n_near'*reverse(ρA_3); H_n_near'*reverse(ρA_4)];
+M_z    = [H_z'*reverse(ρA_1); H_z'*reverse(ρA_2); H_z'*reverse(ρA_3); H_z'*reverse(ρA_4)];
+
+figure();
+scatter([1; 2; 3; 4],M_far)
+scatter([1; 2; 3; 4],M_near)
+scatter([1; 2; 3; 4],M_z)
+
+figure(figsize=[10,5])
+ax1 = subplot(121)
+plot(r_surf,H_n_far/maximum(H_n_far), label="cylinder: far \$\\lambda_e\$", color="tab:blue");
+plot(r_surf,H_n_near/maximum(H_n_near), label="cylinder: near \$\\lambda_e\$", color="tab:green");
+plot(r_surf,H_z/maximum(H_z), label="planar approximation \$\\lambda_e\$", color="tab:orange");
+s = @sprintf "planar approximation limits (far)" #  \$[%.2f\\lambda_e,%.2f\\lambda_e]\$" r_eal_min_far r_eal_max_far
+fill_between(r_surf,H_z_far_min/maximum(H_z_far_min),H_z_far_max/maximum(H_z_far_max),alpha=0.5,color="tab:red",label=s)
+s = @sprintf "planar approximation limits (near)" #  \$[%.2f\\lambda_e,%.2f\\lambda_e]\$" r_eal_min_near r_eal_max_near
+fill_between(r_surf,H_z_near_min/maximum(H_z_near_min),H_z_near_max/maximum(H_z_near_max),alpha=0.5,color="tab:pink",label=s)
+legend()
+xlabel("radius [\$\\mu m\$]")
+ylabel("normalized gain")
+
+ax2 = subplot(122)
+scatter(["\$\\rho_1\$"; "\$\\rho_2\$"; "\$\\rho_3\$"; "\$\\rho_4\$"],M_far./M_z, label="cylinder far vs planar", color="tab:blue")
+scatter(["\$\\rho_1\$"; "\$\\rho_2\$"; "\$\\rho_3\$"; "\$\\rho_4\$"],M_near./M_z, label="cylinder near vs planar", color="tab:green")
+xlabel("concentration profiles")
+ylabel("relative acquisition: \$\\frac{I_{\\mathrm{cylinder}}}{I_{\\mathrm{plane}}}\$")
+ylim(0.0)
+legend()
+
+tight_layout(pad=1.0, w_pad=2.0, h_pad=0.2)
+ax2.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-1.27, 0.99), textcoords="axes fraction", color="black",fontsize=14)
+ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.07, 0.99), textcoords="axes fraction", color="black",fontsize=14)
+
+# savefig("plans_vs_cylinder.png")
+# savefig("plans_vs_cylinder.pdf")
+
+figure()
+scatter([1; 2; 3; 4],(M_far./M_z)./(M_near./M_z))
