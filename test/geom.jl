@@ -76,6 +76,13 @@ function dist_polar_simple(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Cdouble,x
     C
 end
 
+function d_plane_P(x::Cdouble,y::Cdouble,z::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble)
+    C = -z.*sqrt.(1.0.+((x0.-x).^2 .+(y0.-y).^2)./((z0.-z).^2))
+    C[C.<=0.0] .= 0.0;
+    C
+end
+
+
 # atan(sqrt(2.0),1.0)
 # near the analyzer
 x0_near = 1.1*sqrt(2.0);
@@ -237,6 +244,29 @@ J = 257;
 θ0_near = atan(x0_near,z0_near);
 θ_near  = collect(range(θ0_near-π/2.0,θ0_near+π/2.0,length=J));
 
+function cylinder_gain_H(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe::Cdouble)
+    # compute the elementary integrals
+    Arn = 0.5*r.*[r[2]-r[1]; r[3:end]-r[1:end-2]; r[end]-r[end-1]]; # rdr
+    Aθj = 0.5*[θ[2]-θ[1]; θ[3:end]-θ[1:end-2]; θ[end]-θ[end-1]];    # dθ
+    Ayk = 0.5*[y[2]-y[1]; y[3:end]-y[1:end-2]; y[end]-Y[end-1]];    # dy
+
+    #compute the model
+    H_rθy = zeros(Cdouble,length(r),length(θ),length(y));
+    for k in 1:length(y)
+        H_rθy[:,:,k] = exp.(-d_cylinder_P(r,θ,y[k],x0,y0,z0,μ0)/λe)
+    end
+
+    H_r  = zeros(Cdouble,length(r));
+    for n in 1:length(r)
+        H_r[n] = Arn[n]*Aθj'*H_rθy[n,:,:]*Ayk
+    end
+    H_r,H_rθy,Arn,Aθj,Ayk
+end
+
+#TODO: check if the results are OK
+H_r,H_rθy,Arn,Aθj,Ayk = cylinder_gain_H(r_surf,θ_far,Y,x0_far,y0_far,z0_far,μ0,λe)
+H_r,H_rθy,Arn,Aθj,Ayk = cylinder_gain_H(r_surf,θ_near,Y,x0_near,y0_near,z0_near,μ0,λe)
+
 Arn = 0.5*[r_surf[2]-r_surf[1]; r_surf[3:end]-r_surf[1:end-2]; r_surf[end]-r_surf[end-1]];
 Aθj_far = 0.5*[θ_far[2]-θ_far[1]; θ_far[3:end]-θ_far[1:end-2]; θ_far[end]-θ_far[end-1]];
 Aθj_near = 0.5*[θ_near[2]-θ_near[1]; θ_near[3:end]-θ_near[1:end-2]; θ_near[end]-θ_near[end-1]];
@@ -333,3 +363,76 @@ ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.07, 0.99), textcoords
 
 figure()
 scatter([1; 2; 3; 4],(M_far./M_z)./(M_near./M_z))
+
+
+##
+## planar model with extent over some area, not just one point in space
+##
+
+Nx = 100;
+Ny = K;
+Nz = N;
+x_far   = collect(range(-μ0,μ0,length=Nx));
+# y_far   = collect(range(y0_far-L/2.0,y0_far+L/2.0,length=Ny));
+x_near  = collect(range(-μ0,μ0,length=Nx));
+# y_near  = collect(range(y0_near-L/2.0,y0_near+L/2.0,length=Ny));
+
+z_surf = collect(range(-5λe,0.0,length=N));
+
+Azn      = 0.5*[z_surf[2]-z_surf[1]; z_surf[3:end]-z_surf[1:end-2]; z_surf[end]-z_surf[end-1]];
+Axj_far  = 0.5*[x_far[2]-x_far[1]; x_far[3:end]-x_far[1:end-2]; x_far[end]-x_far[end-1]];
+Axj_near = 0.5*[x_near[2]-x_near[1]; x_near[3:end]-x_near[1:end-2]; x_near[end]-x_near[end-1]];
+Ayk = 0.5*[Y[2]-Y[1]; Y[3:end]-Y[1:end-2]; Y[end]-Y[end-1]];
+
+H_z_far = zeros(Cdouble,Nz,Nx,Ny);
+H_z_near = zeros(Cdouble,Nz,Nx,Ny);
+
+for j in 1:Nx
+    for k in 1:Ny
+        H_z_far[:,j,k] = exp.(-d_plane_P(x_far[j],Y[k],z_surf,x0_far,y0_far,z0_far)/λe)
+        H_z_near[:,j,k] = exp.(-d_plane_P(x_near[j],Y[k],z_surf,x0_near,y0_near,z0_near)/λe)
+    end
+end
+
+H_z_far_int  = zeros(Cdouble,Nz);
+H_z_near_int = zeros(Cdouble,Nz);
+
+for n in 1:Nz
+    H_z_far_int[n]  = Axj_far'*H_z_far[n,:,:]*Ayk
+    H_z_near_int[n] = Axj_near'*H_z_near[n,:,:]*Ayk
+end
+
+H_z_far_int = H_z_far_int.*Azn
+H_z_near_int = H_z_near_int.*Azn
+H_z_z = Arn.*exp.(z_surf/λe);
+H_z_z_0 = Arn.*exp.(z_surf/(0.58λe));
+
+figure()
+plot(z_surf,H_z_far_int/maximum(H_z_far_int))
+plot(z_surf,H_z_near_int/maximum(H_z_near_int))
+plot(z_surf,H_z_z/maximum(H_z_z))
+plot(z_surf,H_z_z_0/maximum(H_z_z_0))
+
+
+function plane_gain_H(x::Array{Cdouble,1},y::Array{Cdouble,1},z::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,λe::Cdouble)
+    # compute the elementary integrals
+    Azn = 0.5*[z[2]-z[1]; z[3:end]-z[1:end-2]; z[end]-z[end-1]]; # dz
+    Axj = 0.5*[x[2]-x[1]; x[3:end]-x[1:end-2]; x[end]-x[end-1]]; # dx
+    Ayk = 0.5*[y[2]-y[1]; y[3:end]-y[1:end-2]; y[end]-Y[end-1]]; # dy
+
+    #compute the model
+    H_zxy = zeros(Cdouble,length(z),length(x),length(y));
+
+    for j in 1:length(x)
+        for k in 1:length(y)
+            H_zxy[:,j,k] = exp.(-d_plane_P(x[j],y[k],z,x0,y0,z0)/λe)
+        end
+    end
+
+    H_z  = zeros(Cdouble,length(z));
+    for n in 1:length(z)
+        H_z[n]  = Azn[n]*Axj'*H_z_far[n,:,:]*Ayk
+    end
+
+    H_z,H_zxy,Azn,Axj,Ayk
+end

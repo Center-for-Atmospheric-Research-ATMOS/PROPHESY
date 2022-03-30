@@ -34,9 +34,12 @@ export baseline_removal, EM_peaks, cross_section_spread_function, cross_section_
 # objects modelling experiment and device
 export XPSexp, XPSdevice, XPSsetup
 
+export d_plane_P, d_cylinder_P, d_sphere_P, plane_gain_H, cylinder_gain_H
+
 # include the implementation of the exported functions and objects
 include("XPSexp.jl")   # implements XPSexp object
 include("XPSmeas.jl")  # implement most function exported so far
+include("XPSmeas_simple.jl") # re-implementation of the measurement operator for several regular cases (planar and cylindrical intefaces)
 include("peakArea.jl") # encapulsation: peak area model
 
 using NewtonMethod
