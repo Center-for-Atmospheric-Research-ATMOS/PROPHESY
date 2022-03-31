@@ -64,6 +64,22 @@ function d_cylinder_P(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Cdouble,x0::Cd
 end
 
 """
+    d_cylinder_P_simple(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Cdouble,x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
+
+    Simplification of d_cylinder_P in the case μ0≪√((x0-x)^2+(z0-z)^2) and  |y0-y|≪√((x0-x)^2+(z0-z)^2)
+"""
+function d_cylinder_P_simple(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Cdouble,x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
+    θ0 = atan(x0,z0)
+    A = -r*cos.(θ'.-θ0)
+    B = (μ0^2 .- (r.^2*(sin.(θ'.-θ0)).^2))
+    A[r.>μ0,:] .= 0.0
+    B[r.>μ0,:] .= 0.0
+    C = A+sqrt.(B);
+    C[C.<0.0] .= 0.0;
+    C
+end
+
+"""
     d_sphere_P(r::Array{Cdouble,1},θ::Array{Cdouble,1},φ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
 
     NOT IMPLEMENTED YET!
@@ -90,7 +106,7 @@ end
 
     Compute the volume integrales (exact for piecewise linear gain)
 
-    H_{n,j,k} = ∭ e_n(z)e_j(x)e_k(y) e^{d_P(M)/λe} dzdxdy
+    H_{n,j,k} = ∭ e_n(z)e_j(x)e_k(y) e^{-d_P(M)/λe} dzdxdy
 
     The arrays x, y and z are the discretization subdivisions
     P:(x0,y0,z0) is the point in Cartesian coordinates used for the computation of the distance d_P
@@ -102,7 +118,7 @@ function plane_gain_H(x::Array{Cdouble,1},y::Array{Cdouble,1},z::Array{Cdouble,1
     # compute the elementary integrals
     Azn = 0.5*[z[2]-z[1]; z[3:end]-z[1:end-2]; z[end]-z[end-1]]; # dz
     Axj = 0.5*[x[2]-x[1]; x[3:end]-x[1:end-2]; x[end]-x[end-1]]; # dx
-    Ayk = 0.5*[y[2]-y[1]; y[3:end]-y[1:end-2]; y[end]-Y[end-1]]; # dy
+    Ayk = 0.5*[y[2]-y[1]; y[3:end]-y[1:end-2]; y[end]-y[end-1]]; # dy
 
     #compute the model
     H_zxy = zeros(Cdouble,length(z),length(x),length(y));
@@ -115,10 +131,36 @@ function plane_gain_H(x::Array{Cdouble,1},y::Array{Cdouble,1},z::Array{Cdouble,1
 
     H_z  = zeros(Cdouble,length(z));
     for n in 1:length(z)
-        H_z[n]  = Azn[n]*Axj'*H_z_far[n,:,:]*Ayk
+        H_z[n]  = Azn[n]*Axj'*H_zxy[n,:,:]*Ayk
     end
 
     H_z,H_zxy,Azn,Axj,Ayk
+end
+
+"""
+    finger_gain_H(x::Cdouble,y::Cdouble,z::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,λe::Cdouble)
+
+    Compute the volume integrales (exact for piecewise linear gain)
+
+    H_{n} = ∫ e_n(z) e^{z/λe} dz
+
+    The array z is the discretization subdivisions, and (x,y) is the coordinate at the sample's surface
+    where the model is evaluated.
+    P:(x0,y0,z0) is the point in Cartesian coordinates used for the computation of the distance d_P
+    λe is the attenuation length in the Beer-Lambert model
+
+    Note: this model should be used only if not enough information is known about the experiment's geometry. It assumes
+    that the whole signal is coming from one line orthogonal to the sample's surface, thus ignoring the variation in
+    the distance the electron has to travel though the sample due to the surfacic spread of the illumination,
+    making this model less surface sensitive.
+"""
+function finger_gain_H(x::Cdouble,y::Cdouble,z::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,λe::Cdouble)
+    # compute the elementary integrals
+    Azn = 0.5*[z[2]-z[1]; z[3:end]-z[1:end-2]; z[end]-z[end-1]]; # dz
+
+    #compute the model
+    H_z  = Azn.*exp.(-d_plane_P(x,y,z,x0,y0,z0)/λe);
+    H_z,Azn
 end
 
 """
@@ -126,7 +168,7 @@ end
 
     Compute the volume integrales (exact for piecewise linear gain)
 
-    H_{n,j,k} = ∭ e_n(r)e_j(θ)e_k(y) e^{d_P(M)/λe} rdrdθdy
+    H_{n,j,k} = ∭ e_n(r)e_j(θ)e_k(y) e^{-d_P(M)/λe} rdrdθdy
 
     The arrays r, θ and y are the discretization subdivisions
     P:(x0,y0,z0) is the point in Cartesian coordinates used for the computation of the distance d_P
@@ -139,7 +181,7 @@ function cylinder_gain_H(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdoub
     # compute the elementary integrals
     Arn = 0.5*r.*[r[2]-r[1]; r[3:end]-r[1:end-2]; r[end]-r[end-1]]; # rdr
     Aθj = 0.5*[θ[2]-θ[1]; θ[3:end]-θ[1:end-2]; θ[end]-θ[end-1]];    # dθ
-    Ayk = 0.5*[y[2]-y[1]; y[3:end]-y[1:end-2]; y[end]-Y[end-1]];    # dy
+    Ayk = 0.5*[y[2]-y[1]; y[3:end]-y[1:end-2]; y[end]-y[end-1]];    # dy
 
     #compute the model
     H_rθy = zeros(Cdouble,length(r),length(θ),length(y));
