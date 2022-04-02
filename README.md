@@ -109,3 +109,10 @@ Test for:
 - [2] D. Roy and D. Tremblay, Design of electron spectrometers, Reports on Progress in Physics, 1990, Vol. 53, No. 12, p. 1621 ([DOI: 10.1088/0034-4885/53/12/003](https://www.doi.org/10.1088/0034-4885/53/12/003))
 - [3] S. Manson and J. Cooper, Photo-Ionization in the Soft x-Ray Range: 1 Z Dependence in a Central-Potential Model, Physical Review, 1968, Vol. 165, p. 126 ([DOI: 10.1103/PhysRev.165.126](https://www.doi.org/10.1103/PhysRev.165.126))
 - [4] J. Yeh and I. Lindau, Atomic subshell photoionization cross sections and asymmetry parameters: 1⩽ Z⩽ 103, 1985, Vol. 32, No. 1, p. 1--155, ([DOI: 10.1016/0092-640X(85)90016-6](https://www.doi.org/10.1016/0092-640X\(85\)90016-6))
+
+
+# Dependence
+
+Interpolations
+utilsFun
+utilsFun

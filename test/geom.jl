@@ -1,9 +1,9 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
-fm = PyPlot.matplotlib.font_manager.json_load("/home/mattoz/.cache/matplotlib/fontlist-v310.json")
-fm.findfont("serif", rebuild_if_missing=false)
-fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
+fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json")
+# fm.findfont("serif", rebuild_if_missing=false)
+# fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
 rc("font",family="serif",serif="Computer Modern Roman")
 rc("text", usetex=true)
 
