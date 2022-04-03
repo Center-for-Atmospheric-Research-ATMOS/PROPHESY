@@ -1,9 +1,9 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
-fm = PyPlot.matplotlib.font_manager.json_load("/home/mattoz/.cache/matplotlib/fontlist-v310.json")
-fm.findfont("serif", rebuild_if_missing=false)
-fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
+fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json")
+# fm.findfont("serif", rebuild_if_missing=false)
+# fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
 rc("font",family="serif",serif="Computer Modern Roman")
 rc("text", usetex=true)
 using myPlot
@@ -34,7 +34,7 @@ using XPSinv
 ## load some data
 ##
 σ_noise = 0.002;
-data_folder = "./data/lin/4peaks/0.0020/";
+data_folder = "/home/matthew/Data/XPS/lin/4peaks/0.0020/"; # "./data/lin/4peaks/0.0020/";
 folder_res = "./results/lin/4peaks/0.0020/"
 
 # σ_noise = 0.02;
@@ -79,7 +79,7 @@ Zi_high = Matrix{Cdouble}(d_Zi_high_res)[1,:];
 ##
 ## load the model
 ##
-model_folder = "./data/lin/4peaks/low_res_50/";
+model_folder = "/home/matthew/Data/XPS/lin/4peaks/low_res_50/";  #"./data/lin/4peaks/low_res_50/";
 d_H = CSV.File(string(model_folder,"H.csv"); delim=",", header=false) |> DataFrame;
 H = Matrix{Cdouble}(d_H);
 d_H_std = CSV.File(string(model_folder,"H_standard_deviation.csv"); delim=",", header=false) |> DataFrame;
@@ -158,9 +158,9 @@ Nh = 121
 Ns = 25
 ρ_samples_nso_h = zeros(Cdouble,Nh*Ns,N);
 t_elapsed = @elapsed for i in 1:Nh
-   model_folder = "./data/lin/4peaks/low_res_50/";
-   d_H = CSV.File(string(model_folder,i,"/","H.csv"); delim=",", header=false) |> DataFrame;
-   H = Matrix{Cdouble}(d_H);
+   # model_folder = "./data/lin/4peaks/low_res_50/";
+   local d_H = CSV.File(string(model_folder,i,"/","H.csv"); delim=",", header=false) |> DataFrame;
+   local H = Matrix{Cdouble}(d_H);
 
    # compute reconstruction with the given model
    for j in 1:Ns
@@ -196,8 +196,8 @@ Ns = 5 # 00;
 t_elapsed = @elapsed for i in 2:Ns
    idx = shuffle_data(Nke,Npeak;Nmin=Nmin);
    # A = [H[idx,:]; Matrix{Cdouble}(I,N,N); D_2nd; B];
-   x0 = 0.0*ρA_1[idx_res]
-   s0 = A*x0
+   local x0 = 0.0*ρA_1[idx_res]
+   local s0 = A*x0
    # ρ_samples[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,IA_1[idx],ρ0,ρB,A,γ[idx],γ_H[idx,:],γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
    ρ_samples[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,IA_1_clean+σ_noise*randn(Nke),ρ0,ρB,A,γ,γ_H,γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
 end
@@ -215,10 +215,10 @@ Nh = 121
 Ns = 25
 ρ_samples_cp_h = zeros(Cdouble,Nh*Ns,N);
 t_elapsed = @elapsed for i in 1:Nh
-   model_folder = "./data/lin/4peaks/low_res_50/";
-   d_H = CSV.File(string(model_folder,i,"/","H.csv"); delim=",", header=false) |> DataFrame;
-   H = Matrix{Cdouble}(d_H);
-   A = [H; Matrix{Cdouble}(I,N,N); D_2nd; B];
+   # model_folder = "./data/lin/4peaks/low_res_50/";
+   local d_H = CSV.File(string(model_folder,i,"/","H.csv"); delim=",", header=false) |> DataFrame;
+   local H = Matrix{Cdouble}(d_H);
+   local A = [H; Matrix{Cdouble}(I,N,N); D_2nd; B];
 
    # compute reconstruction with the given model
    for j in 1:Ns
