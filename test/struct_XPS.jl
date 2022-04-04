@@ -1,9 +1,10 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
-fm = PyPlot.matplotlib.font_manager.json_load("/home/mattoz/.cache/matplotlib/fontlist-v310.json")
-fm.findfont("serif", rebuild_if_missing=false)
-fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
+fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json") # TODO: look for the path automatically
+# fm = PyPlot.matplotlib.font_manager.json_load("/home/mattoz/.cache/matplotlib/fontlist-v310.json")
+# fm.findfont("serif", rebuild_if_missing=false)
+# fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
 rc("font",family="serif",serif="Computer Modern Roman")
 rc("text", usetex=true)
 
@@ -91,8 +92,10 @@ mutable struct cylinderGeom
     y0::Cdouble
     z0::Cdouble
 
+    # radius of the sample
+    μ0::Cdouble 
 
-    # probing depths
+    # probing depths (distance from the symmetry axis of the sample)
     r::Array{Cdouble,1}
 
     # coordinates of the illuminated area at the surface of the sample in polar coordinates (the covered area may be bigger or smaller than the sample's dimension: the derived model should deal with that with the beam-light's profile)
@@ -100,51 +103,16 @@ mutable struct cylinderGeom
     y::Array{Cdouble,1}
 
     function cylinderGeom()
-        new(0.0,0.0,0.0, Array{Cdouble,1}(undef,0),Array{Cdouble,1}(undef,0),Array{Cdouble,1}(undef,0))
+        new(0.0,0.0,0.0,0.0, Array{Cdouble,1}(undef,0),Array{Cdouble,1}(undef,0),Array{Cdouble,1}(undef,0))
     end
-    function cylinderGeom(x0_::Cdouble,y0_::Cdouble,z0_::Cdouble,r_::Array{Cdouble,1},θ_::Array{Cdouble,1},y_::Array{Cdouble,1})
-        new(x0_,y0_,z0_,r_,θ_,y_)
+    function cylinderGeom(x0_::Cdouble,y0_::Cdouble,z0_::Cdouble,μ0_::Cdouble,r_::Array{Cdouble,1},θ_::Array{Cdouble,1},y_::Array{Cdouble,1})
+        new(x0_,y0_,z0_,μ0_,r_,θ_,y_)
     end
     function cylinderGeom(ws::cylinderGeom)
-        new(ws.x0,ws.y0,ws.z0,ws.r,ws.θ,ws.y)
+        new(ws.x0,ws.y0,ws.z0,ws.μ0,ws.r,ws.θ,ws.y)
     end
 end
 
-mutable struct XPSgeom
-    finger::fingerGeom
-    plane::planeGeom
-    cylinder::cylinderGeom
-
-    function XPSgeom()
-        # printf("creating an empty geometry object")
-        new(fingerGeom(),planeGeom(),cylinderGeom())
-    end
-    function XPSgeom(geom_str::String,x0_::Cdouble,y0_::Cdouble,z0_::Cdouble,x_::Cdouble,y_::Cdouble,z_::Array{Cdouble,1})
-        # printf("creating a finger geometry object")
-        new(fingerGeom(x0_,y0_,z0_,x_,y_,z_),planeGeom(),cylinderGeom())
-    end
-    function XPSgeom(geom_str::String,x0_::Cdouble,y0_::Cdouble,z0_::Cdouble,x_::Array{Cdouble,1},y_::Array{Cdouble,1},z_::Array{Cdouble,1})
-        if(geom_str=="plane")
-            # printf("creating a plane geometry object")
-            new(fingerGeom(),planeGeom(x0_,y0_,z0_,x_,y_,z_),cylinderGeom())
-        elseif (geom_str=="cylinder")
-            # printf("creating a cylinder geometry object")
-            new(fingerGeom(),planeGeom(),cylinderGeom(x0_,y0_,z0_,x_,y_,z_))
-        end
-    end
-    function XPSgeom(ws::XPSgeom)
-        new(ws.finger,ws.plane,ws.cylinder)
-    end
-    function XPSgeom(ws::fingerGeom)
-        new(ws,planeGeom(),cylinderGeom())
-    end
-    function XPSgeom(ws::planeGeom)
-        new(fingerGeom(),ws,cylinderGeom())
-    end
-    function XPSgeom(ws::cylinderGeom)
-        new(fingerGeom(),planeGeom(),ws)
-    end
-end
 
 # acquisition struct
 mutable struct XPSacq
@@ -187,25 +155,49 @@ mutable struct XPSacq
     end
 end
 
-# the experiment structure gather all the data need to compute the model
-#  - geometrical data  Union{fingerGeom,planeGeom,cylinderGeom}
-#  - acquisition setup a dictionary of XPSacq (one for each pair (ħν,μKe))
-# WARNING: I don't think this structure needs a normal ctor because it would
-# need too many arguments
-# mutable struct XPSexp
-#     # geometry
-#     geom::XPSgeom
-#
-#     # acquisition setup
-#     acq::Dict{Int64,XPSacq}
-#
-#     # default
-#     function XPSexp()
-#         new(XPSgeom(),Dict{Int64,XPSacq}())
-#     end
-#
-#     # copy
-#     function XPSexp(ws::XPSexp)
-#         new(ws.geom,ws.acq)
-#     end
-# end
+
+## acquisition setup
+ħν = 900.0;
+μKe = ħν-285.0;
+α = 1.0
+T = 1.0
+Fν = 1.0;
+Nke = 200;
+Ke = collect(range(μKe-2.0,μKe+2.0,length=Nke));
+dKe = Ke[2]-Ke[1]
+σν0 = 0.6;
+σν = σν0*((0.7/sqrt(2π*0.2^2))*exp.(-0.5*(Ke.-(μKe-0.5)).^2/0.2^2) .+ (0.3/sqrt(2π*0.5^2))*exp.(-0.5*(Ke.-(μKe+0.5)).^2/0.5^2));
+λe0 = 0.002;
+
+wsAcq = XPSacq(ħν,μKe,α,T,Fν,Ke,σν,λe0);
+
+## geometry setup
+k0 = 5;
+Nr = 51;
+Nθ = 256;
+Ny = 256;
+μ0 = 100.0;
+L = 200.0;
+x0 = sqrt(2.0)*100.0μ0
+y0 = 0.0;
+z0 = 100.0μ0
+r = collect(range(μ0-k0*λe0,μ0,length=Nr))
+θ0 = atan(x0,z0)
+θ = collect(range(θ0-π/2.0,θ0+π/2.0,Nθ));
+y = collect(range(-L/2.0,L/2.0,length=Ny));
+
+wsGeom = cylinderGeom(x0,y0,z0,r,θ,y)
+
+# TODO: create a model from the given elements
+Hr,Hrθy,Arn,Aθj,Ayk = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λe0);
+
+fig,ax,pcm,cax,cb = plotPolar(1,r,θ,Hrθy[:,:,128];cb_ax_loc=(0.25, .37));
+# ax.set_rticks([99.97, 99.98, 99.99, 100.0])
+ax.set_ylim(99.97,100.0)
+
+
+
+function acqModel(wsAcq::XPSacq,wsGeom::cylinderGeom)
+    Hr,Hrθy,_,_,_ = cylinder_gain_H(wsGeom.r,wsGeom.θ,wsGeom.y,wsGeom.x0,wsGeom.y0,wsGeom.z0,wsGeom.μ0,wsAcq.λe);
+    wsAcq.T*wsAcq.α*wsAcq.Fν*σν*Hr'
+end
