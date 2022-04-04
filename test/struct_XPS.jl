@@ -186,10 +186,28 @@ r = collect(range(μ0-k0*λe0,μ0,length=Nr))
 θ = collect(range(θ0-π/2.0,θ0+π/2.0,Nθ));
 y = collect(range(-L/2.0,L/2.0,length=Ny));
 
-wsGeom = cylinderGeom(x0,y0,z0,r,θ,y)
+wsGeom = cylinderGeom(x0,y0,z0,μ0,r,θ,y)
 
 # TODO: create a model from the given elements
 Hr,Hrθy,Arn,Aθj,Ayk = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λe0);
+
+
+
+function plotPolar(figNum::Int64,r::Array{Cdouble,1},θ::Array{Cdouble,1},H::Array{Cdouble,2};subFig::Int64=111,cb_label::String="gain [a.u.]",cb_ax_loc::Tuple{Cdouble,Cdouble}=(0.0,0.0),cb_ax_size::Tuple{Cdouble,Cdouble}=(0.02,0.25),rlabel_position::Cdouble=-22.5)
+    fig = figure(figNum) # ,figsize=[9,5])
+    ax = subplot(subFig,polar=true)
+    ax.set_rlabel_position(rlabel_position)
+    # ax.set_rticks([0.97, 0.98, 0.99, 1.0])
+    pcm = ax.pcolormesh(θ,r,H,edgecolors="face")
+    ylim(r[1],r[end])
+    cax = fig.add_axes([cb_ax_loc[1], cb_ax_loc[2], cb_ax_size[1], cb_ax_size[2]])
+    cb = fig.colorbar(pcm, orientation="vertical", cax=cax, shrink=0.6)
+    cb.set_label(cb_label, fontsize=10)
+
+    fig,ax,pcm,cax,cb
+end
+
+
 
 fig,ax,pcm,cax,cb = plotPolar(1,r,θ,Hrθy[:,:,128];cb_ax_loc=(0.25, .37));
 # ax.set_rticks([99.97, 99.98, 99.99, 100.0])
