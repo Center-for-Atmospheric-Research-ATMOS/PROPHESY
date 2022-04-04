@@ -369,3 +369,80 @@ function cylinder_gain_H(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdoub
     end
     H_r,H_rθy,Arn,Aθj,Ayk
 end
+
+
+"""
+    Ψ_lin_peak(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+
+    returns the measurement operator for a cylindrical geometry
+    - wsGeom: cylinderGeom
+    - wsAcq:  XPSacq
+    - κ_cs:   relative bias in the cross section values
+    - κ_eal:  relative bias in the attenuation length values
+"""
+function Ψ_lin_peak(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+    Hr,_,_,_,_ = cylinder_gain_H(wsGeom.r,wsGeom.θ,wsGeom.y,wsGeom.x0,wsGeom.y0,wsGeom.z0,wsGeom.μ0,(1.0+κ_eal)*wsAcq.λe);
+    wsAcq.T*wsAcq.α*wsAcq.Fν*((1.0+κ_cs)*wsAcq.σν)*Hr'
+end
+
+"""
+    Ψ_lin_peak_area(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+
+    returns the peak area operator for a cylindrical geometry
+    - wsGeom: cylinderGeom
+    - wsAcq:  XPSacq
+    - κ_cs:   relative bias in the cross section values
+    - κ_eal:  relative bias in the attenuation length values
+"""
+function Ψ_lin_peak_area(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+    H_peak = Ψ_lin_peak(wsGeom,wsAcq;κ_cs=κ_cs,κ_eal=κ_eal)
+    AKe = 0.5*[wsAcq.Ke[2]-wsAcq.Ke[1]; wsAcq.Ke[3:end]-wsAcq.Ke[1:end-2]; wsAcq.Ke[end]-wsAcq.Ke[end-1]];    # dθ
+    AKe'*H_peak # A = dropdims(sum(H,dims=1),dims=1)*abs(peak.Ke[2]-peak.Ke[1])
+end
+
+
+# TODO: compute the model's uncertainty (the ones due to errors in the parameters' values)
+# # uniform distribution
+# function Ψ_lin_peaks_mean_and_std(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+#     N = length(Zi);
+#     H_mean = Array{Cdouble}(undef,wsXPS.Nν*wsXPS.Nbe,N);
+#     H_var  = Array{Cdouble}(undef,wsXPS.Nν*wsXPS.Nbe,N);
+#     # go for the discrete operator
+#     for j in 1:wsXPS.Nν
+#        for b in 1:wsXPS.Nbe
+#           λi_min = (1.0-κ_eal)*wsXPS.λe[(j-1)*wsXPS.Nbe+b];
+#           λi_max = (1.0+κ_eal)*wsXPS.λe[(j-1)*wsXPS.Nbe+b];
+#           H_mean[(j-1)*wsXPS.Nbe+b,1] = wsXPS.αT[j]*wsXPS.Fν[j]*wsXPS.σν[j,b]*f_ij_0(Zi[1],Zi[2],λi_min,λi_max,σ_z,z0,Nz,Nλ)
+#           H_var[(j-1)*wsXPS.Nbe+b,1]  = (wsXPS.αT[j]*wsXPS.Fν[j]*wsXPS.σν[j,b])^2*(1.0+(κ_cs^2/3.0))*f_ij_0_sq(Zi[1],Zi[2],λi_min,λi_max,σ_z,z0,Nz,Nλ)
+#           for i in 2:N-1
+#              H_mean[(j-1)*wsXPS.Nbe+b,i] = wsXPS.αT[j]*wsXPS.Fν[j]*wsXPS.σν[j,b]*f_ij(Zi[i-1],Zi[i],Zi[i+1],λi_min,λi_max,σ_z,z0,Nz,Nλ)
+#              H_var[(j-1)*wsXPS.Nbe+b,i]  = (wsXPS.αT[j]*wsXPS.Fν[j]*wsXPS.σν[j,b])^2*(1.0+(κ_cs^2/3.0))*f_ij_sq(Zi[i-1],Zi[i],Zi[i+1],λi_min,λi_max,σ_z,z0,Nz,Nλ)
+#           end
+#           H_mean[(j-1)*wsXPS.Nbe+b,end] = wsXPS.αT[j]*wsXPS.Fν[j]*wsXPS.σν[j,b]*f_ij_M(Zi[end-1],Zi[end],λi_min,λi_max,σ_z,z0,Nz,Nλ)
+#           H_var[(j-1)*wsXPS.Nbe+b,end]  = (wsXPS.αT[j]*wsXPS.Fν[j]*wsXPS.σν[j,b])^2*(1.0+(κ_cs^2/3.0))*f_ij_M_sq(Zi[end-1],Zi[end],λi_min,λi_max,σ_z,z0,Nz,Nλ)
+#        end
+#     end
+#     H_mean,sqrt.(H_var-H_mean.^2)
+#  end
+
+
+ """
+    Ψ_lin_peaks(wsGeom::cylinderGeom,XPS_peak::Dict{Int64,XPSacq};κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+
+    return a dictionary of measurement operators corresponding to the peaks listed in the argument
+
+    - wsGeom::cylinderGeom    
+    - XPS_peak: dictionary of peaks (different acquisition setups)
+    - κ_cs:   relative bias in the cross section values
+    - κ_eal:  relative bias in the attenuation length values
+ """
+function Ψ_lin_peaks(wsGeom::cylinderGeom,XPS_peak::Dict{Int64,XPSacq};κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+    H_dict     = Dict{Int64,Array{Cdouble,2}}();
+    
+    for (i,peak) in XPS_peak
+       # create the measurement model
+       setindex!(H_dict,Ψ_lin_peak(wsGeom,peak;κ_cs=κ_cs,κ_eal=κ_eal),i);
+    end
+    H_dict
+end
+
