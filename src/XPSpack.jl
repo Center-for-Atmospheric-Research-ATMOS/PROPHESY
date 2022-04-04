@@ -34,7 +34,12 @@ export baseline_removal, EM_peaks, cross_section_spread_function, cross_section_
 # objects modelling experiment and device
 export XPSexp, XPSdevice, XPSsetup
 
+# possible geometry of the sample
+export fingerGeom, planeGeom, cylinderGeom
+# distance and geometry factors
 export d_plane_P, d_cylinder_P, d_cylinder_P_simple, d_sphere_P, plane_gain_H, finger_gain_H, cylinder_gain_H
+# acquisition parameters
+export XPSacq
 
 # include the implementation of the exported functions and objects
 include("XPSexp.jl")   # implements XPSexp object
