@@ -77,3 +77,66 @@ function acqModel(wsAcq::XPSacq,wsGeom::cylinderGeom)
     Hr,Hrθy,_,_,_ = cylinder_gain_H(wsGeom.r,wsGeom.θ,wsGeom.y,wsGeom.x0,wsGeom.y0,wsGeom.z0,wsGeom.μ0,wsAcq.λe);
     wsAcq.T*wsAcq.α*wsAcq.Fν*σν*Hr'
 end
+
+
+# a few things about model uncertainty
+
+"""
+    cov_H_cylinder()
+
+    computes the covariance matrix of the geometrical structure...
+    A = ∭ ρ(r,θ,y) e^{\frac{d_P(r,θ,y)}{λ}} r dr dθ dy ≃ Hρ
+    where H = [H_1 H_2 … H_Nr]† and 
+    H_n(λ) = r_n ∑_j ∑_k e^{\frac{d_P(r_n,θ_j,y_k)}{λ}} ∭ e_n(r) e_j(θ) e_k(y) dr dθ dy
+    ΓH = cov(H) = \mathbb{E} [H×H†] - \mathbb{E}[H]×\mathbb{E} [H†]
+"""
+function cov_H_cylinder(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe0::Cdouble)
+    # the distance for each point of the space discretization
+    Nr = length(r);
+    Nθ = length(θ);
+    Ny = length(y);
+    D = zeros(Cdouble,Nr,Nθ,Ny);
+    for k in 1:Ny
+        D[:,:,k] = d_cylinder_P(r,θ,y[k],x0,y0,z0,μ0);
+    end
+    Arn = 0.5*r.*[r[2]-r[1]; r[3:end]-r[1:end-2]; r[end]-r[end-1]]; # rdr
+    Aθj = 0.5*[θ[2]-θ[1]; θ[3:end]-θ[1:end-2]; θ[end]-θ[end-1]];    # dθ
+    Ayk = 0.5*[y[2]-y[1]; y[3:end]-y[1:end-2]; y[end]-y[end-1]];    # dy
+
+    # attenuation length distribution
+    Nλ = 21;
+    λ = collect(range(0.9λe0,1.1λe0,length=Nλ));
+    Aλ = 0.5*[λ[2]-λ[1]; λ[3:end]-λ[1:end-2]; λ[end]-λ[end-1]];
+    Pλ = (1.0/sum(Aλ))ones(Cdouble,Nλ);
+
+    # compute the integration operator for the discretized attenuation space
+    H = zeros(Cdouble,Nr,Nλ);
+    Djk = Aθj*Ayk'; # integration over θ and y 
+    for m in 1:Nr
+        for s in 1:Nλ
+            H[m,s] = Arn[m]*sum(Djk.*exp.(-D[m,:,:]/λ[s]))
+        end
+    end
+
+    # mean operator 
+    μH = H*(Pλ.*Aλ);
+
+    # square
+    HHt = zeros(Cdouble,Nr,Nr);
+    for l in 1:Nr
+        HHt[l,l] = (H[l,:].^2 .*Pλ)'*Aλ
+        for m in l+1:Nr
+            HHt[l,m] = (H[l,:].*H[m,:].*Pλ)'*Aλ
+            HHt[m,l] = HHt[l,m]
+        end
+    end
+    HHt - μH*μH'
+end
+
+
+
+
+
+
+# ℓ = 1;
+# Rℓλ = exp.(-D[ℓ,:,:])
