@@ -13,7 +13,7 @@ using myPlot
 using Printf
 
 # scientific package from the official Julia repositories
-# using LinearAlgebra
+using LinearAlgebra
 # using Statistics
 # using DSP
 # using SpecialMatrices
@@ -81,15 +81,15 @@ end
 
 # a few things about model uncertainty
 
-"""
-    cov_H_cylinder()
+# """
+#     cov_H_cylinder()
 
-    computes the covariance matrix of the geometrical structure...
-    A = ∭ ρ(r,θ,y) e^{\frac{d_P(r,θ,y)}{λ}} r dr dθ dy ≃ Hρ
-    where H = [H_1 H_2 … H_Nr]† and 
-    H_n(λ) = r_n ∑_j ∑_k e^{\frac{d_P(r_n,θ_j,y_k)}{λ}} ∭ e_n(r) e_j(θ) e_k(y) dr dθ dy
-    ΓH = cov(H) = \mathbb{E} [H×H†] - \mathbb{E}[H]×\mathbb{E} [H†]
-"""
+#     computes the covariance matrix of the geometrical structure...
+#     A = ∭ ρ(r,θ,y) e^{\frac{d_P(r,θ,y)}{λ}} r dr dθ dy ≃ Hρ
+#     where H = [H_1 H_2 … H_Nr]† and 
+#     H_n(λ) = r_n ∑_j ∑_k e^{\frac{d_P(r_n,θ_j,y_k)}{λ}} ∭ e_n(r) e_j(θ) e_k(y) dr dθ dy
+#     ΓH = cov(H) = \mathbb{E} [H×H†] - \mathbb{E}[H]×\mathbb{E} [H†]
+# """
 function cov_H_cylinder(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe0::Cdouble)
     # the distance for each point of the space discretization
     Nr = length(r);
@@ -105,9 +105,9 @@ function cov_H_cylinder(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdoubl
 
     # attenuation length distribution
     Nλ = 21;
-    λ = collect(range(0.9λe0,1.1λe0,length=Nλ));
+    λ = collect(range(0.9λe0,1.1λe0,length=Nλ)); # should be given as an argument because 
     Aλ = 0.5*[λ[2]-λ[1]; λ[3:end]-λ[1:end-2]; λ[end]-λ[end-1]];
-    Pλ = (1.0/sum(Aλ))ones(Cdouble,Nλ);
+    Pλ = (1.0/sum(Aλ))ones(Cdouble,Nλ);          # should be given as an argument
 
     # compute the integration operator for the discretized attenuation space
     H = zeros(Cdouble,Nr,Nλ);
@@ -130,13 +130,60 @@ function cov_H_cylinder(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdoubl
             HHt[m,l] = HHt[l,m]
         end
     end
-    HHt - μH*μH'
+
+    # return the covariance
+    HHt - μH*μH', μH
 end
 
 
 
+ΓH,μH = cov_H_cylinder(r,θ,y,x0,y0,z0,μ0,λe0);
+
+figure()
+imshow(ΓH)
+colorbar()
+
+evals = eigvals(ΓH)
+
+figure()
+semilogy(abs.(evals))
+
+svals = svdvals(ΓH)
+
+figure()
+semilogy(svals)
+
+figure();
+semilogy(r,μH,color="tab:blue")
+fill_between(r,μH-sqrt.(diag(ΓH)),μH+sqrt.(diag(ΓH)),alpha=0.5,color="tab:blue",label="uncertainty")
+
+FΓH = eigen(ΓH);
+
+pos_val = zeros(Cdouble,Nr); # = FΓH.values[]
+th_val = 1.0e-5*maximum(FΓH.values);
+pos_val[FΓH.values.>th_val] .= FΓH.values[FΓH.values.>th_val];
+pos_val[FΓH.values.<=th_val] .= th_val;
+
+pos_val[FΓH.values.<=0.0] .= 1.0e-20; # minimum(FΓH.values[FΓH.values.>0])*0.5*rand(Cdouble,Nr-length(FΓH.values[FΓH.values.>0]));
+
+ΓH_pos = FΓH.vectors*diagm(pos_val)*FΓH.vectors';
+# ΓH_pos = 0.5*(ΓH_pos+ΓH_pos');
+
+figure(); imshow(ΓH); colorbar()
+figure(); imshow(ΓH_pos); colorbar()
+figure(); imshow(abs.(ΓH-ΓH_pos)); colorbar()
 
 
+LH = cholesky(ΓH_pos)
+
+sqrtΓH = sqrt(ΓH);
+
+figure();
+plot(r,μH.+real(sqrtΓH)*randn(Cdouble,Nr,20))
+
+
+# norm(real(sqrtΓH))
+# norm(imag(sqrtΓH))
 
 # ℓ = 1;
 # Rℓλ = exp.(-D[ℓ,:,:])
