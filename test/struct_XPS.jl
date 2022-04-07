@@ -187,3 +187,143 @@ plot(r,μH.+real(sqrtΓH)*randn(Cdouble,Nr,20))
 
 # ℓ = 1;
 # Rℓλ = exp.(-D[ℓ,:,:])
+
+
+##
+## OK, going in a different direction for estimating the uncertainty (posterior covariance): sampling the a priori with rejection mechanism based on likelihood (or a posteriori)
+##
+
+
+# simulate some data (one point in the kinetic energy spectrum for four different concentration profiles)
+ρA_1 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0);
+ρA_2 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(1000.0reverse(μ0.-r).-1.0).^2. /(2.0*0.25^2));
+ρA_3 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0) .+ exp.(-(1000.0reverse(μ0.-r).-1.5).^2. /(2.0*0.5^2));
+ρA_4 = exp.(-(1000.0reverse(μ0.-r).-2.5).^2. /(2.0*0.5^2));
+
+# covariance matrix for the a priori distribution
+
+Dprior = D2nd(Nr+2)[:,2:end-1];
+
+Γprior = zeros(Cdouble,Nr,Nr)
+
+for i in 1:Nr
+    Γprior[i,i] = (0.005*(1.0-ρA_1[i]+0.1))^2;
+    for j in i+1:Nr
+        Γprior[i,j] = Γprior[i,i]*exp(-(i-j)^2/(0.5*5.0^2))
+        Γprior[j,i] = Γprior[i,j]
+    end
+end
+
+figure(); imshow(Γprior); colorbar()
+
+
+# Lprior = cholesky(Γprior)
+
+Bprior = Dprior'*inv(Γprior)*Dprior;
+Cprior = inv(Bprior);
+Dsqrt = real(sqrt(Cprior));
+
+figure(); imshow(Γprior); colorbar()
+figure(); imshow(inv(Γprior)); colorbar()
+figure(); imshow(Dprior'*inv(Γprior)*Dprior); colorbar()
+figure(); imshow(Cprior); colorbar()
+figure(); imshow(Dsqrt); colorbar()
+
+
+figure(); plot(Dprior*ρA_1); plot(Dprior*ρA_2); plot(Dprior*ρA_3); plot(Dprior*ρA_4)
+
+figure(); plot(ρA_1); plot(ρA_1.+Dsqrt*randn(Cdouble,Nr,20))
+
+tmpDens = ρA_1;
+figure(); plot(tmpDens)
+for i in 1:20
+    tmpDens = tmpDens + Dsqrt*randn(Cdouble,Nr);
+    tmpDens[tmpDens.<0.0] .= 0.0
+    plot(tmpDens)
+end
+
+Ndata = 10
+H_dummy = zeros(Cdouble,Ndata,Nr);
+for i in 1:10
+    H_dummy[i,:] = 5.0exp.(-collect(range(0.0,Nr,length=Nr))./(1.0*i))
+end
+figure(); imshow(H_dummy)
+
+
+ΓI = (0.01^2)*diagm(ones(Cdouble,Ndata)); # iid data noise
+# ΓI = (1.1^2)*diagm(ones(Cdouble,Ndata));
+ΓIsqrt = sqrt(ΓI);
+detΓI = det(ΓI);
+ΓIinv = inv(ΓI);
+
+y_data_1 = H_dummy*ρA_1 + ΓIsqrt*randn(Cdouble,Ndata);
+figure(); plot(y_data_1)
+
+
+function likelihood_H(x::Array{Cdouble,1})
+    (1.0/sqrt(2π*detΓI))*exp(-0.5*(y_data_1-H_dummy*x)'*ΓIinv*(y_data_1-H_dummy*x))
+end
+
+function prior_D(x::Array{Cdouble,1})
+    exp(-0.5x'Bprior*x)
+end
+
+function rejectSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdouble)
+    # if the posterior probability is larger for the proposed state ρ_prop than the current state ρ_cur, then accept the state, otherwise, reject it with probability p
+    # r_cp = likelihood_H(ρ_prop)/likelihood_H(ρ_cur)
+    r_cp = exp(0.5*(y_data_1-H_dummy*ρ_cur)'*ΓIinv*(y_data_1-H_dummy*ρ_cur)-0.5*(y_data_1-H_dummy*ρ_prop)'*ΓIinv*(y_data_1-H_dummy*ρ_prop))
+    r_cp = r_cp*exp(0.5ρ_cur'Bprior*ρ_cur - 0.5ρ_prop'Bprior*ρ_prop)
+    ρ_new = ρ_cur;
+    if r_cp>=1.0
+        # unconditionally accept the new state
+        ρ_new = ρ_prop
+    else
+        # accept the state with probability p
+        if (rand()<=p)
+            ρ_new = ρ_prop
+        end
+    end
+    ρ_new
+end
+
+
+ρ_cur = ρA_1;
+figure();
+plot(ρ_cur)
+
+Ns = 5*200000;
+likelihoodP = zeros(Cdouble,Ns+1)
+ρ_all = zeros(Cdouble,Ns+1,Nr);
+ρ_all[1,:] = ρ_cur;
+likelihoodP[1] = likelihood_H(ρ_cur)
+
+for i in 1:Ns
+    ρ_prop = ρ_cur + 0.0001Dsqrt*randn(Cdouble,Nr);
+    # ρ_prop = ρ_cur + 1.1Dsqrt*randn(Cdouble,Nr);
+    ρ_prop[ρ_prop.<0.0] .= 0.0
+    # ρ_new = rejectSample(ρ_cur,ρ_prop,0.001)
+    ρ_new = rejectSample(ρ_cur,ρ_prop,0.02)
+    # if(i%2000==1)
+    #     plot(ρ_new)
+    # end
+    ρ_cur = ρ_new
+    ρ_all[i+1,:] = ρ_cur;
+    likelihoodP[i+1] = likelihood_H(ρ_cur)
+end
+
+plot(ρ_cur,color="blue")
+
+figure();
+plot(μ0.-r,ρA_1)
+
+μρ_IG = dropdims(mean(ρ_all,dims=1),dims=1)
+plot(μ0.-r,μρ_IG,color="blue")
+
+Γρ_IG = cov(ρ_all);
+fill_between(μ0.-r,μρ_IG-sqrt.(diag(Γρ_IG)),μρ_IG+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
+
+figure(); imshow(Γρ_IG); colorbar()
+
+figure(); 
+plot(likelihoodP)
+
