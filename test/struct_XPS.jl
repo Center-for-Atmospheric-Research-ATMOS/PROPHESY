@@ -18,7 +18,7 @@ using LinearAlgebra
 # using DSP
 # using SpecialMatrices
 # using Polynomials
-# using StatsBase
+using StatsBase
 
 # implemented scientific packages
 using utilsFun  # for the softMax functions
@@ -174,7 +174,7 @@ figure(); imshow(ΓH_pos); colorbar()
 figure(); imshow(abs.(ΓH-ΓH_pos)); colorbar()
 
 
-LH = cholesky(ΓH_pos)
+# LH = cholesky(ΓH_pos)
 
 sqrtΓH = sqrt(ΓH);
 
@@ -205,11 +205,11 @@ plot(r,μH.+real(sqrtΓH)*randn(Cdouble,Nr,20))
 Dprior = D2nd(Nr+2)[:,2:end-1];
 
 Γprior = zeros(Cdouble,Nr,Nr)
-
+cor_len = 5.0;
 for i in 1:Nr
-    Γprior[i,i] = (0.005*(1.0-ρA_1[i]+0.1))^2;
+    Γprior[i,i] = (0.005*(1.0-ρA_1[i]+0.1))^2; # 0.005^2 # 
     for j in i+1:Nr
-        Γprior[i,j] = Γprior[i,i]*exp(-(i-j)^2/(0.5*5.0^2))
+        Γprior[i,j] = Γprior[i,i]*exp(-(i-j)^2/(0.5*cor_len^2))
         Γprior[j,i] = Γprior[i,j]
     end
 end
@@ -219,7 +219,7 @@ figure(); imshow(Γprior); colorbar()
 
 # Lprior = cholesky(Γprior)
 
-Bprior = Dprior'*inv(Γprior)*Dprior;
+Bprior = 1.0e8Dprior'*inv(Γprior)*Dprior; # 1.0e-8
 Cprior = inv(Bprior);
 Dsqrt = real(sqrt(Cprior));
 
@@ -230,15 +230,15 @@ figure(); imshow(Cprior); colorbar()
 figure(); imshow(Dsqrt); colorbar()
 
 
-figure(); plot(Dprior*ρA_1); plot(Dprior*ρA_2); plot(Dprior*ρA_3); plot(Dprior*ρA_4)
+# figure(); plot(Dprior*ρA_1); plot(Dprior*ρA_2); plot(Dprior*ρA_3); plot(Dprior*ρA_4)
 
 figure(); plot(ρA_1); plot(ρA_1.+Dsqrt*randn(Cdouble,Nr,20))
 
 tmpDens = ρA_1;
 figure(); plot(tmpDens)
 for i in 1:20
-    tmpDens = tmpDens + Dsqrt*randn(Cdouble,Nr);
-    tmpDens[tmpDens.<0.0] .= 0.0
+    global tmpDens = tmpDens + Dsqrt*randn(Cdouble,Nr);
+    global tmpDens[tmpDens.<0.0] .= 0.0
     plot(tmpDens)
 end
 
@@ -250,8 +250,8 @@ end
 figure(); imshow(H_dummy)
 
 
-ΓI = (0.01^2)*diagm(ones(Cdouble,Ndata)); # iid data noise
-# ΓI = (1.1^2)*diagm(ones(Cdouble,Ndata));
+# ΓI = (0.01^2)*diagm(ones(Cdouble,Ndata)); # iid data noise
+ΓI = (1.1^2)*diagm(ones(Cdouble,Ndata));
 ΓIsqrt = sqrt(ΓI);
 detΓI = det(ΓI);
 ΓIinv = inv(ΓI);
@@ -268,11 +268,17 @@ function prior_D(x::Array{Cdouble,1})
     exp(-0.5x'Bprior*x)
 end
 
+function entropy_xq(x::Array{Cdouble,1},q::Array{Cdouble,1})
+    sum(x-q-x.*log.(x./q))
+end
+
 function rejectSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdouble)
     # if the posterior probability is larger for the proposed state ρ_prop than the current state ρ_cur, then accept the state, otherwise, reject it with probability p
     # r_cp = likelihood_H(ρ_prop)/likelihood_H(ρ_cur)
     r_cp = exp(0.5*(y_data_1-H_dummy*ρ_cur)'*ΓIinv*(y_data_1-H_dummy*ρ_cur)-0.5*(y_data_1-H_dummy*ρ_prop)'*ΓIinv*(y_data_1-H_dummy*ρ_prop))
-    r_cp = r_cp*exp(0.5ρ_cur'Bprior*ρ_cur - 0.5ρ_prop'Bprior*ρ_prop)
+    # r_cp = r_cp*exp(0.5ρ_cur'Bprior*ρ_cur - 0.5ρ_prop'Bprior*ρ_prop)
+    r_cp = r_cp*exp(0.5*((ρ_cur[1]-ρA_1[1])^2)/(0.01^2) - 0.5*((ρ_prop[1]-ρA_1[1])^2)/(0.01^2))
+    # r_cp = r_cp*exp(entropy_xq(ρ_cur,ρA_1)-entropy_xq(ρ_prop,ρA_1))
     ρ_new = ρ_cur;
     if r_cp>=1.0
         # unconditionally accept the new state
@@ -287,28 +293,47 @@ function rejectSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdou
 end
 
 
+Dcor = sqrt(Γprior);
+
 ρ_cur = ρA_1;
 figure();
 plot(ρ_cur)
 
 Ns = 5*200000;
 likelihoodP = zeros(Cdouble,Ns+1)
+EP = zeros(Cdouble,Ns+1);
+EP[1] = (y_data_1-H_dummy*ρ_cur)'*ΓIinv*(y_data_1-H_dummy*ρ_cur) + ρ_cur'Bprior*ρ_cur;
 ρ_all = zeros(Cdouble,Ns+1,Nr);
 ρ_all[1,:] = ρ_cur;
 likelihoodP[1] = likelihood_H(ρ_cur)
 
+Γprop = inv(Bprior+H_dummy'*ΓIinv*H_dummy)*H_dummy'*ΓIinv;
+
+Γprop = sqrt(Γprop*Γprop');
+
+# figure(); plot(r,ρA_1.+0.01Γprop*randn(Cdouble,Ndata,20));
+
+# figure(); plot(r,ρA_1.+100.0Γprop*randn(Cdouble,Nr,20));
+
 for i in 1:Ns
-    ρ_prop = ρ_cur + 0.0001Dsqrt*randn(Cdouble,Nr);
+    global ρ_cur
+    EP[i+1] = ρ_cur'Bprior*ρ_cur;
+    ρ_prop = ρ_cur + 0.1Dsqrt*randn(Cdouble,Nr);
+    # ρ_prop = ρ_cur + Γprop*randn(Cdouble,Ndata);
+    # ρ_prop = ρ_cur + Γprop*randn(Cdouble,Nr);
     # ρ_prop = ρ_cur + 1.1Dsqrt*randn(Cdouble,Nr);
+    # ρ_prop = ρ_cur + 0.001Dcor*randn(Cdouble,Nr);
     ρ_prop[ρ_prop.<0.0] .= 0.0
     # ρ_new = rejectSample(ρ_cur,ρ_prop,0.001)
-    ρ_new = rejectSample(ρ_cur,ρ_prop,0.02)
-    # if(i%2000==1)
-    #     plot(ρ_new)
-    # end
+    p = 0.002*(Ns-i)/(Ns-1.0) # 0.002 # 0.02 # 
+    ρ_new = rejectSample(ρ_cur,ρ_prop,p) # 0.02
+    if(i%20000==1)
+        plot(ρ_new)
+    end
     ρ_cur = ρ_new
     ρ_all[i+1,:] = ρ_cur;
-    likelihoodP[i+1] = likelihood_H(ρ_cur)
+    likelihoodP[i+1] = likelihood_H(ρ_cur) # *prior_D(ρ_cur)
+    EP[i+1] = ρ_cur'Bprior*ρ_cur - EP[i+1]; # (y_data_1-H_dummy*ρ_cur)'*ΓIinv*(y_data_1-H_dummy*ρ_cur) + 
 end
 
 plot(ρ_cur,color="blue")
@@ -320,10 +345,15 @@ plot(μ0.-r,ρA_1)
 plot(μ0.-r,μρ_IG,color="blue")
 
 Γρ_IG = cov(ρ_all);
-fill_between(μ0.-r,μρ_IG-sqrt.(diag(Γρ_IG)),μρ_IG+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
+# fill_between(μ0.-r,μρ_IG-sqrt.(diag(Γρ_IG)),μρ_IG+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
+fill_between(μ0.-r,ρA_1-sqrt.(diag(Γρ_IG)),ρA_1+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
 
 figure(); imshow(Γρ_IG); colorbar()
 
 figure(); 
 plot(likelihoodP)
+
+figure(); 
+plot(EP)
+
 
