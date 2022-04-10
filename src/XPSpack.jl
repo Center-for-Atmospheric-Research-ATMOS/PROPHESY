@@ -38,6 +38,7 @@ export XPSexp, XPSdevice, XPSsetup
 export fingerGeom, planeGeom, cylinderGeom
 # distance and geometry factors
 export d_plane_P, d_cylinder_P, d_cylinder_P_simple, d_sphere_P, plane_gain_H, finger_gain_H, cylinder_gain_H
+export cov_H_cylinder
 # acquisition parameters
 export XPSacq
 
