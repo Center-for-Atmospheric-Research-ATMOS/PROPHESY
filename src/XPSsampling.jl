@@ -18,6 +18,22 @@ function likelihood_H(I::Array{Cdouble,1},x::Array{Cdouble,1},H::Array{Cdouble,2
     (1.0/sqrt(2π*detΓI))*exp(-0.5*(I-H*x)'*ΓIinv*(I-H*x))
 end
 
+function corrCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
+    Nr = length(w);
+
+    Γprior = zeros(Cdouble,Nr,Nr);
+
+    for i in 1:Nr
+        Γprior[i,i] = w[i]^2;
+        for j in i+1:Nr
+            Γprior[i,j] = Γprior[i,i]*exp(-(i-j)^2/(0.5*cor_len^2))
+            Γprior[j,i] = Γprior[i,j]
+        end
+    end
+
+    Γprior
+end
+
 function smoothnessCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
     Nr = length(w);
 
@@ -60,7 +76,7 @@ end
     and whose covariance matrix is Γsqrt^2. The truncation comes in to play when negative values 
     appear in the generated state
 """
-function transmissionMechanism(x_curr::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},σB::Cdouble;psmooth::Cdouble=0.99)
+function transmissionMechanism(x_curr::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},σB::Array{Cdouble,1};psmooth::Cdouble=0.99)
     if (rand(Cdouble)<psmooth)
         x_prop = transmissionMechanismSmooth(x_curr,Γsqrt)
     else

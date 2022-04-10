@@ -51,7 +51,7 @@ using NewtonMethod
 include("XPSutils.jl") # common algorithms used for data processing #TODO: move to XPSinv package
 
 # MAYBE: move to another package/module
-export samplePosterior, acceptSample, transmissionMechanism, smoothnessCovariance
+export samplePosterior, acceptSample, transmissionMechanism, smoothnessCovariance, corrCovariance
 include("XPSsampling.jl")
 
 end # module
