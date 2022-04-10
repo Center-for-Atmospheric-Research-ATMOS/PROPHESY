@@ -202,12 +202,13 @@ plot(r,μH.+real(sqrtΓH)*randn(Cdouble,Nr,20))
 
 # covariance matrix for the a priori distribution
 
-Dprior = D2nd(Nr+2)[:,2:end-1];
+
 
 Γprior = zeros(Cdouble,Nr,Nr)
 cor_len = 5.0;
 for i in 1:Nr
-    Γprior[i,i] = (0.005*(1.0-ρA_1[i]+0.1))^2; # 0.005^2 # 
+    # Γprior[i,i] = (0.005*(1.0-ρA_1[i]+0.1))^2;
+    Γprior[i,i] =  0.005^2 
     for j in i+1:Nr
         Γprior[i,j] = Γprior[i,i]*exp(-(i-j)^2/(0.5*cor_len^2))
         Γprior[j,i] = Γprior[i,j]
@@ -219,141 +220,93 @@ figure(); imshow(Γprior); colorbar()
 
 # Lprior = cholesky(Γprior)
 
-Bprior = 1.0e8Dprior'*inv(Γprior)*Dprior; # 1.0e-8
+Dprior = D2nd(Nr) # D2nd(Nr+2)[:,2:end-1];
+# Bprior = 1.0e8Dprior'*inv(Γprior[2:end-1,2:end-1])*Dprior; # 1.0e-8
+Bprior = 1.0e-16Dprior'*inv(Γprior[2:end-1,2:end-1])*Dprior; # 1.0e-8
 Cprior = inv(Bprior);
 Dsqrt = real(sqrt(Cprior));
 
-figure(); imshow(Γprior); colorbar()
-figure(); imshow(inv(Γprior)); colorbar()
-figure(); imshow(Dprior'*inv(Γprior)*Dprior); colorbar()
-figure(); imshow(Cprior); colorbar()
-figure(); imshow(Dsqrt); colorbar()
-
-
-# figure(); plot(Dprior*ρA_1); plot(Dprior*ρA_2); plot(Dprior*ρA_3); plot(Dprior*ρA_4)
-
-figure(); plot(ρA_1); plot(ρA_1.+Dsqrt*randn(Cdouble,Nr,20))
-
-tmpDens = ρA_1;
-figure(); plot(tmpDens)
-for i in 1:20
-    global tmpDens = tmpDens + Dsqrt*randn(Cdouble,Nr);
-    global tmpDens[tmpDens.<0.0] .= 0.0
-    plot(tmpDens)
-end
-
-Ndata = 10
+Ndata = 5 # 25
 H_dummy = zeros(Cdouble,Ndata,Nr);
-for i in 1:10
-    H_dummy[i,:] = 5.0exp.(-collect(range(0.0,Nr,length=Nr))./(1.0*i))
+for i in 1:Ndata
+    # H_dummy[i,:] = 5.0exp.(-collect(range(0.0,Nr,length=Nr))./(0.5*i))
+    # H_dummy[i,:] = 5.0exp.(-0.5*(collect(range(0.0,Nr,length=Nr)).-0.5i.-15.0).^2 ./(5.0^2))
+    # H_dummy[i,:] = 1.0(exp.(-collect(range(0.0,Nr,length=Nr))./(0.5*(i+1)+1.0))-exp.(-collect(range(0.0,Nr,length=Nr))./(0.5*i+1.0)))
+    H_dummy[i,:] = exp.(-collect(range(0.0,Nr,length=Nr))./(0.5*i+2.0))
 end
-figure(); imshow(H_dummy)
+figure(); imshow(H_dummy); colorbar()
+
+figure(); plot(μ0.-r,H_dummy')
 
 
-# ΓI = (0.01^2)*diagm(ones(Cdouble,Ndata)); # iid data noise
-ΓI = (1.1^2)*diagm(ones(Cdouble,Ndata));
+ΓI = (2.0e-2^2)*diagm(ones(Cdouble,Ndata)); # iid data noise
+# ΓI = (1.1^2)*diagm(ones(Cdouble,Ndata));
 ΓIsqrt = sqrt(ΓI);
 detΓI = det(ΓI);
 ΓIinv = inv(ΓI);
 
 y_data_1 = H_dummy*ρA_1 + ΓIsqrt*randn(Cdouble,Ndata);
+y_data_1[y_data_1.<0.0] = -y_data_1[y_data_1.<0.0];
 figure(); plot(y_data_1)
 
+# ρ_all = zeros(Cdouble,Ns+1,Nr);
+# square root matrix of the generative covariance matrix (the covariance in the distribution used for generating new samples)
+σw = 10.e-2 # 0.001; # small compared with the amplitude of the state 
+w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
+# w = σw*(1.0.-ρA_1.+0.1); # too optimal because we known the solution (but the general sigmoid shape could be used because it's not a big a priori)
+Γsqrt = real(sqrt(corrCovariance(w;cor_len=15.0)));
+p0 = 0.02; #starting acceptance rate of uphill moves
+ρB = [ρA_1[1]; ρA_1[end]];
+σB = [0.01; 0.01];
+Ns = 1000000;
+ρ_all = samplePosterior(0.0ρA_1,Γsqrt,p0,y_data_1,ΓIinv,H_dummy,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
+# ρ_all = samplePosterior(ρA_1,Γsqrt,p0,y_data_1,ΓIinv,H_dummy,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
 
-function likelihood_H(x::Array{Cdouble,1})
-    (1.0/sqrt(2π*detΓI))*exp(-0.5*(y_data_1-H_dummy*x)'*ΓIinv*(y_data_1-H_dummy*x))
-end
+μρ_IG = dropdims(mean(ρ_all,dims=1),dims=1);
+Γρ_IG = cov(ρ_all.-μρ_IG');
 
-function prior_D(x::Array{Cdouble,1})
-    exp(-0.5x'Bprior*x)
-end
-
-function entropy_xq(x::Array{Cdouble,1},q::Array{Cdouble,1})
-    sum(x-q-x.*log.(x./q))
-end
-
-function rejectSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdouble)
-    # if the posterior probability is larger for the proposed state ρ_prop than the current state ρ_cur, then accept the state, otherwise, reject it with probability p
-    # r_cp = likelihood_H(ρ_prop)/likelihood_H(ρ_cur)
-    r_cp = exp(0.5*(y_data_1-H_dummy*ρ_cur)'*ΓIinv*(y_data_1-H_dummy*ρ_cur)-0.5*(y_data_1-H_dummy*ρ_prop)'*ΓIinv*(y_data_1-H_dummy*ρ_prop))
-    # r_cp = r_cp*exp(0.5ρ_cur'Bprior*ρ_cur - 0.5ρ_prop'Bprior*ρ_prop)
-    r_cp = r_cp*exp(0.5*((ρ_cur[1]-ρA_1[1])^2)/(0.01^2) - 0.5*((ρ_prop[1]-ρA_1[1])^2)/(0.01^2))
-    # r_cp = r_cp*exp(entropy_xq(ρ_cur,ρA_1)-entropy_xq(ρ_prop,ρA_1))
-    ρ_new = ρ_cur;
-    if r_cp>=1.0
-        # unconditionally accept the new state
-        ρ_new = ρ_prop
-    else
-        # accept the state with probability p
-        if (rand()<=p)
-            ρ_new = ρ_prop
-        end
-    end
-    ρ_new
-end
-
-
-Dcor = sqrt(Γprior);
-
-ρ_cur = ρA_1;
-figure();
-plot(ρ_cur)
-
-Ns = 5*200000;
-likelihoodP = zeros(Cdouble,Ns+1)
-EP = zeros(Cdouble,Ns+1);
-EP[1] = (y_data_1-H_dummy*ρ_cur)'*ΓIinv*(y_data_1-H_dummy*ρ_cur) + ρ_cur'Bprior*ρ_cur;
-ρ_all = zeros(Cdouble,Ns+1,Nr);
-ρ_all[1,:] = ρ_cur;
-likelihoodP[1] = likelihood_H(ρ_cur)
-
-Γprop = inv(Bprior+H_dummy'*ΓIinv*H_dummy)*H_dummy'*ΓIinv;
-
-Γprop = sqrt(Γprop*Γprop');
-
-# figure(); plot(r,ρA_1.+0.01Γprop*randn(Cdouble,Ndata,20));
-
-# figure(); plot(r,ρA_1.+100.0Γprop*randn(Cdouble,Nr,20));
-
-for i in 1:Ns
-    global ρ_cur
-    EP[i+1] = ρ_cur'Bprior*ρ_cur;
-    ρ_prop = ρ_cur + 0.1Dsqrt*randn(Cdouble,Nr);
-    # ρ_prop = ρ_cur + Γprop*randn(Cdouble,Ndata);
-    # ρ_prop = ρ_cur + Γprop*randn(Cdouble,Nr);
-    # ρ_prop = ρ_cur + 1.1Dsqrt*randn(Cdouble,Nr);
-    # ρ_prop = ρ_cur + 0.001Dcor*randn(Cdouble,Nr);
-    ρ_prop[ρ_prop.<0.0] .= 0.0
-    # ρ_new = rejectSample(ρ_cur,ρ_prop,0.001)
-    p = 0.002*(Ns-i)/(Ns-1.0) # 0.002 # 0.02 # 
-    ρ_new = rejectSample(ρ_cur,ρ_prop,p) # 0.02
-    if(i%20000==1)
-        plot(ρ_new)
-    end
-    ρ_cur = ρ_new
-    ρ_all[i+1,:] = ρ_cur;
-    likelihoodP[i+1] = likelihood_H(ρ_cur) # *prior_D(ρ_cur)
-    EP[i+1] = ρ_cur'Bprior*ρ_cur - EP[i+1]; # (y_data_1-H_dummy*ρ_cur)'*ΓIinv*(y_data_1-H_dummy*ρ_cur) + 
-end
-
-plot(ρ_cur,color="blue")
+# figure(); plot(μ0.-r,ρ_all[end-20:end,:]')
 
 figure();
 plot(μ0.-r,ρA_1)
-
-μρ_IG = dropdims(mean(ρ_all,dims=1),dims=1)
 plot(μ0.-r,μρ_IG,color="blue")
-
-Γρ_IG = cov(ρ_all);
-# fill_between(μ0.-r,μρ_IG-sqrt.(diag(Γρ_IG)),μρ_IG+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
 fill_between(μ0.-r,ρA_1-sqrt.(diag(Γρ_IG)),ρA_1+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
+# fill_between(μ0.-r,μρ_IG-sqrt.(diag(Γρ_IG)),μρ_IG+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
 
 figure(); imshow(Γρ_IG); colorbar()
 
-figure(); 
-plot(likelihoodP)
+figure(); plot(μ0.-r,sqrt.(diag(Γρ_IG)))
 
-figure(); 
-plot(EP)
+
+# TODO: observe the burn in period and don't use it for the computation of the mean and the covariance
+Elikelihood  = zeros(Cdouble,Ns+1);
+EpriorSmooth = zeros(Cdouble,Ns+1);
+EpriorVal    = zeros(Cdouble,Ns+1);
+for i in 1:Ns+1
+    Elikelihood[i]  = (y_data_1-H_dummy*ρ_all[i,:])'*ΓIinv*(y_data_1-H_dummy*ρ_all[i,:])
+    EpriorSmooth[i] = ρ_all[i,:]'Bprior*ρ_all[i,:]
+    EpriorVal[i] = ((ρ_all[i,1]  -ρB[1])^2)/(σB[1]^2) + ((ρ_all[i,end]  -ρB[2])^2)/(σB[2]^2)
+end
+
+
+figure()
+loglog(collect(1:Ns+1),Elikelihood)
+loglog(collect(1:Ns+1),EpriorSmooth)
+loglog(collect(1:Ns+1),EpriorVal)
+
+
+μρ_IG = dropdims(mean(ρ_all[500000:end,:],dims=1),dims=1);
+Γρ_IG = cov(ρ_all[500000:end,:]);
+
+
+figure();
+plot(μ0.-r,ρA_1)
+plot(μ0.-r,μρ_IG,color="blue")
+fill_between(μ0.-r,ρA_1-sqrt.(diag(Γρ_IG)),ρA_1+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
+# fill_between(μ0.-r,μρ_IG-sqrt.(diag(Γρ_IG)),μρ_IG+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
+
+figure(); imshow(Γρ_IG); colorbar()
+
+figure(); plot(μ0.-r,sqrt.(diag(Γρ_IG)))
 
 
