@@ -5,8 +5,9 @@ fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/f
 # fm = PyPlot.matplotlib.font_manager.json_load("/home/mattoz/.cache/matplotlib/fontlist-v310.json")
 # fm.findfont("serif", rebuild_if_missing=false)
 # fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
-rc("font",family="serif",serif="Computer Modern Roman")
+# rc("font",family="serif",serif="Computer Modern Roman")
 rc("text", usetex=true)
+rc("figure",max_open_warning=50)
 using myPlot
 
 # data manipulation (loading, writing, etc)
@@ -26,8 +27,6 @@ using utilsFun  # for the softMax functions
 # modeling XPS
 using XPSpack
 using XPSinv
-
-# Dict{Int64,XPSsetup}();
 
 
 ## acquisition setup
@@ -60,7 +59,7 @@ r = collect(range(μ0-k0*λe0,μ0,length=Nr))
 θ = collect(range(θ0-π/2.0,θ0+π/2.0,Nθ));
 y = collect(range(-L/2.0,L/2.0,length=Ny));
 
-wsGeom = cylinderGeom(x0,y0,z0,μ0,r,θ,y)
+wsGeom = cylinderGeom(x0,y0,z0,μ0,r,θ,y);
 
 # TODO: create a model from the given elements
 Hr,Hrθy,Arn,Aθj,Ayk = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λe0);
@@ -79,114 +78,60 @@ function acqModel(wsAcq::XPSacq,wsGeom::cylinderGeom)
 end
 
 
-# a few things about model uncertainty
-
-# """
-#     cov_H_cylinder()
-
-#     computes the covariance matrix of the geometrical structure...
-#     A = ∭ ρ(r,θ,y) e^{\frac{d_P(r,θ,y)}{λ}} r dr dθ dy ≃ Hρ
-#     where H = [H_1 H_2 … H_Nr]† and 
-#     H_n(λ) = r_n ∑_j ∑_k e^{\frac{d_P(r_n,θ_j,y_k)}{λ}} ∭ e_n(r) e_j(θ) e_k(y) dr dθ dy
-#     ΓH = cov(H) = \mathbb{E} [H×H†] - \mathbb{E}[H]×\mathbb{E} [H†]
-# """
-function cov_H_cylinder(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe0::Cdouble)
-    # the distance for each point of the space discretization
-    Nr = length(r);
-    Nθ = length(θ);
-    Ny = length(y);
-    D = zeros(Cdouble,Nr,Nθ,Ny);
-    for k in 1:Ny
-        D[:,:,k] = d_cylinder_P(r,θ,y[k],x0,y0,z0,μ0);
-    end
-    Arn = 0.5*r.*[r[2]-r[1]; r[3:end]-r[1:end-2]; r[end]-r[end-1]]; # rdr
-    Aθj = 0.5*[θ[2]-θ[1]; θ[3:end]-θ[1:end-2]; θ[end]-θ[end-1]];    # dθ
-    Ayk = 0.5*[y[2]-y[1]; y[3:end]-y[1:end-2]; y[end]-y[end-1]];    # dy
-
-    # attenuation length distribution
+if false
     Nλ = 21;
-    λ = collect(range(0.9λe0,1.1λe0,length=Nλ)); # should be given as an argument because 
+    λ = collect(range(0.9λe0,1.1λe0,length=Nλ));
     Aλ = 0.5*[λ[2]-λ[1]; λ[3:end]-λ[1:end-2]; λ[end]-λ[end-1]];
-    Pλ = (1.0/sum(Aλ))ones(Cdouble,Nλ);          # should be given as an argument
+    Pλ = (1.0/sum(Aλ))ones(Cdouble,Nλ);
 
-    # compute the integration operator for the discretized attenuation space
-    H = zeros(Cdouble,Nr,Nλ);
-    Djk = Aθj*Ayk'; # integration over θ and y 
-    for m in 1:Nr
-        for s in 1:Nλ
-            H[m,s] = Arn[m]*sum(Djk.*exp.(-D[m,:,:]/λ[s]))
-        end
-    end
+    ΓH,μH = cov_H_cylinder(r,θ,y,x0,y0,z0,μ0,λ,Pλ);
 
-    # mean operator 
-    μH = H*(Pλ.*Aλ);
+    figure()
+    imshow(ΓH)
+    colorbar()
 
-    # square
-    HHt = zeros(Cdouble,Nr,Nr);
-    for l in 1:Nr
-        HHt[l,l] = (H[l,:].^2 .*Pλ)'*Aλ
-        for m in l+1:Nr
-            HHt[l,m] = (H[l,:].*H[m,:].*Pλ)'*Aλ
-            HHt[m,l] = HHt[l,m]
-        end
-    end
+    evals = eigvals(ΓH)
 
-    # return the covariance
-    HHt - μH*μH', μH
+    figure()
+    semilogy(abs.(evals))
+
+    svals = svdvals(ΓH)
+
+    figure()
+    semilogy(svals)
+
+    figure();
+    semilogy(r,μH,color="tab:blue")
+    fill_between(r,μH-sqrt.(diag(ΓH)),μH+sqrt.(diag(ΓH)),alpha=0.5,color="tab:blue",label="uncertainty")
+
+    FΓH = eigen(ΓH);
+
+    pos_val = zeros(Cdouble,Nr); # = FΓH.values[]
+    th_val = 1.0e-5*maximum(FΓH.values);
+    pos_val[FΓH.values.>th_val] .= FΓH.values[FΓH.values.>th_val];
+    pos_val[FΓH.values.<=th_val] .= th_val;
+
+    pos_val[FΓH.values.<=0.0] .= 1.0e-20; # minimum(FΓH.values[FΓH.values.>0])*0.5*rand(Cdouble,Nr-length(FΓH.values[FΓH.values.>0]));
+
+    ΓH_pos = FΓH.vectors*diagm(pos_val)*FΓH.vectors';
+    # ΓH_pos = 0.5*(ΓH_pos+ΓH_pos');
+
+    figure(); imshow(ΓH); colorbar()
+    figure(); imshow(ΓH_pos); colorbar()
+    figure(); imshow(abs.(ΓH-ΓH_pos)); colorbar()
+
+
+    # LH = cholesky(ΓH_pos)
+
+    sqrtΓH = sqrt(ΓH);
+
+    figure();
+    plot(r,μH.+real(sqrtΓH)*randn(Cdouble,Nr,20))
+
+
+    # norm(real(sqrtΓH))
+    # norm(imag(sqrtΓH))
 end
-
-
-
-ΓH,μH = cov_H_cylinder(r,θ,y,x0,y0,z0,μ0,λe0);
-
-figure()
-imshow(ΓH)
-colorbar()
-
-evals = eigvals(ΓH)
-
-figure()
-semilogy(abs.(evals))
-
-svals = svdvals(ΓH)
-
-figure()
-semilogy(svals)
-
-figure();
-semilogy(r,μH,color="tab:blue")
-fill_between(r,μH-sqrt.(diag(ΓH)),μH+sqrt.(diag(ΓH)),alpha=0.5,color="tab:blue",label="uncertainty")
-
-FΓH = eigen(ΓH);
-
-pos_val = zeros(Cdouble,Nr); # = FΓH.values[]
-th_val = 1.0e-5*maximum(FΓH.values);
-pos_val[FΓH.values.>th_val] .= FΓH.values[FΓH.values.>th_val];
-pos_val[FΓH.values.<=th_val] .= th_val;
-
-pos_val[FΓH.values.<=0.0] .= 1.0e-20; # minimum(FΓH.values[FΓH.values.>0])*0.5*rand(Cdouble,Nr-length(FΓH.values[FΓH.values.>0]));
-
-ΓH_pos = FΓH.vectors*diagm(pos_val)*FΓH.vectors';
-# ΓH_pos = 0.5*(ΓH_pos+ΓH_pos');
-
-figure(); imshow(ΓH); colorbar()
-figure(); imshow(ΓH_pos); colorbar()
-figure(); imshow(abs.(ΓH-ΓH_pos)); colorbar()
-
-
-# LH = cholesky(ΓH_pos)
-
-sqrtΓH = sqrt(ΓH);
-
-figure();
-plot(r,μH.+real(sqrtΓH)*randn(Cdouble,Nr,20))
-
-
-# norm(real(sqrtΓH))
-# norm(imag(sqrtΓH))
-
-# ℓ = 1;
-# Rℓλ = exp.(-D[ℓ,:,:])
 
 
 ##
@@ -230,23 +175,28 @@ Ndata = 5 # 25
 H_dummy = zeros(Cdouble,Ndata,Nr);
 H_better = zeros(Cdouble,Ndata,Nr);
 Γbetter  = zeros(Cdouble,Ndata,Nr,Nr);
-λbetter  = 1.0e-3*[1.0; 1.5; 2.0; 2.5; 3.0];
+λbetter0  = 1.0e-3*[1.0; 1.5; 2.0; 2.5; 3.0];
+Nλ = 21;
+λ = collect(range(0.9λe0,1.1λe0,length=Nλ));
+λbetter = zeros(Cdouble,Ndata,Nλ);
+
+
 for i in 1:Ndata
     # H_dummy[i,:] = 5.0exp.(-collect(range(0.0,Nr,length=Nr))./(0.5*i))
     # H_dummy[i,:] = 5.0exp.(-0.5*(collect(range(0.0,Nr,length=Nr)).-0.5i.-15.0).^2 ./(5.0^2))
     # H_dummy[i,:] = 1.0(exp.(-collect(range(0.0,Nr,length=Nr))./(0.5*(i+1)+1.0))-exp.(-collect(range(0.0,Nr,length=Nr))./(0.5*i+1.0)))
     H_dummy[i,:] = exp.(-collect(range(0.0,Nr,length=Nr))./(0.5*i+2.0))
-    
-    Γbetter[i,:,:],H_better[i,:] = cov_H_cylinder(r,θ,y,x0,y0,z0,μ0,λbetter[i]);
+    λbetter[i,:] = collect(range(0.9995λbetter0[i],1.0005λbetter0[i],length=Nλ));
+    Γbetter[i,:,:],H_better[i,:] = cov_H_cylinder(r,θ,y,x0,y0,z0,μ0,λbetter[i,:],(1.0/(λbetter[i,end]-λbetter[i,1]))*ones(Cdouble,Nλ));
 end
 
 
-figure(); imshow(H_dummy); colorbar()
-
-figure(); plot(μ0.-r,H_dummy')
+figure(); plot(r.-μ0,H_dummy')
 
 H_better = reverse(H_better,dims=2);
-figure(); plot(μ0.-r,reverse(H_better,dims=2)')
+# figure(); plot(r.-μ0,reverse(H_better,dims=2)')
+figure(); plot(r.-μ0,H_better')
+
 
 Γbetter = reverse(Γbetter,dims=(2,3));
 
@@ -315,11 +265,11 @@ for i in 1:Ns+1
     EpriorSmooth[i] = ρ_all[i,:]'Bprior*ρ_all[i,:]
     EpriorVal[i] = ((ρ_all[i,1]  -ρB[1])^2)/(σB[1]^2) + ((ρ_all[i,end]  -ρB[2])^2)/(σB[2]^2)
     for g in 1:Ndata
-        EpriorModel[i] = EpriorModel[i] + ΓIinv[i,i]*(ρ_all[i,:]'*Γbetter[i,:,:]*ρ_all[i,:])
+        EpriorModel[i] = EpriorModel[i] + ΓIinv[g,g]*(ρ_all[i,:]'*Γbetter[g,:,:]*ρ_all[i,:]) # 
     end
 end
 
-Etot = Elikelihood+EpriorSmooth+EpriorVal;
+Etot = Elikelihood+EpriorSmooth+EpriorVal+EpriorModel;
 maxProbDens = maximum(exp.(-0.5*(Elikelihood+EpriorSmooth+EpriorVal)))
 
 idx_best = findall(exp.(-0.5*(Elikelihood+EpriorSmooth+EpriorVal)).>=0.1maxProbDens)
