@@ -121,15 +121,24 @@ for i in 1:Ndata
 end
 
 # generate some data (data point and covariance)
-ΓI = (2.0e-2^2)*diagm(ones(Cdouble,Ndata)); # iid data noise
-ΓIsqrt = sqrt(ΓI);
-detΓI = det(ΓI);
-ΓIinv = inv(ΓI);
+Nnoise = 10;
+σnoise = 0.1*ones(Cdouble,Nnoise);
 
-y_data_1 = H_better*ρA_1 + ΓIsqrt*randn(Cdouble,Ndata);
-y_data_1[y_data_1.<0.0] = -y_data_1[y_data_1.<0.0];
+y_data = zeros(Cdouble,Nnoise,Ndata);
+ΓI = zeros(Cdouble,Ndata,Ndata,Nnoise);
+ΓIsqrt = zeros(Cdouble,Ndata,Ndata,Nnoise);
+detΓI = zeros(Cdouble,Nnoise);
+ΓIinv = zeros(Cdouble,Ndata,Ndata,Nnoise);
+for i in 1:Nnoise
+    ΓI[:,:,i] = σnoise[i]^2*diagm(ones(Cdouble,Ndata)); # iid data noise
+    ΓIsqrt[:,:,i] = sqrt(ΓI[:,:,i]);
+    detΓI[i] = det(ΓI[:,:,i]);
+    ΓIinv[:,:,i] = inv(ΓI[:,:,i]);
+    y_data[i,:] = H_better*ρA_1 + ΓIsqrt[:,:,i]*randn(Cdouble,Ndata);
+end
+y_data[y_data.<0.0] = -y_data[y_data.<0.0];
 
-figure(); plot(y_data_1)
+figure(); plot(y_data')
 
 
 # square root matrix of the generative covariance matrix (the covariance in the distribution used for generating new samples)
@@ -142,52 +151,91 @@ p0 = 0.5 # 0.02; #starting acceptance rate of uphill moves
 σB = [0.01; 0.01];
 Ns = 1000000;
 
-ρ_all = samplePosteriorModelMargin(0.0ρA_1,Γsqrt,p0*ones(Cdouble,Ns),y_data_1,ΓIinv,H_better,Γbetter,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
+Γρ_I = zeros(Cdouble,Nr,Nr,Nnoise);
+μρ_I = zeros(Cdouble,Nr,Nnoise);
 
-μρ_IG = dropdims(mean(ρ_all,dims=1),dims=1);
-Γρ_IG = cov(ρ_all.-μρ_IG');
+PLOT_FIG = false
 
-figure();
-plot(μ0.-r,ρA_1)
-plot(μ0.-r,μρ_IG,color="blue")
-fill_between(μ0.-r,ρA_1-sqrt.(diag(Γρ_IG)),ρA_1+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
-figure(); imshow(Γρ_IG); colorbar()
-figure(); plot(μ0.-r,sqrt.(diag(Γρ_IG)))
+for k in 1:Nnoise
+
+    ρ_all = samplePosteriorModelMargin(0.0ρA_1,Γsqrt,p0*ones(Cdouble,Ns),y_data[k,:],ΓIinv[:,:,k],H_better,Γbetter,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
+
+    # compute a covariance matrix from the samples 
+    μρ_I[:,k] = dropdims(mean(ρ_all,dims=1),dims=1);
+    Γρ_I[:,:,k] = cov(ρ_all);
+
+    if PLOT_FIG
+        figure();
+        plot(μ0.-r,ρA_1)
+        plot(μ0.-r,μρ_I[:,k],color="blue")
+        fill_between(μ0.-r,ρA_1-sqrt.(diag(Γρ_I[:,:,k])),ρA_1+sqrt.(diag(Γρ_I[:,:,k])),alpha=0.5,color="tab:blue",label="uncertainty")
+        figure(); imshow(Γρ_I[:,:,k]); colorbar()
+        figure(); plot(μ0.-r,sqrt.(diag(Γρ_I[:,:,k])))
 
 
+        # TODO: observe the burn in period and don't use it for the computation of the mean and the covariance... not really showing up (which is good news)
+        Elikelihood  = zeros(Cdouble,Ns+1);
+        EpriorSmooth = zeros(Cdouble,Ns+1);
+        EpriorVal    = zeros(Cdouble,Ns+1);
+        EpriorModel  = zeros(Cdouble,Ns+1);
+        for i in 1:Ns+1
+            Elikelihood[i]  = (y_data[k,:]-H_better*ρ_all[i,:])'*ΓIinv[:,:,k]*(y_data[k,:]-H_better*ρ_all[i,:])
+            EpriorSmooth[i] = ρ_all[i,:]'Bprior*ρ_all[i,:]
+            EpriorVal[i] = ((ρ_all[i,1]  -ρB[1])^2)/(σB[1]^2) + ((ρ_all[i,end]  -ρB[2])^2)/(σB[2]^2)
+            for g in 1:Ndata
+                EpriorModel[i] = EpriorModel[i] + ΓIinv[g,g,k]*(ρ_all[i,:]'*Γbetter[g,:,:]*ρ_all[i,:])
+            end
+        end
 
+        Etot = Elikelihood+EpriorSmooth+EpriorVal+EpriorModel;
+        Etot[isnan.(Etot)] .= Inf;
+        val_min,idx_min = findmin(Etot);
 
+        figure()
+        semilogx(collect(1:Ns+1),Elikelihood,label="likelihood")
+        semilogx(collect(1:Ns+1),EpriorSmooth,label="smoothness a priori")
+        semilogx(collect(1:Ns+1),EpriorVal,label="values a priori")
+        semilogx(collect(1:Ns+1),EpriorModel,label="operator a priori")
+        semilogx(collect(1:Ns+1),Etot,label="total")
+        legend()
 
-
-
-
-# TODO: observe the burn in period and don't use it for the computation of the mean and the covariance... not really showing up (which is good news)
-Elikelihood  = zeros(Cdouble,Ns+1);
-EpriorSmooth = zeros(Cdouble,Ns+1);
-EpriorVal    = zeros(Cdouble,Ns+1);
-EpriorModel  = zeros(Cdouble,Ns+1);
-for i in 1:Ns+1
-    Elikelihood[i]  = (y_data_1-H_better*ρ_all[i,:])'*ΓIinv*(y_data_1-H_better*ρ_all[i,:])
-    EpriorSmooth[i] = ρ_all[i,:]'Bprior*ρ_all[i,:]
-    EpriorVal[i] = ((ρ_all[i,1]  -ρB[1])^2)/(σB[1]^2) + ((ρ_all[i,end]  -ρB[2])^2)/(σB[2]^2)
-    for g in 1:Ndata
-        EpriorModel[i] = EpriorModel[i] + ΓIinv[g,g]*(ρ_all[i,:]'*Γbetter[g,:,:]*ρ_all[i,:])
+        figure();
+        plot(μ0.-r,ρA_1,label="GT")
+        plot(μ0.-r,ρ_all[idx_min,:],label="min Etot")
+        plot(μ0.-r,μρ_I[:,k],color="blue",label="average")
+        fill_between(μ0.-r,ρA_1-sqrt.(diag(Γρ_I[:,:,k])),ρA_1+sqrt.(diag(Γρ_I[:,:,k])),alpha=0.5,color="tab:blue",label="uncertainty")
     end
+
 end
 
-Etot = Elikelihood+EpriorSmooth+EpriorVal+EpriorModel;
 
 figure()
-semilogx(collect(1:Ns+1),Elikelihood,label="likelihood")
-semilogx(collect(1:Ns+1),EpriorSmooth,label="smoothness a priori")
-semilogx(collect(1:Ns+1),EpriorVal,label="values a priori")
-semilogx(collect(1:Ns+1),EpriorModel,label="operator a priori")
-semilogx(collect(1:Ns+1),Etot,label="total")
-legend()
+plot(μ0.-r,ρA_1,label="GT")
+μ_mean = dropdims(mean(μρ_I,dims=2),dims=2)
+Γ_mean = dropdims(mean(Γρ_I,dims=3),dims=3)
+plot(μ0.-r,μ_mean,color="blue",label="average")
+fill_between(μ0.-r,ρA_1-sqrt.(diag(Γ_mean)),ρA_1+sqrt.(diag(Γ_mean)),alpha=0.5,color="tab:blue",label="uncertainty")
+legend(fontsize=14)
+xlabel("distance [\$\\mu\$m]",fontsize=14)
+ylabel("relative concentration [a.u.]",fontsize=14)
+
+# savefig("rho1_posterior_cov_noise_1e-3_marginalization.png")
+# savefig("rho1_posterior_cov_noise_1e-3_marginalization.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e-2_marginalization.png")
+# savefig("rho1_posterior_cov_noise_1e-2_marginalization.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e-1_marginalization.png")
+# savefig("rho1_posterior_cov_noise_1e-1_marginalization.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e0_marginalization.png")
+# savefig("rho1_posterior_cov_noise_1e0_marginalization.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e1_marginalization.png")
+# savefig("rho1_posterior_cov_noise_1e1_marginalization.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e2_marginalization.png")
+# savefig("rho1_posterior_cov_noise_1e2_marginalization.pdf")
 
 
-# acceptance rate over the uphill moves
-
-dE = Etot[2:end]-Etot[1:end-1];
-τ = (length(dE[dE.>=0.0])-length(dE[dE.==0.0]))/(length(dE[dE.>=0.0]))
-
+[norm(Γρ_I[:,:,i]) for i in 1:Nnoise]
