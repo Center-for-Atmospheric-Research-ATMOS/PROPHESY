@@ -66,39 +66,38 @@ wsGeom = cylinderGeom(x0,y0,z0,μ0,r,θ,y);
 
 # simulate some data (one point in the kinetic energy spectrum for four different concentration profiles)
 ρA_1 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0);
-# ρA_2 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(1000.0reverse(μ0.-r).-1.0).^2. /(2.0*0.25^2));
-# ρA_3 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0) .+ exp.(-(1000.0reverse(μ0.-r).-1.5).^2. /(2.0*0.5^2));
-# ρA_4 = exp.(-(1000.0reverse(μ0.-r).-2.5).^2. /(2.0*0.5^2));
+# ρA_1 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(1000.0reverse(μ0.-r).-1.0).^2. /(2.0*0.25^2));
+# ρA_1 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0) .+ exp.(-(1000.0reverse(μ0.-r).-1.5).^2. /(2.0*0.5^2));
+# ρA_1 = exp.(-(1000.0reverse(μ0.-r).-2.5).^2. /(2.0*0.5^2));
 
 # covariance matrix for the a priori distribution
 
 
 
-Γprior = zeros(Cdouble,Nr,Nr)
+Γprior = zeros(Cdouble,Nr,Nr);
 cor_len = 5.0;
 for i in 1:Nr
-    # Γprior[i,i] = (0.005*(1.0-ρA_1[i]+0.1))^2;
-    Γprior[i,i] =  0.005^2 
+    # Γprior[i,i] = (1.0-ρA_1[i]+0.1)^2;
+    Γprior[i,i] =  1.0
     for j in i+1:Nr
         Γprior[i,j] = Γprior[i,i]*exp(-(i-j)^2/(0.5*cor_len^2))
         Γprior[j,i] = Γprior[i,j]
     end
 end
 
-figure(); imshow(Γprior); colorbar()
+# figure(); imshow(Γprior); colorbar()
 
 
 Dprior = D2nd(Nr) # D2nd(Nr+2)[:,2:end-1];
-# Bprior = 1.0e8Dprior'*inv(Γprior[2:end-1,2:end-1])*Dprior; # 1.0e-8
-Bprior = 1.0e-16Dprior'*inv(Γprior[2:end-1,2:end-1])*Dprior; # 1.0e-8
-Cprior = inv(Bprior);
-Dsqrt = real(sqrt(Cprior));
+# Bprior = 1.0e-12Dprior'*inv(Γprior[2:end-1,2:end-1])*Dprior; # 1.0e-8
+Bprior = 1.0e-10Dprior'*inv(Γprior[2:end-1,2:end-1])*Dprior;
 
 
 # measurement operator (only the geometical term since the other comes as a multiplicative scalar estimated from the data)
-Ndata = 5 # 25
+Ndata = 6 # 25
 H_better = zeros(Cdouble,Ndata,Nr);
-λbetter0  = 1.0e-3*[1.0; 1.5; 2.0; 2.5; 3.0]; # these are some eal values that would nice to be able to access... but that would not be sufficient to make the uncertainty small enough
+# λbetter0  = 1.0e-3*[1.0; 1.5; 2.0; 2.5; 3.0]; # these are some eal values that would nice to be able to access... but that would not be sufficient to make the uncertainty small enough
+λbetter0 = 1.0e-3collect(range(1.3,2.5,Ndata));
 
 for i in 1:Ndata
     H_better[i,:],_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λbetter0[i]);
@@ -108,15 +107,28 @@ H_better = reverse(H_better,dims=2); #
 figure(); plot(r.-μ0,H_better')
 
 # generate some data (data point and covariance)
-ΓI = (2.0e-2^2)*diagm(ones(Cdouble,Ndata)); # iid data noise
-ΓIsqrt = sqrt(ΓI);
-detΓI = det(ΓI);
-ΓIinv = inv(ΓI);
+Nnoise = 5;
+σnoise = [0.001; 0.01; 0.1; 1.0; 10.0];
+# Nnoise = 10;
+# σnoise = 100.0*ones(Cdouble,Nnoise);
 
-y_data_1 = H_better*ρA_1 + ΓIsqrt*randn(Cdouble,Ndata);
-y_data_1[y_data_1.<0.0] = -y_data_1[y_data_1.<0.0];
+y_data = zeros(Cdouble,Nnoise,Ndata);
+ΓI = zeros(Cdouble,Ndata,Ndata,Nnoise);
+ΓIsqrt = zeros(Cdouble,Ndata,Ndata,Nnoise);
+detΓI = zeros(Cdouble,Nnoise);
+ΓIinv = zeros(Cdouble,Ndata,Ndata,Nnoise);
+for i in 1:Nnoise
+    ΓI[:,:,i] = σnoise[i]^2*diagm(ones(Cdouble,Ndata)); # iid data noise
+    ΓIsqrt[:,:,i] = sqrt(ΓI[:,:,i]);
+    detΓI[i] = det(ΓI[:,:,i]);
+    ΓIinv[:,:,i] = inv(ΓI[:,:,i]);
+    y_data[i,:] = H_better*ρA_1 + ΓIsqrt[:,:,i]*randn(Cdouble,Ndata);
+end
+y_data[y_data.<0.0] = -y_data[y_data.<0.0];
 
-figure(); plot(y_data_1)
+
+
+figure(); plot(y_data')
 
 
 
@@ -128,58 +140,94 @@ figure(); plot(y_data_1)
 ##
 
 # square root matrix of the generative covariance matrix (the covariance in the distribution used for generating new samples)
-σw = 10.e-2 # 0.001; # small compared with the amplitude of the state 
+σw = 1.0e-1 # 0.001; # small compared with the amplitude of the state 
 w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
-# w = σw*(1.0.-ρA_1.+0.1); # too optimal because we known the solution (but the general sigmoid shape could be used because it's not a big a priori)
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=15.0)));
-p0 = 0.5 # 0.02; # starting acceptance rate of uphill moves
+p0 = 0.05 # 0.02; # starting acceptance rate of uphill moves
 ρB = [ρA_1[1]; ρA_1[end]]; # known values 
-σB = [0.01; 0.01];         # how much do we trust these known values
+σB = 0.1*[0.01; 0.01];         # how much do we trust these known values
 Ns = 1000000; # number of samples... no idea a priori how many samples are needed
 
-# actually run the sampling
-ρ_all = samplePosterior(zeros(Cdouble,Nr),Γsqrt,p0*ones(Cdouble,Ns),y_data_1,ΓIinv,H_better,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
+Γρ_IG = zeros(Cdouble,Nr,Nr,Nnoise);
+μρ_IG = zeros(Cdouble,Nr,Nnoise);
+
+PLOT_FIG = false
+
+for k in 1:Nnoise
+    # actually run the sampling
+    ρ_all = samplePosterior(zeros(Cdouble,Nr),Γsqrt,p0*ones(Cdouble,Ns),y_data[k,:],ΓIinv[:,:,k],H_better,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
+
+    # compute a covariance matrix from the samples 
+    μρ_IG[:,k] = dropdims(mean(ρ_all,dims=1),dims=1);
+    Γρ_IG[:,:,k] = cov(ρ_all);
+
+    if PLOT_FIG
+        figure();
+        plot(μ0.-r,ρA_1,label="GT")
+        plot(μ0.-r,μρ_IG[:,k],color="blue",label="average")
+        fill_between(μ0.-r,ρA_1-sqrt.(diag(Γρ_IG[:,:,k])),ρA_1+sqrt.(diag(Γρ_IG[:,:,k])),alpha=0.5,color="tab:blue",label="uncertainty")
+        # figure(); imshow(Γρ_IG[:,:,k]); colorbar()
+        # figure(); plot(μ0.-r,sqrt.(diag(Γρ_IG[:,:,k])))
 
 
-# compute a covariance matrix from the samples 
-μρ_IG = dropdims(mean(ρ_all,dims=1),dims=1);
-Γρ_IG = cov(ρ_all.-μρ_IG');
+        
+        # observe the quantities used for the sampling (note that the burn in period is not too long with the communication kernel in use)
+        Elikelihood  = zeros(Cdouble,Ns+1);
+        EpriorSmooth = zeros(Cdouble,Ns+1);
+        EpriorVal    = zeros(Cdouble,Ns+1);
+        for i in 1:Ns+1
+            Elikelihood[i]  = (y_data[k,:]-H_better*ρ_all[i,:])'*ΓIinv[:,:,k]*(y_data[k,:]-H_better*ρ_all[i,:])
+            EpriorSmooth[i] = ρ_all[i,:]'Bprior*ρ_all[i,:]
+            EpriorVal[i] = ((ρ_all[i,1]  -ρB[1])^2)/(σB[1]^2) + ((ρ_all[i,end]  -ρB[2])^2)/(σB[2]^2)
+        end
+        Etot = Elikelihood+EpriorSmooth+EpriorVal;
+        Etot[isnan.(Etot)] .= Inf;
+        val_min,idx_min = findmin(Etot);
 
-figure();
-plot(μ0.-r,ρA_1)
-plot(μ0.-r,μρ_IG,color="blue")
-fill_between(μ0.-r,ρA_1-sqrt.(diag(Γρ_IG)),ρA_1+sqrt.(diag(Γρ_IG)),alpha=0.5,color="tab:blue",label="uncertainty")
-figure(); imshow(Γρ_IG); colorbar()
-figure(); plot(μ0.-r,sqrt.(diag(Γρ_IG)))
+        figure()
+        semilogx(collect(1:Ns+1),Elikelihood,label="likelihood")
+        semilogx(collect(1:Ns+1),EpriorSmooth,label="smoothness a priori")
+        semilogx(collect(1:Ns+1),EpriorVal,label="values a priori")
+        semilogx(collect(1:Ns+1),Etot,label="total")
+        legend()
 
-
-# observe the quantities used for the sampling (note that the burn in period is not too long with the communication kernel in use)
-Elikelihood  = zeros(Cdouble,Ns+1);
-EpriorSmooth = zeros(Cdouble,Ns+1);
-EpriorVal    = zeros(Cdouble,Ns+1);
-for i in 1:Ns+1
-    Elikelihood[i]  = (y_data_1-H_better*ρ_all[i,:])'*ΓIinv*(y_data_1-H_better*ρ_all[i,:])
-    EpriorSmooth[i] = ρ_all[i,:]'Bprior*ρ_all[i,:]
-    EpriorVal[i] = ((ρ_all[i,1]  -ρB[1])^2)/(σB[1]^2) + ((ρ_all[i,end]  -ρB[2])^2)/(σB[2]^2)
+        figure();
+        plot(μ0.-r,ρA_1,label="GT")
+        plot(μ0.-r,ρ_all[idx_min,:],label="min Etot")
+        plot(μ0.-r,μρ_IG[:,k],color="blue",label="average")
+        fill_between(μ0.-r,ρA_1-sqrt.(diag(Γρ_IG[:,:,k])),ρA_1+sqrt.(diag(Γρ_IG[:,:,k])),alpha=0.5,color="tab:blue",label="uncertainty")
+    end
 end
-Etot = Elikelihood+EpriorSmooth+EpriorVal;
+
+
 
 figure()
-semilogx(collect(1:Ns+1),Elikelihood,label="likelihood")
-semilogx(collect(1:Ns+1),EpriorSmooth,label="smoothness a priori")
-semilogx(collect(1:Ns+1),EpriorVal,label="values a priori")
-semilogx(collect(1:Ns+1),Etot,label="total")
-legend()
+plot(μ0.-r,ρA_1,label="GT")
+μ_mean = dropdims(mean(μρ_IG,dims=2),dims=2)
+Γ_mean = dropdims(mean(Γρ_IG,dims=3),dims=3)
+plot(μ0.-r,μ_mean,color="blue",label="average")
+fill_between(μ0.-r,ρA_1-sqrt.(diag(Γ_mean)),ρA_1+sqrt.(diag(Γ_mean)),alpha=0.5,color="tab:blue",label="uncertainty")
+legend(fontsize=14)
+xlabel("distance [\$\\mu\$m]",fontsize=14)
+ylabel("relative concentration [a.u.]",fontsize=14)
+
+# savefig("rho1_posterior_cov_noise_1e-3.png")
+# savefig("rho1_posterior_cov_noise_1e-3.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e-2.png")
+# savefig("rho1_posterior_cov_noise_1e-2.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e-1.png")
+# savefig("rho1_posterior_cov_noise_1e-1.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e0.png")
+# savefig("rho1_posterior_cov_noise_1e0.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e1.png")
+# savefig("rho1_posterior_cov_noise_1e1.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e2.png")
+# savefig("rho1_posterior_cov_noise_1e2.pdf")
 
 
-maxProbDens = maximum(exp.(-0.5*Etot))
-idx_best = findall(exp.(-0.5*Etot).>=0.1maxProbDens)
-mean(Elikelihood[100000:end])
-mean(EpriorSmooth[100000:end])
-mean(EpriorVal[100000:end])
-
-
-# acceptance rate over the uphill moves
-
-dE = Etot[2:end]-Etot[1:end-1];
-τ = (length(dE[dE.>=0.0])-length(dE[dE.==0.0]))/(length(dE[dE.>=0.0])) # should be the same as p0
+[norm(Γρ_IG[:,:,i]) for i in 1:Nnoise]
