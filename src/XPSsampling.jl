@@ -114,7 +114,7 @@ function acceptSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdou
             ρ_new = ρ_prop
         end
     end
-    ρ_new # maybe it could return the computed values
+    ρ_new,r_cp # maybe it could return the computed values
 end
 
 
@@ -136,7 +136,7 @@ function acceptSampleEntropy(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
             ρ_new = ρ_prop
         end
     end
-    ρ_new # maybe it could return the computed values
+    ρ_new,r_cp # maybe it could return the computed values
 end
 
 
@@ -165,7 +165,7 @@ function acceptSampleModelMargin(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble
             ρ_new = ρ_prop
         end
     end
-    ρ_new # maybe it could return the computed values
+    ρ_new,r_cp # maybe it could return the computed values
 end
 
 
@@ -184,7 +184,7 @@ function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0:
         
         # accept or reject the sample
         p = p0*(Ns-i)/(Ns-1.0) 
-        ρ_all[i+1,:] = acceptSample(ρ_all[i,:],ρ_all[i+1,:],p,y,ΓIinv,H,Dprior,ρB,σB)
+        ρ_all[i+1,:],_ = acceptSample(ρ_all[i,:],ρ_all[i+1,:],p,y,ΓIinv,H,Dprior,ρB,σB)
     end
     ρ_all
 end
@@ -198,7 +198,7 @@ function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0:
         ρ_all[i+1,:] = transmissionMechanism(ρ_all[i,:],Γsqrt,σB;psmooth=psmooth)
         
         # accept or reject the sample
-        ρ_all[i+1,:] = acceptSample(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,Dprior,ρB,σB)
+        ρ_all[i+1,:],_ = acceptSample(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,Dprior,ρB,σB)
     end
     ρ_all
 end
@@ -213,7 +213,7 @@ function samplePosteriorEntropy(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble
         ρ_all[i+1,ρ_all[i+1,:].<=0.0] .= 1.0e-6;
         
         # accept or reject the sample
-        ρ_all[i+1,:] = acceptSampleEntropy(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,ρ_prior,wE)
+        ρ_all[i+1,:],_ = acceptSampleEntropy(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,ρ_prior,wE)
     end
     ρ_all
 end
@@ -227,7 +227,107 @@ function samplePosteriorModelMargin(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdo
         ρ_all[i+1,:] = transmissionMechanism(ρ_all[i,:],Γsqrt,σB;psmooth=psmooth)
         
         # accept or reject the sample
-        ρ_all[i+1,:] = acceptSampleModelMargin(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,ΓH,Dprior,ρB,σB)
+        ρ_all[i+1,:],_ = acceptSampleModelMargin(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,ΓH,Dprior,ρB,σB)
     end
     ρ_all
+end
+
+
+
+##
+## why not SA
+##
+
+
+function samplePosteriorDeltaU(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},Dprior::Array{Cdouble,2},ρB::Array{Cdouble,1},σB::Array{Cdouble,1};Ns::Int64=10000,psmooth::Cdouble=0.99)
+    # all samples
+    ρ_all  = zeros(Cdouble,Ns+1,length(ρ_start))
+    deltaU = zeros(Cdouble,Ns);
+    ρ_all[1,:] = ρ_start;
+    for i in 1:Ns
+        # draw a new sample from a distribution not to far from the actual one
+        ρ_all[i+1,:] = transmissionMechanism(ρ_all[i,:],Γsqrt,σB;psmooth=psmooth)
+        
+        # accept or reject the sample
+        ρ_all[i+1,:],deltaU[i] = acceptSample(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,Dprior,ρB,σB)
+    end
+    ρ_all,deltaU
+end
+
+function samplePosteriorEntropyDeltaU(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ρ_prior::Array{Cdouble,1},wE::Cdouble;Ns::Int64=10000)
+    # all samples
+    ρ_all = zeros(Cdouble,Ns+1,length(ρ_start))
+    deltaU = zeros(Cdouble,Ns);
+    ρ_all[1,:] = ρ_start;
+    for i in 1:Ns
+        # draw a new sample from a distribution not to far from the actual one
+        ρ_all[i+1,:] = transmissionMechanismSmooth(ρ_all[i,:],Γsqrt)
+        ρ_all[i+1,ρ_all[i+1,:].<=0.0] .= 1.0e-6;
+        
+        # accept or reject the sample
+        ρ_all[i+1,:],deltaU[i] = acceptSampleEntropy(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,ρ_prior,wE)
+    end
+    ρ_all,deltaU
+end
+
+function samplePosteriorModelMarginDeltaU(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ΓH::Array{Cdouble,3},Dprior::Array{Cdouble,2},ρB::Array{Cdouble,1},σB::Array{Cdouble,1};Ns::Int64=10000,psmooth::Cdouble=0.99)
+    # all samples
+    ρ_all = zeros(Cdouble,Ns+1,length(ρ_start))
+    deltaU = zeros(Cdouble,Ns);
+    ρ_all[1,:] = ρ_start;
+    for i in 1:Ns
+        # draw a new sample from a distribution not to far from the actual one
+        ρ_all[i+1,:] = transmissionMechanism(ρ_all[i,:],Γsqrt,σB;psmooth=psmooth)
+        
+        # accept or reject the sample
+        ρ_all[i+1,:],deltaU[i] = acceptSampleModelMargin(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,ΓH,Dprior,ρB,σB)
+    end
+    ρ_all,deltaU
+end
+
+
+function dichotomyTemperature(τ::Cdouble,deltaU::Array{Cdouble,1},Niter::Int64=100)
+    Tmin = -minimum(deltaU)/log(τ);    # minimum value for the set
+    Tmax = -mean(deltaU)/log(τ);       # maximum value for the set: due to concavity of exp
+    f_exp = (x->mean(exp.(-deltaU./x))-τ);
+    fval = zeros(Cdouble,Niter+1);
+    for i in 1:Niter
+        Tmean = 0.5*(Tmin+Tmax);
+        fval[i] = f_exp(Tmean);
+        if (fval[i]<=0)
+            Tmin = Tmean;
+        else
+            Tmax = Tmean;
+        end
+    end
+    fval[end] = f_exp(0.5*(Tmin+Tmax))
+    0.5*(Tmin+Tmax),fval
+end
+
+
+function posteriorTemperature(τ::Cdouble,ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},Dprior::Array{Cdouble,2},ρB::Array{Cdouble,1},σB::Array{Cdouble,1};Ns::Int64=10000,psmooth::Cdouble=0.99)
+    # generate samples 
+    ρ_all,deltaU = samplePosteriorDeltaU(ρ_start,Γsqrt,p0,y,ΓIinv,H,Dprior,ρB,σB;Ns=Ns,psmooth=psmooth)
+    # keep only positive variations of energy
+    deltaU = deltaU[deltaU>0.0];
+    # compute temperature (dichotomy)
+    dichotomyTemperature(τ,deltaU,100)
+end
+
+function posteriorTemperatureEntropy(τ::Cdouble,ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ρ_prior::Array{Cdouble,1},wE::Cdouble;Ns::Int64=10000)
+    # generate samples 
+    ρ_all,deltaU = samplePosteriorEntropyDeltaU(ρ_start,Γsqrt,p0,y,ΓIinv,H,ρ_prior,wE;Ns=Ns)
+    # keep only positive variations of energy
+    deltaU = deltaU[deltaU>0.0];
+    # compute temperature (dichotomy)
+    dichotomyTemperature(τ,deltaU,100)
+end
+
+function posteriorTemperatureModelMargin(τ::Cdouble,ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ΓH::Array{Cdouble,3},Dprior::Array{Cdouble,2},ρB::Array{Cdouble,1},σB::Array{Cdouble,1};Ns::Int64=10000,psmooth::Cdouble=0.99)
+    # generate samples 
+    ρ_all,deltaU = samplePosteriorModelMarginDeltaU(ρ_start,Γsqrt,p0,y,ΓIinv,H,ΓH,Dprior,ρB,σB;Ns=Ns,psmooth=psmooth)
+    # keep only positive variations of energy
+    deltaU = deltaU[deltaU>0.0];
+    # compute temperature (dichotomy)
+    dichotomyTemperature(τ,deltaU,100)
 end
