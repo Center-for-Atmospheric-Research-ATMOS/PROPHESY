@@ -118,15 +118,13 @@ function acceptSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdou
 end
 
 
-function acceptSampleEntropy(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdouble,y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ρ_prior::Array{Cdouble,1})
+function acceptSampleEntropy(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdouble,y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ρ_prior::Array{Cdouble,1},wE::Cdouble)
     # if the posterior probability is larger for the proposed state ρ_prop than the current state ρ_cur, then accept the state, otherwise, reject it with probability p
 
     # likelihood
     r_cp = 0.5*(y-H*ρ_cur)'*ΓIinv*(y-H*ρ_cur)-0.5*(y-H*ρ_prop)'*ΓIinv*(y-H*ρ_prop);
-    # smoothness
-    # Ecur  = -sum(ρ_cur-ρ_prior)  + sum(ρ_cur.*log.(ρ_cur./ρ_prior))
-    # Eprop = -sum(ρ_prop-ρ_prior) + sum(ρ_prop.*log.(ρ_prop./ρ_prior))
-    r_cp = r_cp + sum(ρ_cur-ρ_prop) + sum(ρ_prop.*log.(ρ_prop./ρ_prior) - ρ_cur.*log.(ρ_cur./ρ_prior))
+    # entropy 
+    r_cp = r_cp + wE*(sum(ρ_cur-ρ_prop) + sum(ρ_prop.*log.(ρ_prop./ρ_prior) - ρ_cur.*log.(ρ_cur./ρ_prior)))
     
     ρ_new = ρ_cur;
     if (r_cp>=0.0)
@@ -205,7 +203,7 @@ function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0:
     ρ_all
 end
 
-function samplePosteriorEntropy(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ρ_prior::Array{Cdouble,1};Ns::Int64=10000)
+function samplePosteriorEntropy(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ρ_prior::Array{Cdouble,1},wE::Cdouble;Ns::Int64=10000)
     # all samples
     ρ_all = zeros(Cdouble,Ns+1,length(ρ_start))
     ρ_all[1,:] = ρ_start;
@@ -215,7 +213,7 @@ function samplePosteriorEntropy(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble
         ρ_all[i+1,ρ_all[i+1,:].<=0.0] .= 1.0e-6;
         
         # accept or reject the sample
-        ρ_all[i+1,:] = acceptSampleEntropy(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,ρ_prior)
+        ρ_all[i+1,:] = acceptSampleEntropy(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,ΓIinv,H,ρ_prior,wE)
     end
     ρ_all
 end

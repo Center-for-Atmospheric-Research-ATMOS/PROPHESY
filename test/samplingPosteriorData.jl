@@ -121,8 +121,8 @@ for i in 1:Ndata
 end
 
 # generate some data (data point and covariance)
-Nnoise = 10;
-σnoise = 0.1*ones(Cdouble,Nnoise);
+Nnoise = 6;
+σnoise = 1.0*ones(Cdouble,Nnoise);
 
 y_data = zeros(Cdouble,Nnoise,Ndata);
 ΓI = zeros(Cdouble,Ndata,Ndata,Nnoise);
