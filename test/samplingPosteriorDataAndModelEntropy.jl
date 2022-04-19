@@ -65,9 +65,9 @@ wsGeom = cylinderGeom(x0,y0,z0,μ0,r,θ,y);
 
 
 # simulate some data (one point in the kinetic energy spectrum for four different concentration profiles)
-# ρA_1 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0);
+ρA_1 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0);
 # ρA_1 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0) .+ 2.0exp.(-(1000.0reverse(μ0.-r).-1.0).^2. /(2.0*0.25^2));
-ρA_1 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0) .+ exp.(-(1000.0reverse(μ0.-r).-1.5).^2. /(2.0*0.5^2));
+# ρA_1 = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0) .+ exp.(-(1000.0reverse(μ0.-r).-1.5).^2. /(2.0*0.5^2));
 # ρA_1 = exp.(-(1000.0reverse(μ0.-r).-2.5).^2. /(2.0*0.5^2));
 
 
@@ -88,7 +88,7 @@ figure(); plot(r.-μ0,H_better')
 # Nnoise = 5;
 # σnoise = [0.001; 0.01; 0.1; 1.0; 10.0];
 Nnoise = 10;
-σnoise = 0.01*ones(Cdouble,Nnoise);
+σnoise = 1.0*ones(Cdouble,Nnoise);
 y_data = zeros(Cdouble,Nnoise,Ndata);
 ΓI = zeros(Cdouble,Ndata,Ndata,Nnoise);
 ΓIsqrt = zeros(Cdouble,Ndata,Ndata,Nnoise);
@@ -130,7 +130,7 @@ p0 = 0.05 # 0.02; # starting acceptance rate of uphill moves
 # σB = [0.01; 0.01];         # how much do we trust these known values
 # for noise levels: σnoise = [0.001; 0.01; 0.1; 1.0; 10.0], use the following entropy weights
 # wE = [1.0e8; 1.0e6; 1.0e4; 1.0e2; 1.0e0]
-wE = 1.0e16*ones(Cdouble,Nnoise);
+wE = 1.0e2*ones(Cdouble,Nnoise);
 ρE = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0); # purposefully choose a wrong a priori profile
 Ns = 1000000; # number of samples... no idea a priori how many samples are needed
 
@@ -195,98 +195,108 @@ legend(fontsize=14)
 xlabel("distance [\$\\mu\$m]",fontsize=14)
 ylabel("relative concentration [a.u.]",fontsize=14)
 
+# savefig("rho1_posterior_cov_noise_1e-2_entropy.png")
+# savefig("rho1_posterior_cov_noise_1e-2_entropy.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e-1_entropy.png")
+# savefig("rho1_posterior_cov_noise_1e-1_entropy.pdf")
+
+# savefig("rho1_posterior_cov_noise_1e0_entropy.png")
+# savefig("rho1_posterior_cov_noise_1e0_entropy.pdf")
+
 
 [norm(Γρ_IG[:,:,i]) for i in 1:Nnoise]
 
 
 
-Eval  = zeros(Cdouble,Ns);
-Eval2 = zeros(Cdouble,Ns);
-for i in 1:Ns
-    new_state = ρA_1 + Γsqrt*randn(Cdouble,Nr);
-    new_state[new_state.<=0.0] .= 1.0e-6
-    Eval2[i]   = (y_data[1,:]-H_better*new_state)'*ΓIinv[:,:,1]*(y_data[1,:]-H_better*new_state)
-    Eval[i] = sum(new_state-ρE) - sum(new_state.*log.(new_state./ρE))
-end
-figure(); hist(Eval,100)
-figure(); hist(Eval2,100)
+# Eval  = zeros(Cdouble,Ns);
+# Eval2 = zeros(Cdouble,Ns);
+# for i in 1:Ns
+#     new_state = ρA_1 + Γsqrt*randn(Cdouble,Nr);
+#     new_state[new_state.<=0.0] .= 1.0e-6
+#     Eval2[i]   = (y_data[1,:]-H_better*new_state)'*ΓIinv[:,:,1]*(y_data[1,:]-H_better*new_state)
+#     Eval[i] = sum(new_state-ρE) - sum(new_state.*log.(new_state./ρE))
+# end
+# figure(); hist(Eval,100)
+# figure(); hist(Eval2,100)
 
 # figure(); plot(ρA_1 + Γsqrt*randn(Cdouble,Nr))
 
 # Eval[isnan.(Eval)] .= Inf;
 
+# if false
+#     # explaining the difference between entropy regularization and smoothness regularization:
+#     x1 = collect(range(0.1,5.0,length=50));
+#     x2 = collect(range(0.1,5.0,length=50));
+#     x1E = 1.5; x2E = 0.5;
+#     Γxx = inv(2.0*[1.0 0.25; 0.25 0.1]);
 
-# explaining the difference between entropy regularization and smoothness regularization:
-x1 = collect(range(0.1,5.0,length=50));
-x2 = collect(range(0.1,5.0,length=50));
-x1E = 1.5; x2E = 0.5;
-Γxx = inv(2.0*[1.0 0.25; 0.25 0.1]);
+#     y1 = 3.5; y2 = 3.5;
+#     σ1 = 1.0; σ2 = 1.0;
+#     Plikelihood = exp.(-0.5*((y1.-x1)./σ1).^2)*exp.(-0.5*((y2.-x2)./σ2).^2)';
 
-y1 = 3.5; y2 = 3.5;
-σ1 = 1.0; σ2 = 1.0;
-Plikelihood = exp.(-0.5*((y1.-x1)./σ1).^2)*exp.(-0.5*((y2.-x2)./σ2).^2)';
+#     figure()
+#     imshow(Plikelihood)
+#     colorbar()
 
-figure()
-imshow(Plikelihood)
-colorbar()
+#     Psmooth  = zeros(Cdouble,50,50);
+#     Pentropy = zeros(Cdouble,50,50);
+#     for i1 in 1:50
+#         for i2 in 1:50
+#             xx = [x1[i1]; x2[i2]];
+#             Psmooth[i1,i2] = exp(-0.5xx'Γxx*xx)
+#             Pentropy[i1,i2] = exp(2.0e0*(x1[i1] - x1E - x1[i1]*log(x1[i1]/x1E) + x2[i2] - x2E - x2[i2]*log(x2[i2]/x2E)))
+#         end
+#     end
 
-Psmooth  = zeros(Cdouble,50,50);
-Pentropy = zeros(Cdouble,50,50);
-for i1 in 1:50
-    for i2 in 1:50
-        xx = [x1[i1]; x2[i2]];
-        Psmooth[i1,i2] = exp(-0.5xx'Γxx*xx)
-        Pentropy[i1,i2] = exp(2.0e0*(x1[i1] - x1E - x1[i1]*log(x1[i1]/x1E) + x2[i2] - x2E - x2[i2]*log(x2[i2]/x2E)))
-    end
-end
+#     figure(figsize=[10,5])
+#     ax1 = subplot(121)
+#     contour(x1,x2,Plikelihood,label="likelihood")
+#     contour(x1,x2,Psmooth,label="smoothness a priori")
+#     contour(x1,x2,Plikelihood.*Psmooth,label="posterior")
+#     # title("Smoothness")
+#     xlabel("x1")
+#     ylabel("x2")
 
-figure(figsize=[10,5])
-ax1 = subplot(121)
-contour(x1,x2,Plikelihood,label="likelihood")
-contour(x1,x2,Psmooth,label="smoothness a priori")
-contour(x1,x2,Plikelihood.*Psmooth,label="posterior")
-# title("Smoothness")
-xlabel("x1")
-ylabel("x2")
+#     ax2 = subplot(122)
+#     contour(x1,x2,Plikelihood)
+#     contour(x1,x2,Pentropy)
+#     contour(x1,x2,Plikelihood.*Pentropy)
+#     # title("Entropy")
+#     xlabel("x1")
+#     ylabel("x2")
 
-ax2 = subplot(122)
-contour(x1,x2,Plikelihood)
-contour(x1,x2,Pentropy)
-contour(x1,x2,Plikelihood.*Pentropy)
-# title("Entropy")
-xlabel("x1")
-ylabel("x2")
-
-tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
-
-
-# ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-1.27, 0.99), textcoords="axes fraction", color="black",fontsize=14)
-ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.08, 0.99), textcoords="axes fraction", color="black",fontsize=14)
-ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.08, 0.99), textcoords="axes fraction", color="black",fontsize=14)
-
-ax1.annotate("Likelihood", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.9), textcoords="axes fraction", color="black",fontsize=14)
-ax1.annotate("a priori", xy=(3, 1),  xycoords="data", xytext=(0.01, 0.05), textcoords="axes fraction", color="black",fontsize=14)
-ax1.annotate("posterior", xy=(3, 1),  xycoords="data", xytext=(0.08, 0.55), textcoords="axes fraction", color="black",fontsize=14)
-ax1.annotate("Smoothness", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.1), textcoords="axes fraction", color="black",fontsize=14)
-
-ax2.annotate("Likelihood", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.9), textcoords="axes fraction", color="black",fontsize=14)
-ax2.annotate("a priori", xy=(3, 1),  xycoords="data", xytext=(0.03, 0.17), textcoords="axes fraction", color="black",fontsize=14)
-ax2.annotate("posterior", xy=(3, 1),  xycoords="data", xytext=(0.25, 0.45), textcoords="axes fraction", color="black",fontsize=14)
-ax2.annotate("Entropy", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.1), textcoords="axes fraction", color="black",fontsize=14)
-
-# savefig("smoothness_vs_entropy_formulation.png")
-# savefig("smoothness_vs_entropy_formulation.pdf")
+#     tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
 
+#     # ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-1.27, 0.99), textcoords="axes fraction", color="black",fontsize=14)
+#     ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.08, 0.99), textcoords="axes fraction", color="black",fontsize=14)
+#     ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.08, 0.99), textcoords="axes fraction", color="black",fontsize=14)
+
+#     ax1.annotate("Likelihood", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.9), textcoords="axes fraction", color="black",fontsize=14)
+#     ax1.annotate("a priori", xy=(3, 1),  xycoords="data", xytext=(0.01, 0.05), textcoords="axes fraction", color="black",fontsize=14)
+#     ax1.annotate("posterior", xy=(3, 1),  xycoords="data", xytext=(0.08, 0.55), textcoords="axes fraction", color="black",fontsize=14)
+#     ax1.annotate("Smoothness", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.1), textcoords="axes fraction", color="black",fontsize=14)
+
+#     ax2.annotate("Likelihood", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.9), textcoords="axes fraction", color="black",fontsize=14)
+#     ax2.annotate("a priori", xy=(3, 1),  xycoords="data", xytext=(0.03, 0.17), textcoords="axes fraction", color="black",fontsize=14)
+#     ax2.annotate("posterior", xy=(3, 1),  xycoords="data", xytext=(0.25, 0.45), textcoords="axes fraction", color="black",fontsize=14)
+#     ax2.annotate("Entropy", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.1), textcoords="axes fraction", color="black",fontsize=14)
+
+#     # savefig("smoothness_vs_entropy_formulation.png")
+#     # savefig("smoothness_vs_entropy_formulation.pdf")
 
 
-figure()
-imshow(Psmooth.*Plikelihood)
-colorbar()
 
 
-figure()
-imshow(Pentropy.*Plikelihood)
-colorbar()
+#     figure()
+#     imshow(Psmooth.*Plikelihood)
+#     colorbar()
 
 
+#     figure()
+#     imshow(Pentropy.*Plikelihood)
+#     colorbar()
+
+
+# end
