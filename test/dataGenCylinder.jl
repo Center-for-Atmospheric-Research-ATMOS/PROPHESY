@@ -42,27 +42,32 @@ wsGeom = cylinderGeom(x0,y0,z0,μ0,r,θ,y);
 # measurement operator (only the geometical term since the other comes as a multiplicative scalar estimated from the data)
 Ndata = 6 # 25
 H_better = zeros(Cdouble,Ndata,Nr);
+Nr_lowres = length(r[1:4:end]);
+H_lowres = zeros(Cdouble,Ndata,Nr_lowres);
 # λbetter0  = 1.0e-3*[1.0; 1.5; 2.0; 2.5; 3.0]; # these are some eal values that would nice to be able to access... but that would not be sufficient to make the uncertainty small enough
 λbetter0 = 1.0e-3collect(range(1.3,2.5,Ndata));
 
 for i in 1:Ndata
     H_better[i,:],_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λbetter0[i]);
+    H_lowres[i,:],_,_,_,_ = cylinder_gain_H(r[1:4:end],θ,y,x0,y0,z0,μ0,0.99λbetter0[i]);
 end
 
-H_better = reverse(H_better,dims=2); #
+H_better = reverse(H_better,dims=2);
+H_lowres = reverse(H_lowres,dims=2);
 
 
 # deeper than some distance, the signal is not likely to be disantangled
 d0 = 15.0e-3 # NOTE: this value should depend on the penetration depth
 N0 = findfirst(r.-μ0.>=-d0) 
+N0_lowres = findfirst(r[1:4:end].-μ0.>=-d0) 
 figure(); plot(r.-μ0,H_better'); plot(r.-μ0,ρA_1)
 # plot(r[end-(29+50+70):end].-μ0,ρA_1[end-(29+50+70):end])
 plot(r[N0+1:end].-μ0,ρA_1[N0+1:end])
 
 
 # generate some data (data point and covariance)
-Nnoise = 10;
-σnoise = 0.1*ones(Cdouble,Nnoise);
+Nnoise = 20 #0;
+σnoise = 0.02*ones(Cdouble,Nnoise);
 
 y_data = zeros(Cdouble,Nnoise,Ndata);
 ΓI = zeros(Cdouble,Ndata,Ndata,Nnoise);
