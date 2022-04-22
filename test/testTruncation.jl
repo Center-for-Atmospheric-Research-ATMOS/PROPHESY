@@ -29,7 +29,7 @@ using XPSpack
 using XPSinv
 
 
-# create some data with a fairly fine discretization
+# create some data with a fairly fine discretization and another operator with a different resolution
 include("dataGenCylinder.jl")
 
 
@@ -46,71 +46,35 @@ y_tilde = y_data.-(Δy+δy)';
 H_tilde = H_better[:,2:N0]
 
 
-
-N = size(H_tilde,2);
-N = 51;
-N_lowres = 13;
+N=N0-1;
+N_lowres = N0_lowres - 1
 
 D_2nd = D2nd(N);
 D_2nd_lowres = D2nd(N_lowres);
-
-# A = [H_tilde; Matrix{Cdouble}(I,N,N); 10.0D_2nd];
-# A_lowres = [H_tilde; Matrix{Cdouble}(I,N,N); 10.0D_2nd];
-# w = (1.0/σnoise[1])*ones(Cdouble,Ndata);
-# W_stop = ones(Cdouble,N);
-# τ0 = 1.0e1 # 4
-# x00 = 0.5ones(Cdouble,N); # 0.0*ρA_1[idx_res]
-# # s0 = A*x00;
-# N_max_iter = 2000#0 # 00;
-# r_n_tol=0.1*1.0
-# r_y_tol=0.005;
 
 
 ##
 ## other truncation
 ##
 
-if false
-    H0 = H_better[:,1];
-    H_tilde = H_better[:,2:N0];
-    Hb = H_better[:,N0+1:end];
-    Δy = Hb*ρA_1[N0+1:end];
-    δy = H0*ρA_1[1];
-    # dropdims(sum(H_better[:,N0+1:end],dims=2),dims=2)
-else
-    H0 = H_lowres[:,1];
-    H_tilde = H_lowres[:,2:N0_lowres];
-    Hb = H_lowres[:,N0_lowres+1:end];
-    Δy = dropdims(sum(Hb,dims=2),dims=2) # Hb*ρA_1[N0+1:end];
-    δy = H0*ρA_1[1];
-end
 
+H0 = H_lowres[:,1];
+H_tilde = H_lowres[:,2:N0_lowres];
+Hb = H_lowres[:,N0_lowres+1:end];
+Δy = dropdims(sum(Hb,dims=2),dims=2)*ρA_1[end] # Hb*ρA_1[N0+1:end];
+δy = H0*ρA_1[1];
 
 y_tilde = y_data.-(Δy+δy)';
 
+DN = D2nd(N_lowres+3); #+3
+D0 = DN[:,1];
+D_tilde = DN[:,2:N_lowres+1];
+Db = DN[:,N_lowres+2:N_lowres+3];
 
-if false
-    DN = D2nd(N+3);
-    D0 = DN[:,1];
-    D_tilde = DN[:,2:N+1];
-    Db = DN[:,N+2:N+3];
-
-    Δyd = -Db*ρA_1[N+2:N+3]
-    δyd = -D0*ρA_1[1];
-else
-    DN = D2nd(N_lowres+3); #+3
-    D0 = DN[:,1];
-    D_tilde = DN[:,2:N_lowres+1];
-    Db = DN[:,N_lowres+2:N_lowres+3];
-
-    Δyd = -dropdims(sum(Db,dims=2),dims=2) # Db*ρA_1[N+2:N+3]
-    δyd = -D0*ρA_1[1];
-end
-
+Δyd = -dropdims(sum(Db,dims=2),dims=2)*ρA_1[end] # Db*ρA_1[N+2:N+3]
+δyd = -D0*ρA_1[1];
 
 yd = Δyd+δyd;
-
-
 
 Htrunc = [H_tilde; D_tilde];
 
@@ -119,7 +83,7 @@ Htrunc = [H_tilde; D_tilde];
 Γprior = zeros(Cdouble,Nr,Nr);
 Γprior_lowres = zeros(Cdouble,Nr_lowres,Nr_lowres);
 cor_len = 5.0;
-cor_len_lowres = 5.0/4.0;
+cor_len_lowres = cor_len/(Nr/Nr_lowres);
 for i in 1:Nr
     # Γprior[i,i] = (1.0-ρA_1[i]+0.1)^2;
     Γprior[i,i] =  1.0
@@ -138,33 +102,25 @@ for i in 1:Nr_lowres
 end
 # Γytilde = ΓI[:,:,1] + 1.0e-6*(Γprior[1,1]*H0*H0' + Hb*Γprior[N+2:end,N+2:end]*Hb');
 Γd = 0.0001*Γprior[2:N+2,2:N+2]; # inv(D_tilde'*inv(Γprior[2:N+1,2:N+1])*D_tilde)
-Γd_lowres = 0.0001*Γprior_lowres[2:N_lowres+2,2:N_lowres+2];
+Γd_lowres = 0.0001*((Nr/Nr_lowres)^2)*Γprior_lowres[2:N_lowres+2,2:N_lowres+2];
 
 
 # 
-if false
-    W_stop = ones(Cdouble,N);
-else 
-    W_stop_lowres = ones(Cdouble,N_lowres);
-end
+# W_stop = ones(Cdouble,N);
+W_stop_lowres = ones(Cdouble,N_lowres);
 τ0 = 1.0e1
-if false
-    x00 = 0.5ones(Cdouble,N);
-else
-    x00 = 0.5ones(Cdouble,N_lowres);
-end
+# x00 = 0.5ones(Cdouble,N);
+x00 = 0.5ones(Cdouble,N_lowres);
 N_max_iter = 200000 # 0;
 r_n_tol=0.0001;
 r_y_tol=0.005;
 
 # for each noise sample
-if false
-    ρ_est_block    = zeros(Cdouble,Nnoise,Nr);
-    ρ_est_cp_block = zeros(Cdouble,Nnoise,Nr);
-else
-    ρ_est_block    = zeros(Cdouble,Nnoise,Nr_lowres);
-    ρ_est_cp_block = zeros(Cdouble,Nnoise,Nr_lowres);
-end
+# ρ_est_block    = zeros(Cdouble,Nnoise,Nr);
+# ρ_est_cp_block = zeros(Cdouble,Nnoise,Nr);
+ρ_est_block    = zeros(Cdouble,Nnoise,Nr_lowres);
+ρ_est_cp_block = zeros(Cdouble,Nnoise,Nr_lowres);
+
 
 
 for i in 1:Nnoise
@@ -173,7 +129,7 @@ for i in 1:Nnoise
     local ρ_trunc = inv(Htrunc'*Htrunc)*Htrunc'*Y;
 
     # ρ_est_block[i,:] = [ρA_1[1]; ρ_trunc; ρA_1[N_lowres+2:end]]
-    ρ_est_block[i,:] = [ρA_1[1]; ρ_trunc; ones(Cdouble,Nr_lowres-N0_lowres)]
+    ρ_est_block[i,:] = [ρA_1[1]; ρ_trunc; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
 
     # local w = [(1.0/σnoise[i])*ones(Cdouble,Ndata); (1.0/0.1)*ones(Cdouble,N+1)];
     
@@ -182,8 +138,7 @@ for i in 1:Nnoise
     local ρ_est,sn,taun,X_ALL,S_ALL,T_ALL,N_last = alg2_cp_quad(0.5ones(Cdouble,N_lowres),y_tilde[i,:],yd,Htrunc,ΓI[:,:,i],Γd_lowres,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
 
     # ρ_est_cp_block[i,:] = [ρA_1[1]; ρ_est; ρA_1[N_lowres+2:end]]
-    ρ_est_cp_block[i,:] = [ρA_1[1]; ρ_est; ones(Cdouble,Nr_lowres-N0_lowres)]
-    
+    ρ_est_cp_block[i,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
 end
 
 
@@ -191,17 +146,43 @@ end
 Γρ = cov(ρ_est_cp_block);
 
 figure()
-plot(ρ_est_block')
-plot(ρA_1)
+plot(μ0.-r_lowres,ρ_est_block')
+plot(μ0.-r,ρA_1)
 
 figure()
 # plot(ρ_est_block')
-plot(ρ_est_cp_block')
-plot(ρA_1)
-
-if false
-figure()
-plot(μ0.-r,μρ)
-fill_between(μ0.-r,μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color="tab:blue",label="uncertainty")
+plot(μ0.-r_lowres,ρ_est_cp_block')
 plot(μ0.-r,ρA_1)
-end
+
+
+figure()
+plot(1000.0(r_lowres.-μ0),reverse(μρ),color="tab:blue",label="mean value")
+fill_between(1000.0(r_lowres.-μ0),reverse(μρ-sqrt.(diag(Γρ))),reverse(μρ+sqrt.(diag(Γρ))),alpha=0.5,color="tab:blue",label="uncertainty")
+plot(1000.0(r.-μ0),reverse(ρA_1),color="tab:green",label="GT")
+legend(fontsize=14)
+xlabel("depth [nm]",fontsize=14)
+xticks(fontsize=14)
+ylabel("concentration [a.u.]",fontsize=14)
+yticks(fontsize=14)
+
+# savefig("truncated_model_hard_values_50_datapoints.png")
+# savefig("truncated_model_hard_values_50_datapoints.pdf")
+
+
+# savefig("truncated_model_hard_values_50_datapoints_noise_3e-2.png")
+# savefig("truncated_model_hard_values_50_datapoints_noise_3e-2.pdf")
+
+# savefig("truncated_model_hard_values_20_datapoints.png")
+# savefig("truncated_model_hard_values_20_datapoints.pdf")
+
+# savefig("truncated_model_hard_values_10_datapoints.png")
+# savefig("truncated_model_hard_values_10_datapoints.pdf")
+
+# savefig("truncated_model_hard_values_10_datapoints_noise_1e-2.png")
+# savefig("truncated_model_hard_values_10_datapoints_noise_1e-2.pdf")
+
+# savefig("truncated_model_hard_values_10_datapoints_noise_1e-1.png")
+# savefig("truncated_model_hard_values_10_datapoints_noise_1e-1.pdf")
+
+# savefig("truncated_model_hard_values_5_datapoints.png")
+# savefig("truncated_model_hard_values_5_datapoints.pdf")
