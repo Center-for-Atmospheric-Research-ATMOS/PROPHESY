@@ -42,12 +42,12 @@ wsGeom = cylinderGeom(x0,y0,z0,μ0,r,θ,y);
 
 
 # measurement operator (only the geometical term since the other comes as a multiplicative scalar estimated from the data)
-Ndata = 10 # 5 # 10 # 20 # 50 # 6 # 25
+Ndata = 5 # 5 # 10 # 20 # 50 # 6 # 25
 H_better = zeros(Cdouble,Ndata,Nr);
 H_lowres = zeros(Cdouble,Ndata,Nr_lowres);
 # λbetter0  = 1.0e-3*[1.0; 1.5; 2.0; 2.5; 3.0]; # these are some eal values that would nice to be able to access... but that would not be sufficient to make the uncertainty small enough
 λbetter0 = 1.0e-3collect(range(1.3,2.5,Ndata));
-λbetter0 = 1.0e-3collect(range(0.5,5.0,Ndata));
+# λbetter0 = 1.0e-3collect(range(0.5,5.0,Ndata));
 Nλ = 21;
 ΓH = Array{Cdouble}(undef,Nr_lowres,Nr_lowres,Ndata);
 μH = Array{Cdouble}(undef,Nr_lowres,Ndata);
@@ -57,7 +57,7 @@ Nλ = 21;
 
 for i in 1:Ndata
     H_better[i,:],_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λbetter0[i]);
-    H_lowres[i,:],_,_,_,_ = cylinder_gain_H(r_lowres,θ,y,x0,y0,z0,μ0,0.99λbetter0[i]); # 0.999999999
+    H_lowres[i,:],_,_,_,_ = cylinder_gain_H(r_lowres,θ,y,x0,y0,z0,μ0,0.9λbetter0[i]); # 0.999999999
     # local λrange = collect(range(0.95λbetter0[i],1.05λbetter0[i],length=Nλ))
     # local λrange = collect(range(0.98λbetter0[i],1.02λbetter0[i],length=Nλ))
     local λrange = collect(range(0.99λbetter0[i],1.01λbetter0[i],length=Nλ))

@@ -225,3 +225,6 @@ yticks(fontsize=14)
 
 # savefig("truncated_model_hard_values_5_datapoints.png")
 # savefig("truncated_model_hard_values_5_datapoints.pdf")
+
+
+include("postCovEst.jl")
