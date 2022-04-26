@@ -14,11 +14,16 @@ export D0th,D1st, D2nd, D3rd, D4th, reg_inv, pseudo_inv
 export F_gaussian, G_gaussian, F_convex_conjugate_gaussian, prox_F_conj_gaussian, prox_G_gaussian, alg2_cp_gaussian
 export F_gaussian_un, G_gaussian_un, F_convex_conjugate_gaussian_un, G_convex_conjugate_gaussian_un, prox_F_conj_gaussian_un, prox_G_gaussian_un, alg2_cp_gaussian_un, alg2_cp_gaussian_un_no_mem
 export F_gaussian_un_val, G_gaussian_un_val, F_convex_conjugate_gaussian_un_val, G_convex_conjugate_gaussian_un_val, prox_F_conj_gaussian_un_val, prox_G_gaussian_un_val, alg2_cp_gaussian_un_val, alg2_cp_gaussian_un_no_mem_val
+export F_gaussian_un_vals, G_gaussian_un_vals, F_convex_conjugate_gaussian_un_vals, G_convex_conjugate_gaussian_un_vals, prox_F_conj_gaussian_un_vals, prox_G_gaussian_un_vals, alg2_cp_gaussian_un_vals, alg2_cp_gaussian_un_no_mem_vals
+export alg2_cp_quad, alg2_cp_quad_un
 
 include("usualFun.jl")
 include("cp_gauss.jl")
+include("cp_quad.jl")
+include("cp_quad_uncertainty.jl")
 include("cp_gauss_uncertainty.jl")
 include("cp_gauss_uncertainty_bulk_value.jl")
+include("cp_gauss_uncertainty_values.jl")     # should replace cp_gauss_uncertainty_bulk_value.jl in future versions
 
 
 export low_rank_reconstruction,rest_reconstruction,one_iteration_nso, null_nso, iterative_nso
