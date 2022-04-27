@@ -72,6 +72,8 @@ Hb = H_lowres[:,N0_lowres+1:end];
 y_tilde  = y_data.-(Δy+δy)';
 y_tildeμ = y_data.-(Δyμ+δyμ)';
 
+figure(); plot(y_data'); plot(y_tilde'); plot(y_tildeμ')
+
 DN = D2nd(N_lowres+3); #+3
 D0 = DN[:,1];
 D_tilde = DN[:,2:N_lowres+1];

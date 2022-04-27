@@ -3,7 +3,7 @@
 w = σw*ones(Cdouble,N_lowres); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
 p0 = 0.5 # 8.0*0.05 # 0.02; #starting acceptance rate of uphill moves
-Ns = 100000 # 0;
+Ns = 1000000;
 
 ΓIinv = zeros(Cdouble,Ndata,Ndata,Nnoise);
 for i in 1:Nnoise
