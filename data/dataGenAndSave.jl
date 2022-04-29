@@ -90,7 +90,6 @@ end
 H_highres = reverse(H_highres,dims=2);
 if SAVE_DATA
     mkpath(save_folder)
-    CSV.write(string(save_folder,"concentration_profile.csv"),DataFrame(ρA_1',:auto);header=true)
     CSV.write(string(save_folder,"radial_discretization.csv"),DataFrame(reverse(r)',:auto);header=true)
     CSV.write(string(save_folder,"attenuation_length.csv"),DataFrame(λe',:auto);header=false)
     CSV.write(string(save_folder,"H_highres.csv"),DataFrame(H_highres,:auto);header=true)
@@ -162,5 +161,8 @@ if SIMULATE_DATA
         if SAVE_DATA
             CSV.write(string(save_folder_data,"/noise_level_",σ_level[k],"/","repeated_data.csv"),DataFrame([λe';y_data],:auto);header=true)
         end
+    end
+    if SAVE_DATA
+        CSV.write(string(save_folder_data,"concentration_profile.csv"),DataFrame(ρA_1',:auto);header=true)
     end
 end
