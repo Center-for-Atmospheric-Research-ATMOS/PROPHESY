@@ -40,11 +40,11 @@ end
 μΓρ_I_un = dropdims(mean(Γρ_I_un,dims=3),dims=3);
 
 figure()
-plot(1000.0(r_lowres.-μ0),reverse(μρ),color="tab:red",label="CP estimation")
-fill_between(1000.0(r_lowres[end-N0_lowres+1:end-1].-μ0),reverse(μρ[2:N0_lowres]-sqrt.(diag(μΓρ_I))),reverse(μρ[2:N0_lowres]+sqrt.(diag(μΓρ_I))),alpha=0.5,color="tab:red",label="uncertainty posterior")
-plot(1000.0(r_lowres[end-N0_lowres+1:end-1].-μ0),reverse(μμρ_I),color="tab:blue",label="sampling mean")
-fill_between(1000.0(r_lowres[end-N0_lowres+1:end-1].-μ0),reverse(μμρ_I-sqrt.(diag(μΓρ_I))),reverse(μμρ_I+sqrt.(diag(μΓρ_I))),alpha=0.5,color="tab:blue",label="uncertainty posterior")
-plot(1000.0(r.-μ0),reverse(ρA_1),color="tab:green",label="GT")
+plot(1000.0(μ0.-r_lowres),μρ,color="tab:red",label="CP estimation")
+fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ[2:N0_lowres]-sqrt.(diag(μΓρ_I)),μρ[2:N0_lowres]+sqrt.(diag(μΓρ_I)),alpha=0.5,color="tab:red",label="uncertainty posterior")
+plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μμρ_I,color="tab:blue",label="sampling mean")
+fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μμρ_I-sqrt.(diag(μΓρ_I)),μμρ_I+sqrt.(diag(μΓρ_I)),alpha=0.5,color="tab:blue",label="uncertainty posterior")
+plot(1000.0(μ0.-r),ρA_1,color="tab:green",label="GT")
 legend()
 legend(fontsize=14)
 xlabel("depth [nm]",fontsize=14)
@@ -56,13 +56,13 @@ yticks(fontsize=14)
 
 
 figure()
-plot(1000.0(r_lowres.-μ0),reverse(μρ_un),color="tab:red",label="CP estimation")
-fill_between(1000.0(r_lowres[end-N0_lowres+1:end-1].-μ0),reverse(μρ_un[2:N0_lowres]-sqrt.(diag(μΓρ_I_un))),reverse(μρ_un[2:N0_lowres]+sqrt.(diag(μΓρ_I_un))),alpha=0.5,color="tab:red",label="uncertainty posterior")
+plot(1000.0(μ0.-r_lowres),μρ_un,color="tab:red",label="CP estimation")
+fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_un[2:N0_lowres]-sqrt.(diag(μΓρ_I_un)),μρ_un[2:N0_lowres]+sqrt.(diag(μΓρ_I_un)),alpha=0.5,color="tab:red",label="uncertainty posterior")
 
-plot(1000.0(r_lowres[end-N0_lowres+1:end-1].-μ0),reverse(μμρ_I_un),color="tab:blue",label="sampling mean")
-fill_between(1000.0(r_lowres[end-N0_lowres+1:end-1].-μ0),reverse(μμρ_I_un-sqrt.(diag(μΓρ_I_un))),reverse(μμρ_I_un+sqrt.(diag(μΓρ_I_un))),alpha=0.5,color="tab:blue",label="uncertainty posterior")
+plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μμρ_I_un,color="tab:blue",label="sampling mean")
+fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μμρ_I_un-sqrt.(diag(μΓρ_I_un)),μμρ_I_un+sqrt.(diag(μΓρ_I_un)),alpha=0.5,color="tab:blue",label="uncertainty posterior")
 
-plot(1000.0(r.-μ0),reverse(ρA_1),color="tab:green",label="GT")
+plot(1000.0(μ0.-r),ρA_1,color="tab:green",label="GT")
 legend()
 legend(fontsize=14)
 xlabel("depth [nm]",fontsize=14)
