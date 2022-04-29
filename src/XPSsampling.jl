@@ -109,6 +109,8 @@ function acceptSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdou
         # accept the state with probability p
         if (rand()<=p)
             ρ_new = ρ_prop
+        else
+            r_cp = 0.0
         end
     end
     ρ_new,r_cp # maybe it could return the computed values
@@ -132,6 +134,8 @@ function acceptSampleMargin(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p
         # accept the state with probability p
         if (rand()<=p)
             ρ_new = ρ_prop
+        else
+            r_cp = 0.0
         end
     end
     ρ_new,r_cp # maybe it could return the computed values
@@ -156,6 +160,8 @@ function acceptSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdou
         # accept the state with probability p
         if (rand()<=p)
             ρ_new = ρ_prop
+        else
+            r_cp = 0.0
         end
     end
     ρ_new,r_cp # maybe it could return the computed values
@@ -231,6 +237,8 @@ function acceptSampleModelMargin(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble
         # accept the state with probability p
         if (rand()<=p)
             ρ_new = ρ_prop
+        else
+            r_cp = 0.0
         end
     end
     ρ_new,r_cp # maybe it could return the computed values
@@ -246,45 +254,48 @@ function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0:
     # all samples
     ρ_all = zeros(Cdouble,Ns+1,length(ρ_start))
     ρ_all[1,:] = ρ_start;
+    deltaU = zeros(Cdouble,Ns);
     for i in 1:Ns
         # draw a new sample from a distribution not to far from the actual one
         ρ_all[i+1,:] = transmissionMechanismSmooth(ρ_all[i,:],Γsqrt)
         ρ_all[i+1,ρ_all[i+1,:].<0.0] .= 0.0  
         
         # accept or reject the sample
-        ρ_all[i+1,:],_ = acceptSample(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,yd,ΓIinv,Γdinv,H,D)
+        ρ_all[i+1,:],deltaU[i] = acceptSample(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,yd,ΓIinv,Γdinv,H,D)
     end
-    ρ_all
+    ρ_all,deltaU
 end
 
 function samplePosteriorMargin(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Array{Cdouble,1},y::Array{Cdouble,1},yd::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2},H::Array{Cdouble,2},D::Array{Cdouble,2},ΓHΓyinv::Array{Cdouble,2};Ns::Int64=10000)
     # all samples
     ρ_all = zeros(Cdouble,Ns+1,length(ρ_start))
     ρ_all[1,:] = ρ_start;
+    deltaU = zeros(Cdouble,Ns);
     for i in 1:Ns
         # draw a new sample from a distribution not to far from the actual one
         ρ_all[i+1,:] = transmissionMechanismSmooth(ρ_all[i,:],Γsqrt)
         ρ_all[i+1,ρ_all[i+1,:].<0.0] .= 0.0  
         
         # accept or reject the sample
-        ρ_all[i+1,:],_ = acceptSampleMargin(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,yd,ΓIinv,Γdinv,H,D,ΓHΓyinv)
+        ρ_all[i+1,:],deltaU[i] = acceptSampleMargin(ρ_all[i,:],ρ_all[i+1,:],p0[i],y,yd,ΓIinv,Γdinv,H,D,ΓHΓyinv)
     end
-    ρ_all
+    ρ_all,deltaU
 end
 
 function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},p0::Cdouble,y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},Dprior::Array{Cdouble,2},ρB::Array{Cdouble,1},σB::Array{Cdouble,1};Ns::Int64=10000,psmooth::Cdouble=0.99)
     # all samples
     ρ_all = zeros(Cdouble,Ns+1,length(ρ_start))
     ρ_all[1,:] = ρ_start;
+    deltaU = zeros(Cdouble,Ns);
     for i in 1:Ns
         # draw a new sample from a distribution not to far from the actual one
         ρ_all[i+1,:] = transmissionMechanism(ρ_all[i,:],Γsqrt,σB;psmooth=psmooth)
         
         # accept or reject the sample
         p = p0*(Ns-i)/(Ns-1.0) 
-        ρ_all[i+1,:],_ = acceptSample(ρ_all[i,:],ρ_all[i+1,:],p,y,ΓIinv,H,Dprior,ρB,σB)
+        ρ_all[i+1,:],deltaU[i] = acceptSample(ρ_all[i,:],ρ_all[i+1,:],p,y,ΓIinv,H,Dprior,ρB,σB)
     end
-    ρ_all
+    ρ_all,deltaU
 end
 
 
