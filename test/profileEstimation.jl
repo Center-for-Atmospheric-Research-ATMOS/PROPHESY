@@ -25,27 +25,35 @@ using XPSinv
 # tags
 MARG_UN   = true             # set to true to load the mean measurement operator as well as the covarainces
 
-MODEL_ERROR_1 = false         # selection of the error level in the measurement model
+MODEL_ERROR_1 = true         # selection of the error level in the measurement model
 MODEL_ERROR_2 = false
-MODEL_ERROR_3 = true
+MODEL_ERROR_3 = false
 
 SHORT_RANGE = false          # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 
-MODEL_5   = true            # select the number of attenuation lengths probed
+MODEL_5   = false            # select the number of attenuation lengths probed
 MODEL_10  = false
-MODEL_20  = false
+MODEL_20  = true
 
-FLAG_0001 = true             # selection of the profile (one must be true and the others false)
+FLAG_0001 = false             # selection of the profile (one must be true and the others false)
 FLAG_0002 = false
-FLAG_0003 = false
+FLAG_0003 = true
 FLAG_0004 = false
 
 FLAG_NOISE_1 = false          # selection of the noise level (one must be true and the others false)
 FLAG_NOISE_2 = false
 FLAG_NOISE_3 = false
 FLAG_NOISE_4 = false
-FLAG_NOISE_5 = true
-FLAG_NOISE_6 = false
+FLAG_NOISE_5 = false
+FLAG_NOISE_6 = true
+
+STRONG_PRIOR = false
+
+if STRONG_PRIOR
+    σd = 0.01;
+else
+    σd = 0.1
+end
 
 
 model_folder = "../data/";
@@ -253,8 +261,7 @@ for i in 1:Nr_lowres
         Γprior_lowres[j,i] = Γprior_lowres[i,j];
     end
 end
-Γd_lowres = (0.01)^2*Γprior_lowres[2:N_lowres+2,2:N_lowres+2]; # ((Nr/Nr_lowres)^2) # this quantity also scales with the resolution
-# Γd_lowres = (1.0)^2*Γprior_lowres[2:N_lowres+2,2:N_lowres+2];
+Γd_lowres = σd^2*Γprior_lowres[2:N_lowres+2,2:N_lowres+2]; # ((Nr/Nr_lowres)^2) # this quantity also scales with the resolution
 Γd_lowres_inv = inv(Γd_lowres);
 # Fd = eigen(Γd_lowres);
 
@@ -278,7 +285,7 @@ r_y_tol_un=r_y_tol;
 
 
 # for each noise sample
-Nsample = min(20,Nrep)
+Nsample = min(20,Nrep);
 ρ_est_block       = zeros(Cdouble,Nsample,Nr_lowres);
 ρ_est_cp_block    = zeros(Cdouble,Nsample,Nr_lowres);
 ρ_est_cp_block_un = zeros(Cdouble,Nsample,Nr_lowres);
@@ -339,11 +346,11 @@ yticks(fontsize=14)
 #
 
 Nsample = 1
-σw = 1.0e-3 # 0.001; # small compared with the amplitude of the state 
+σw = 1.0e-2 # 0.001; # small compared with the amplitude of the state 
 w = σw*ones(Cdouble,N_lowres); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
-p0 = 0.9 # 0.5 # 8.0*0.05 # 0.02; #starting acceptance rate of uphill moves
-Ns      = 500000;
+p0 = 0.099 # 0.5 # 8.0*0.05 # 0.02; #starting acceptance rate of uphill moves
+Ns      = 1000000;
 Ns_burn = 100000;
 
 ΓIinv = zeros(Cdouble,Ndata,Ndata);
@@ -360,11 +367,12 @@ deltaUun = zeros(Cdouble,Ns);
 for i in 1:Nsample
     println(i,"/",Nsample)
     # conditional to data and model
-    ρ_all[:], deltaU[:] = samplePosterior(μρ[2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns); # Γd_lowres
+    # ρ_all[:], deltaU[:] = samplePosterior(μρ[2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns); # Γd_lowres
+    ρ_all[:], deltaU[:] = samplePosterior(ρ_est_cp_block[i,2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns); # Γd_lowres
     
-
     # error marginalization
-    ρ_all_un[:], deltaUun[:] = samplePosteriorMargin(μρ_un[2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tildeμ[i,:],yd,ΓIinv,Γd_lowres_inv,μH_tilde,D_tilde,ΓHΓyinv;Ns=Ns); # Γd_lowres
+    # ρ_all_un[:], deltaUun[:] = samplePosteriorMargin(μρ_un[2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tildeμ[i,:],yd,ΓIinv,Γd_lowres_inv,μH_tilde,D_tilde,ΓHΓyinv;Ns=Ns); # Γd_lowres
+    ρ_all_un[:], deltaUun[:] = samplePosteriorMargin(ρ_est_cp_block_un[i,2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tildeμ[i,:],yd,ΓIinv,Γd_lowres_inv,μH_tilde,D_tilde,ΓHΓyinv;Ns=Ns); # Γd_lowres
 
     # compute a covariance matrix from the samples 
     μρ_I[:,i] = dropdims(mean(ρ_all[Ns_burn:Ns,:],dims=1),dims=1);
@@ -419,3 +427,55 @@ figure(); plot(ρ_all[end-50:end,:]')
 figure(); plot(ρ_all_un[end-50:end,:]')
 
 # figure(); plot(1000.0(μ0.-r_lowres[2:N0_lowres]),sqrt.(diag(μΓρ_I_un))); ylim(0.0)
+
+
+# plot the estimation for both version (conditional to data and model, and conditional to data only) showing the covariance of the posterior 
+# and the variability due to the noise in the data. For each profile, plot in one figure different level of noise and different level of model uncertainty (2 of each)
+
+figure(figsize=[10,6])
+ax1 = subplot(121)
+# title("P\$(\\rho|H,I)\$")
+
+# l_cp_post_est,   = plot(1000.0(μ0.-r_lowres),ρ_est_cp_block[1,:],color="tab:red") # μρ
+# l_cp_post_cov    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ[2:N0_lowres]-sqrt.(diag(μΓρ_I)),μρ[2:N0_lowres]+sqrt.(diag(μΓρ_I)),alpha=0.5,color="tab:red")
+l_cp_post_est,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μμρ_I,color="tab:red") # μρ
+l_cp_post_cov    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μμρ_I-sqrt.(diag(μΓρ_I)),μμρ_I+sqrt.(diag(μΓρ_I)),alpha=0.5,color="tab:red")
+
+l_cp_noise_mean, = plot(1000.0(μ0.-r_lowres),μρ,color="tab:blue")
+l_cp_noise_cov   = fill_between(1000.0(μ0.-r_lowres),μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color="tab:blue")
+
+l_gt,            = plot(1000.0(μ0.-r),ρA_1,color="tab:green")
+legend([(l_cp_post_est,l_cp_post_cov),(l_cp_noise_mean,l_cp_noise_cov),l_gt],["sampled posterior","est.+noise variability","GT"],fontsize=14,loc="lower right")
+xlim(0.0,10.0)
+ylim(0.0,1.3maximum(ρA_1))
+xlabel("depth [nm]",fontsize=14)
+xticks(fontsize=14)
+ylabel("concentration [a.u.]",fontsize=14)
+yticks(fontsize=14)
+
+ax2 = subplot(122)
+# title("P\$(\\rho|I)\$")
+
+# l_cp_post_est_un,   = plot(1000.0(μ0.-r_lowres),μρ_un,color="tab:red")
+# l_cp_post_cov_un    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_un[2:N0_lowres]-sqrt.(diag(μΓρ_I_un)),μρ_un[2:N0_lowres]+sqrt.(diag(μΓρ_I_un)),alpha=0.5,color="tab:red")
+l_cp_post_est_un,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μμρ_I_un,color="tab:red")
+l_cp_post_cov_un    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μμρ_I_un-sqrt.(diag(μΓρ_I_un)),μμρ_I_un+sqrt.(diag(μΓρ_I_un)),alpha=0.5,color="tab:red")
+
+l_cp_noise_mean_un, = plot(1000.0(μ0.-r_lowres),μρ_un,color="tab:blue",label="mean value marginal")
+l_cp_noise_cov_un   = fill_between(1000.0(μ0.-r_lowres),μρ_un-sqrt.(diag(Γρ_un)),μρ_un+sqrt.(diag(Γρ_un)),alpha=0.5,color="tab:blue",label="uncertainty marginal")
+
+l_gt_un,            = plot(1000.0(μ0.-r),ρA_1,color="tab:green",label="GT")
+legend([(l_cp_post_est_un,l_cp_post_cov_un),(l_cp_noise_mean_un,l_cp_noise_cov_un),l_gt_un],["sampled posterior","est.+noise variability","GT"],fontsize=14,loc="lower right")
+xlim(0.0,10.0)
+ylim(0.0,1.3maximum(ρA_1))
+xlabel("depth [nm]",fontsize=14)
+xticks(fontsize=14)
+ylabel("concentration [a.u.]",fontsize=14)
+yticks(fontsize=14)
+
+tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+ax1.annotate("P\$(\\rho|H,I)\$", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
+ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+ax2.annotate("P\$(\\rho|I)\$",   xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
+
