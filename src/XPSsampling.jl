@@ -107,7 +107,8 @@ function acceptSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdou
         ρ_new = ρ_prop
     else
         # accept the state with probability p
-        if (rand()<=p)
+        # if (rand()<=p)
+        if (log(rand())<=r_cp)
             ρ_new = ρ_prop
         else
             r_cp = 0.0
@@ -132,7 +133,8 @@ function acceptSampleMargin(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p
         ρ_new = ρ_prop
     else
         # accept the state with probability p
-        if (rand()<=p)
+        # if (rand()<=p)
+        if (log(rand())<=r_cp)
             ρ_new = ρ_prop
         else
             r_cp = 0.0
@@ -158,7 +160,8 @@ function acceptSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},p::Cdou
         ρ_new = ρ_prop
     else
         # accept the state with probability p
-        if (rand()<=p)
+        # if (rand()<=p)
+        if (log(rand())<=r_cp)
             ρ_new = ρ_prop
         else
             r_cp = 0.0
@@ -206,7 +209,8 @@ function acceptSampleEntropy(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
         ρ_new = ρ_prop
     else
         # accept the state with probability p
-        if (rand()<=p)
+        # if (rand()<=p)
+        if (log(rand())<=r_cp)
             ρ_new = ρ_prop
         end
     end
@@ -235,7 +239,8 @@ function acceptSampleModelMargin(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble
         ρ_new = ρ_prop
     else
         # accept the state with probability p
-        if (rand()<=p)
+        # if (rand()<=p)
+        if (log(rand())<=r_cp)
             ρ_new = ρ_prop
         else
             r_cp = 0.0
