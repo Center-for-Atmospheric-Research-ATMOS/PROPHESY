@@ -31,8 +31,8 @@ using XPSinv
 ## distances
 ##
 
-μ0 = 1.0; # radius of the microjet
-λe = 2.0e-3μ0; # EAL
+μ0 = 20.0; # radius of the microjet
+λe = 2.0e-3; # μ0; # EAL
 L = 3μ0;
 
 N = 51;
@@ -46,14 +46,14 @@ Y = 0.0μ0 .+ collect(range(-0.5L,0.5L,length=K));
 
 # magic angle: atan(sqrt(2.0),1.0)
 # near the analyzer
-x0_near = 1.1*sqrt(2.0);
+x0_near = 21.0*sqrt(2.0);
 y0_near = 0.0;
-z0_near = 1.1;
+z0_near = 21.0;
 
 # far away from the analyzer
-x0_far = 100.0*sqrt(2.0);
+x0_far = 200.0*sqrt(2.0);
 y0_far = 0.0;
-z0_far = 100.0;
+z0_far = 200.0;
 
 ## compute and plot distances for two cases (near and far), and compare the full model and its approximation
 include("distance.jl")
