@@ -41,7 +41,7 @@ cb1.set_label("gain [a.u.]", fontsize=10) # , color="white"
 #far analyzer
 ax2 = subplot(122,polar=true)
 ax2.set_rlabel_position(-22.5)
-ax1.set_rticks([μ0-0.03, μ0-0.02, μ0-0.01, μ0])
+ax2.set_rticks([μ0-0.03, μ0-0.02, μ0-0.01, μ0])
 ax2.plot(atan(x0_far,z0_far)*ones(Cdouble,2),[μ0-0.03; μ0], color="red",label="\$\\theta\\simeq54.7\$")
 pcm2 = ax2.pcolormesh(θ_far,r_surf,H_rθy_far[:,:,128],edgecolors="face")
 ylim(μ0-0.03,μ0)
