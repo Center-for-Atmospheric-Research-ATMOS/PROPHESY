@@ -127,7 +127,7 @@ function alg2_cp_quad(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdoubl
     N_last = Niter
     for i in 1:Niter
         # dual step
-        sn = prox_F_conj_quad(sn+σn*A*xn_bar,yy,yd,σn,Fy.vectors,Fy.values,Fd.vectors,Fd.values)
+        sn = prox_F_conj_quad(sn+σn*A*xn_bar,yy,yd,σn,real(Fy.vectors),real(Fy.values),real(Fd.vectors),real(Fd.values))
         # primal step
         xn_pre = xn; # memory (TODO: check that it does what I think it does)
         xn     = prox_G_quad(xn-τn*A'*sn);
