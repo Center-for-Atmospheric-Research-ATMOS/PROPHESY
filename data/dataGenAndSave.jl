@@ -25,14 +25,14 @@ using XPSinv
 # tags
 LOW_RES   = true               # set to true for computing the low resolution measurement models
 MARG_UN   = (false & LOW_RES)    # set to true for computing the mean measurement operator as well as the covarainces
-SHORT_RANGE = true              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
+SHORT_RANGE = false              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 SIMULATE_DATA = false            # set true for simulating some data (several nose level)
 SAVE_DATA = (false & SIMULATE_DATA)                # set to true for saving the generated variables
 SAVE_MODEL = true               # set to true to save the models
 
-MODEL_5   = true               # select the number of attenuation lengths probed
+MODEL_5   = false               # select the number of attenuation lengths probed
 MODEL_10  = false
-MODEL_20  = false
+MODEL_20  = true
 
 SAMPLE_MODEL = (true & LOW_RES) # if set to true, generate plenty of models by drawing attenuation lengths (only in low resolution, and does not compute the marginalization)
 N_model_sample = 100;           # 100 should be more than enough for 5 attenuation length, but maybe not for 20

@@ -37,11 +37,11 @@ MODEL_ERROR_2 = false
 MODEL_ERROR_3 = false
 
 
-SHORT_RANGE = true          # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
+SHORT_RANGE = false          # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 
-MODEL_5   = true            # select the number of attenuation lengths probed
+MODEL_5   = false            # select the number of attenuation lengths probed
 MODEL_10  = false
-MODEL_20  = false
+MODEL_20  = true
 
 FLAG_NOISE_1 = false          # selection of the noise level (one must be true and the others false)
 FLAG_NOISE_2 = false
@@ -290,6 +290,7 @@ end
 # modifed model to noise ratio: the extra term comes from the truncation of the model, it accounts for the model uncertainty and the known values uncertainty
 ΓHΓyinv           = zeros(Cdouble,N_lowres,N_lowres);
 for k in 1:Ndata
+    # global ΓHΓyinv = ΓHΓyinv + ΓH[2:N0_lowres,2:N0_lowres,k]/(ΓI[k,k]+(σB*σεH[k])^2+1.0e-2) # test: does not seem to stabilize the case very low noise
     global ΓHΓyinv = ΓHΓyinv + ΓH[2:N0_lowres,2:N0_lowres,k]/(ΓI[k,k]+(σB*σεH[k])^2)
 end
 
