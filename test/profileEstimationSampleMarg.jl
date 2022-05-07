@@ -1,3 +1,4 @@
+## can run this script with multithread: julia --threads NB_THREAD_YOU_WANT
 ## load the packages used in the estimation
 # plotting
 using PyPlot
@@ -21,6 +22,9 @@ using utilsFun  # for the softMax functions
 # modeling XPS
 using XPSpack
 using XPSinv
+
+# checking number of threads
+println("you're running this script with ",Threads.nthreads()," threads") #WARNING: set ntasks to 1 when loading CSV files (it seems that multithreading is not safe with CSV.File)
 
 SAVE_FIG = false;
 
@@ -156,30 +160,30 @@ end
 filename_save = string(profile_flag,"_",filename_save,"_",model_type,"_",model_error,"_",noise_level,"_",prior_strength);
 
 # load some data
-dfRepData = CSV.File(string(data_folder,"repeated_data.csv");header=true) |> DataFrame;
+dfRepData = CSV.File(string(data_folder,"repeated_data.csv");header=true,ntasks=1) |> DataFrame;
 repData   = Matrix{Cdouble}(dfRepData)[2:end,:];
 λe        = Matrix{Cdouble}(dfRepData)[1,:];
 Ndata     = length(λe);
 Nrep      = size(repData,1);
 
 # load some measurement model
-dfr_lowres = CSV.File(string(model_folder_lowres,"radial_discretization_lowres.csv");header=true) |> DataFrame
+dfr_lowres = CSV.File(string(model_folder_lowres,"radial_discretization_lowres.csv");header=true,ntasks=1) |> DataFrame
 r_lowres   = dropdims(Matrix{Cdouble}(dfr_lowres),dims=1)
 Nr_lowres = length(r_lowres);
 
 # load the GT
-dfr   = CSV.File(string(model_folder,"radial_discretization.csv");header=true) |> DataFrame
+dfr   = CSV.File(string(model_folder,"radial_discretization.csv");header=true,ntasks=1) |> DataFrame
 if FLAG_0001
-    dfRho = CSV.File(string(model_folder,"/0001/concentration_profile.csv");header=true) |> DataFrame
+    dfRho = CSV.File(string(model_folder,"/0001/concentration_profile.csv");header=true,ntasks=1) |> DataFrame
 end
 if FLAG_0002
-    dfRho = CSV.File(string(model_folder,"/0002/concentration_profile.csv");header=true) |> DataFrame
+    dfRho = CSV.File(string(model_folder,"/0002/concentration_profile.csv");header=true,ntasks=1) |> DataFrame
 end
 if FLAG_0003
-    dfRho = CSV.File(string(model_folder,"/0003/concentration_profile.csv");header=true) |> DataFrame
+    dfRho = CSV.File(string(model_folder,"/0003/concentration_profile.csv");header=true,ntasks=1) |> DataFrame
 end
 if FLAG_0004
-    dfRho = CSV.File(string(model_folder,"/0004/concentration_profile.csv");header=true) |> DataFrame
+    dfRho = CSV.File(string(model_folder,"/0004/concentration_profile.csv");header=true,ntasks=1) |> DataFrame
 end
 
 r = dropdims(Matrix{Cdouble}(dfr),dims=1);
@@ -238,9 +242,9 @@ x00 = 0.5ones(Cdouble,N_lowres); # since the concentration is normalized by the 
 ##start loop model sampling here: start loading the model samples
 N_model_sample = 100;
 ρ_est_cp_block    = zeros(Cdouble,N_model_sample,Nr_lowres);
-for m in 1:min(N_model_sample,100)
+Threads.@threads for m in 1:min(N_model_sample,100) # this loop is just meant for sampling the model, so, each iteration is independent
     println(m,"/",min(N_model_sample,100))
-    
+    local num_sample;
     if (m<10)
         num_sample = string("00",m,"/")
     elseif ((m>=10) & (m<100))
@@ -248,27 +252,27 @@ for m in 1:min(N_model_sample,100)
     else
         num_sample = string(m,"/")
     end
-    dfH_lowres = CSV.File(string(model_folder_lowres_un,"/",num_sample,"H_lowres.csv");header=true) |> DataFrame
-    global H_lowres   = Matrix{Cdouble}(dfH_lowres);
+    local dfH_lowres = CSV.File(string(model_folder_lowres_un,"/",num_sample,"H_lowres.csv");header=true,ntasks=1) |> DataFrame
+    local H_lowres   = Matrix{Cdouble}(dfH_lowres);
 
 
 
     # slice the model (3 terms: boundary, surface and bulk)
-    H0 = H_lowres[:,1];
-    H_tilde = H_lowres[:,2:N0_lowres];
-    Hb = H_lowres[:,N0_lowres+1:end];
+    local H0 = H_lowres[:,1];
+    local H_tilde = H_lowres[:,2:N0_lowres];
+    local Hb = H_lowres[:,N0_lowres+1:end];
 
     # data correction
-    Δy = dropdims(sum(Hb,dims=2),dims=2)*ρA_1[end];
-    δy = H0*ρA_1[1];
-    y_tilde  = repData.-(Δy+δy)';
+    local Δy = dropdims(sum(Hb,dims=2),dims=2)*ρA_1[end];
+    local δy = H0*ρA_1[1];
+    local y_tilde  = repData.-(Δy+δy)';
 
-    global Γyb = σB^2*dropdims(sum([H0 Hb],dims=2),dims=2)*dropdims(sum([H0 Hb],dims=2),dims=2)';
-    global Γy_tilde = ΓI + diagm(diag(Γyb))#  = Γyb+
+    local Γyb = σB^2*dropdims(sum([H0 Hb],dims=2),dims=2)*dropdims(sum([H0 Hb],dims=2),dims=2)';
+    local Γy_tilde = ΓI + diagm(diag(Γyb))#  = Γyb+
 
 
     # smoosh together the several part of the model into augmented operators
-    Htrunc = [H_tilde; D_tilde];                                     # conditional to data and measurement model
+    local Htrunc = [H_tilde; D_tilde];                                     # conditional to data and measurement model
 
     #
     # data inversion: estimation of the concentration profile using CP algorithm
@@ -276,16 +280,16 @@ for m in 1:min(N_model_sample,100)
 
 
     # for each noise sample
-    Nsample = min(1,Nrep);
+    local Nsample = min(1,Nrep);
     # for i in 1:Nsample
-        i = 1 # just the first sample which is not corrupted by noise
+        local i = 1 # just the first sample which is not corrupted by noise
         println(i,"/",Nsample)
         # augmented data
         # local Y = [y_tilde[i,:]; yd];
 
         # 
         local ρ_est,sn,taun,X_ALL,S_ALL,T_ALL,N_last = alg2_cp_quad(x00,y_tilde[i,:],yd,Htrunc,Γy_tilde,Γd_lowres,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
-        ρ_est_cp_block[m,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
+        global ρ_est_cp_block[m,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
         println(N_last,"/",N_max_iter)
     # end
 

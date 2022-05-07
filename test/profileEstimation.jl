@@ -22,6 +22,9 @@ using utilsFun  # for the softMax functions
 using XPSpack
 using XPSinv
 
+# checking number of threads
+println("you're running this script with ",Threads.nthreads()," threads") #WARNING: set ntasks to 1 when loading CSV files (it seems that multithreading is not safe with CSV.File)
+
 SAVE_FIG = false;
 
 # tags
@@ -166,42 +169,45 @@ end
 filename_save = string(profile_flag,"_",filename_save,"_",model_type,"_",model_error,"_",noise_level,"_",prior_strength);
 
 # load some data
-dfRepData = CSV.File(string(data_folder,"repeated_data.csv");header=true) |> DataFrame;
+dfRepData = CSV.File(string(data_folder,"repeated_data.csv");header=true,ntasks=1) |> DataFrame;
 repData   = Matrix{Cdouble}(dfRepData)[2:end,:];
 λe        = Matrix{Cdouble}(dfRepData)[1,:];
 Ndata     = length(λe);
 Nrep      = size(repData,1);
 
 # load some measurement model
-dfr_lowres = CSV.File(string(model_folder_lowres,"radial_discretization_lowres.csv");header=true) |> DataFrame
+dfr_lowres = CSV.File(string(model_folder_lowres,"radial_discretization_lowres.csv");header=true,ntasks=1) |> DataFrame
 r_lowres   = dropdims(Matrix{Cdouble}(dfr_lowres),dims=1)
 Nr_lowres = length(r_lowres);
-dfH_lowres = CSV.File(string(model_folder_lowres_un,"H_lowres.csv");header=true) |> DataFrame
+dfH_lowres = CSV.File(string(model_folder_lowres_un,"H_lowres.csv");header=true,ntasks=1) |> DataFrame
 H_lowres   = Matrix{Cdouble}(dfH_lowres);
 
 if MARG_UN
-    global dfμH = CSV.File(string(model_folder_lowres_un,"mean_H_lowres.csv");header=true) |> DataFrame
+    global dfμH = CSV.File(string(model_folder_lowres_un,"mean_H_lowres.csv");header=true,ntasks=1) |> DataFrame
     global μH = Matrix{Cdouble}(Matrix{Cdouble}(dfμH)');
     global ΓH = Array{Cdouble}(undef,Nr_lowres,Nr_lowres,Ndata);
     for i in 1:Ndata
-        local df = CSV.File(string(model_folder_lowres_un,"cov/cov_H_lowres_",i,".csv");header=false) |> DataFrame
+        println(string(model_folder_lowres_un,"cov/cov_H_lowres_",i,".csv"))
+        local cov_name = string(model_folder_lowres_un,"cov/cov_H_lowres_",i,".csv")
+        println(cov_name)
+        local df = CSV.File(cov_name;header=false,ntasks=1) |> DataFrame # 
         ΓH[:,:,i] = Matrix{Cdouble}(df)
     end
 end
 
 # load the GT
-dfr   = CSV.File(string(model_folder,"radial_discretization.csv");header=true) |> DataFrame
+dfr   = CSV.File(string(model_folder,"radial_discretization.csv");header=true,ntasks=1) |> DataFrame
 if FLAG_0001
-    dfRho = CSV.File(string(model_folder,"/0001/concentration_profile.csv");header=true) |> DataFrame
+    dfRho = CSV.File(string(model_folder,"/0001/concentration_profile.csv");header=true,ntasks=1) |> DataFrame
 end
 if FLAG_0002
-    dfRho = CSV.File(string(model_folder,"/0002/concentration_profile.csv");header=true) |> DataFrame
+    dfRho = CSV.File(string(model_folder,"/0002/concentration_profile.csv");header=true,ntasks=1) |> DataFrame
 end
 if FLAG_0003
-    dfRho = CSV.File(string(model_folder,"/0003/concentration_profile.csv");header=true) |> DataFrame
+    dfRho = CSV.File(string(model_folder,"/0003/concentration_profile.csv");header=true,ntasks=1) |> DataFrame
 end
 if FLAG_0004
-    dfRho = CSV.File(string(model_folder,"/0004/concentration_profile.csv");header=true) |> DataFrame
+    dfRho = CSV.File(string(model_folder,"/0004/concentration_profile.csv");header=true,ntasks=1) |> DataFrame
 end
 
 r = dropdims(Matrix{Cdouble}(dfr),dims=1);
@@ -308,27 +314,27 @@ r_y_tol_un=r_y_tol;
 
 
 # for each noise sample
-Nsample = min(20,Nrep);
+Nsample = min(30,Nrep);
 ρ_est_block       = zeros(Cdouble,Nsample,Nr_lowres);
 ρ_est_cp_block    = zeros(Cdouble,Nsample,Nr_lowres);
 ρ_est_cp_block_un = zeros(Cdouble,Nsample,Nr_lowres);
-for i in 1:Nsample
+Threads.@threads  for i in 1:Nsample
     println(i,"/",Nsample)
     # augmented data
     local Y = [y_tilde[i,:]; yd];
 
     # naive inversion (no constraints)
     local ρ_trunc = inv(Htrunc'*Htrunc)*Htrunc'*Y;
-    ρ_est_block[i,:] = [ρA_1[1]; ρ_trunc; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
+    global ρ_est_block[i,:] = [ρA_1[1]; ρ_trunc; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
 
     # 
     local ρ_est,sn,taun,X_ALL,S_ALL,T_ALL,N_last = alg2_cp_quad(x00,y_tilde[i,:],yd,Htrunc,ΓI,Γd_lowres,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
-    ρ_est_cp_block[i,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
+    global ρ_est_cp_block[i,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
     println(N_last,"/",N_max_iter)
     
     # marginalization of uncertainty
     local ρ_est_un,sn,taun,X_ALL,S_ALL,T_ALL,N_last = alg2_cp_quad_un(x00,y_tildeμ[i,:],yd,Htrunc_un,ΓI,Γd_lowres,ΓHΓyinv,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol_un)
-    ρ_est_cp_block_un[i,:] = [ρA_1[1]; ρ_est_un; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
+    global ρ_est_cp_block_un[i,:] = [ρA_1[1]; ρ_est_un; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
     println(N_last,"/",N_max_iter)
 end
 
@@ -344,7 +350,7 @@ end
 # posterior covariance estimation (get an idea of how good the estimation can be)
 #
 
-Nsample = 1
+# Nsample = 1 # Threads.nthreads()-1 # 1
 # σw = 1.0e-5 # 0.5*1.0e-3 # 0.001; # small compared with the amplitude of the state 
 w = σw*ones(Cdouble,N_lowres); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
@@ -361,24 +367,31 @@ Ns_burn = 100000;
 Γρ_I_un = zeros(Cdouble,N_lowres,N_lowres,Nsample);
 deltaU = zeros(Cdouble,Ns);
 deltaUun = zeros(Cdouble,Ns);
-ρ_all = zeros(Cdouble,Ns+1,N_lowres);
-ρ_all_un = zeros(Cdouble,Ns+1,N_lowres);
-for i in 1:Nsample
+# ρ_all = zeros(Cdouble,Ns+1,N_lowres);
+# ρ_all_un = zeros(Cdouble,Ns+1,N_lowres);
+Threads.@threads  for i in 1:Nsample
     println(i,"/",Nsample)
     # conditional to data and model
-    ρ_all[:], deltaU[:] = samplePosterior(ρ_est_cp_block[i,2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
+    local ρ_all, deltaU[:] = samplePosterior(ρ_est_cp_block[i,2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
     
     # error marginalization
-    ρ_all_un[:], deltaUun[:] = samplePosteriorMargin(ρ_est_cp_block_un[i,2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tildeμ[i,:],yd,ΓIinv,Γd_lowres_inv,μH_tilde,D_tilde,ΓHΓyinv;Ns=Ns);
+    local ρ_all_un, deltaUun[:] = samplePosteriorMargin(ρ_est_cp_block_un[i,2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tildeμ[i,:],yd,ΓIinv,Γd_lowres_inv,μH_tilde,D_tilde,ΓHΓyinv;Ns=Ns);
 
     # compute a covariance matrix from the samples 
-    μρ_I[:,i] = dropdims(mean(ρ_all[Ns_burn:Ns,:],dims=1),dims=1);
-    Γρ_I[:,:,i] = cov(ρ_all[Ns_burn:Ns,:]);
-    μρ_I_un[:,i] = dropdims(mean(ρ_all_un[Ns_burn:Ns,:],dims=1),dims=1);
-    Γρ_I_un[:,:,i] = cov(ρ_all_un[Ns_burn:Ns,:]);
+    global μρ_I[:,i] = dropdims(mean(ρ_all[Ns_burn:Ns,:],dims=1),dims=1);
+    global Γρ_I[:,:,i] = cov(ρ_all[Ns_burn:Ns,:]);
+    global μρ_I_un[:,i] = dropdims(mean(ρ_all_un[Ns_burn:Ns,:],dims=1),dims=1);
+    global Γρ_I_un[:,:,i] = cov(ρ_all_un[Ns_burn:Ns,:]);
 end
 
-
+# not sure it makes much sense when Nsample is more than 1... but that might give me an idea to create an algorithm. 
+# I think this is the marginalization over the data, meaning it is the either a representation of P(ρ) (or P(ρ|H)) depending on the case
+# but it is different from the P(ρ) that is used in the first place. So, maybe one can use this estimated a priori to estimate P(ρ) again, 
+# and use the new one for the estimation of the next one, etc
+# then, if we're lucky enough, the algorithm will converge to an invariant distribution that is very narrow.
+# P^0(ρ) = initial guess
+# P^{t+1}(ρ) = marginalization(P^t(ρ|H,I)) with P^t(ρ|H,I) ∝ P(I|H,ρ)P(H)P^t(ρ)
+# This would be learning a generative model for a given experiment, falling under the scope of AI
 μμρ_I = dropdims(mean(μρ_I,dims=2),dims=2);
 μΓρ_I = dropdims(mean(Γρ_I,dims=3),dims=3);
 
