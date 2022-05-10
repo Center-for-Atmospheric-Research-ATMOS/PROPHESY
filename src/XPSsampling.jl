@@ -2,6 +2,17 @@
 #  - P(ρ|I,H): the probability density of the state ρ conditionally to the data I and the model H
 #  - P(ρ|I):   the marginalization of P(ρ|I,H) over the measurement model space (using the small perturbation assumption)
 
+# MAYBE: move to another package/module
+# include("XPSsampling.jl")
+
+module XPSsampling
+
+export samplePosterior, acceptSample, transmissionMechanism, smoothnessCovariance, corrCovariance
+export samplePosteriorModelMargin, acceptSampleModelMargin # marginalization over the measurement operator space (or some approximation of it)
+export samplePosteriorEntropy, acceptSampleEntropy # does ot serve much purpose (except for showing that it's not gonna be used)
+export samplePosteriorMargin, acceptSampleMargin
+
+
 
 """
     Likelihood of the measurement knowing the state and the model
@@ -456,4 +467,6 @@ function posteriorSA(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},Tacc::A
         ρ_all[i+1,:],r_cp[i] = acceptSampleSA(ρ_all[i,:],ρ_all[i+1,:],Tacc[i],y,ΓIinv,H,Dprior,ρB,σB)
     end
     ρ_all,r_cp
+end
+
 end

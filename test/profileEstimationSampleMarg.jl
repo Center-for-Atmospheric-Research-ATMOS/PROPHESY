@@ -20,7 +20,6 @@ using StatsBase
 using utilsFun  # for the softMax functions
 
 # modeling XPS
-using XPSpack
 using XPSinv
 
 # checking number of threads: launch Julia with the argument --threads 16 to run julia using 16 threads

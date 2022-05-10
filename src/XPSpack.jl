@@ -13,8 +13,6 @@ using NewtonMethod  # used in XPSutils.jl
 
 # penetration depth and cross-section values: not sure it's really useful in this module since the values are supposed to be known to create the models
 export λe, σ_cs_orb 
-include("XPSpack/penetration_depth.jl")
-include("XPSpack/cross_section.jl")
 
 
 # data enhancement: baseline correction and peak fitting (requires sampling of the spectra)
@@ -32,16 +30,10 @@ export XPSacq # acquisition parameters
 export Ψ_lin_peaks # implemented in XPSmeas.jl
 
 # include the implementation of the exported functions and objects
+include("XPSpack/penetration_depth.jl")
+include("XPSpack/cross_section.jl")
 include("XPSpack/XPSmeas.jl")  # implement most function exported so far
-
-
 include("XPSpack/XPSutils.jl") # common algorithms used for data processing
 
-# MAYBE: move to another package/module
-export samplePosterior, acceptSample, transmissionMechanism, smoothnessCovariance, corrCovariance
-export samplePosteriorModelMargin, acceptSampleModelMargin # marginalization over the measurement operator space (or some approximation of it)
-export samplePosteriorEntropy, acceptSampleEntropy # does ot serve much purpose (except for showing that it's not gonna be used)
-export samplePosteriorMargin, acceptSampleMargin
-include("XPSsampling.jl")
 
 end # module

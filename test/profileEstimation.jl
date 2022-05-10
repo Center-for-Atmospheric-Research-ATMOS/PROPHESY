@@ -19,8 +19,9 @@ using StatsBase
 using utilsFun  # for the softMax functions
 
 # modeling XPS
-using XPSpack
+# using XPSpack
 using XPSinv
+using XPSsampling
 
 # checking number of threads: launch Julia with the argument --threads 16 to run julia using 16 threads
 println("you're running this script with ",Threads.nthreads()," threads") #WARNING: set ntasks to 1 when loading CSV files (it seems that multithreading is not safe with CSV.File)
