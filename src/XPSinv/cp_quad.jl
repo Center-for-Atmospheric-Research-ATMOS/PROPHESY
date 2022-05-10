@@ -107,11 +107,11 @@ function alg2_cp_quad(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdoubl
 
     # eigen decomposition of the covariance matrices
     Fy = eigen(Γy)
-    Fy.vectors = real(Fy.vectors)
-    Fy.values = real(Fy.values)
+    Py = real(Fy.vectors)
+    Dy = real(Fy.values)
     Fd = eigen(Γd)
-    Fd.vectors = real(Fd.vectors)
-    Fd.values = real(Fd.values)
+    Pd = real(Fd.vectors)
+    Dd = real(Fd.values)
  
     X_ALL = zeros(Cdouble,length(x0),Niter+1)
     S_ALL = zeros(Cdouble,size(A,1),Niter+1)
@@ -134,7 +134,7 @@ function alg2_cp_quad(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdoubl
     N_last = Niter
     for i in 1:Niter
         # dual step
-        sn = prox_F_conj_quad(sn+σn*A*xn_bar,yy,yd,σn,Fy.vectors,Fy.values,Fd.vectors,Fd.values)
+        sn = prox_F_conj_quad(sn+σn*A*xn_bar,yy,yd,σn,Py,Dy,Pd,Dd)
         # primal step
         xn_pre = xn;
         xn     = prox_G_quad(xn-τn*A'*sn);

@@ -113,14 +113,14 @@ function alg2_cp_quad_un(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdo
 
     # eigen decomposition of the covariance matrices
     Fy = eigen(Γy)
-    Fy.vectors = real(Fy.vectors)
-    Fy.values = real(Fy.values)
+    Py = real(Fy.vectors)
+    Dy = real(Fy.values)
     Fd = eigen(Γd)
-    Fd.vectors = real(Fd.vectors)
-    Fd.values = real(Fd.values)
+    Pd = real(Fd.vectors)
+    Dd = real(Fd.values)
     Fh = eigen(ΓHΓyinv)
-    Fh.vectors = real(Fh.vectors)
-    Fh.values = real(Fh.values)
+    Ph = real(Fh.vectors)
+    Dh = real(Fh.values)
  
     X_ALL = zeros(Cdouble,length(x0),Niter+1)
     S_ALL = zeros(Cdouble,size(A,1),Niter+1)
@@ -143,7 +143,7 @@ function alg2_cp_quad_un(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdo
     N_last = Niter
     for i in 1:Niter
         # dual step
-        sn = prox_F_conj_quad_un(sn+σn*A*xn_bar,yy,yd,σn,Fy.vectors,Fy.values,Fd.vectors,Fd.values,Fh.vectors,Fh.values)
+        sn = prox_F_conj_quad_un(sn+σn*A*xn_bar,yy,yd,σn,Py,Dy,Pd,Dd,Ph,Dh)
         # primal step
         xn_pre = xn; 
         xn     = prox_G_quad_un(xn-τn*A'*sn);
