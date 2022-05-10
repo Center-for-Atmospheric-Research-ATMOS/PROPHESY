@@ -373,10 +373,10 @@ deltaUun = zeros(Cdouble,Ns);
 Threads.@threads  for i in 1:Nsample
     println(i,"/",Nsample)
     # conditional to data and model
-    local ρ_all, deltaU[:] = samplePosterior(ρ_est_cp_block[i,2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
+    local ρ_all, deltaU[:] = samplePosterior(ρ_est_cp_block[i,2:N0_lowres],Γsqrt,y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
     
     # error marginalization
-    local ρ_all_un, deltaUun[:] = samplePosteriorMargin(ρ_est_cp_block_un[i,2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tildeμ[i,:],yd,ΓIinv,Γd_lowres_inv,μH_tilde,D_tilde,ΓHΓyinv;Ns=Ns);
+    local ρ_all_un, deltaUun[:] = samplePosteriorMargin(ρ_est_cp_block_un[i,2:N0_lowres],Γsqrt,y_tildeμ[i,:],yd,ΓIinv,Γd_lowres_inv,μH_tilde,D_tilde,ΓHΓyinv;Ns=Ns);
 
     # compute a covariance matrix from the samples 
     global μρ_I[:,i] = dropdims(mean(ρ_all[Ns_burn:Ns,:],dims=1),dims=1);
