@@ -1,38 +1,56 @@
 # push!(LOAD_PATH,"/home/mattoz/Dev/XPSinv.jl/src/")
 # sudo nano /opt/julias/julia-1.3.1/etc/julia/startup.jl
 
+"""
+
+    Derivation of a primal-dual optimization problem: implementation of ALG2, a.k.a. CP, in [1]
+    [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
+    Journal of mathematical imaging and vision, 40(1), pp.120-145.
+    DOI: 10.1007/s10851-010-0251-1
+
+    Null Space optimization
+    [2] D. Stolzenburg, M. Ozon, M.  Kulmala, K. Lehtinen, K. Lehtipalo and J. Kangasluoma, 2022, Combining instrument inversions for sub-10 nm aerosol number size-distribution measurements
+    Journal of Aerosol Science, Vol. 159, p. 105862
+    DOI: 10.1016/j.jaerosci.2021.105862
+
+"""
 module XPSinv
 
 using Statistics
-using LinearAlgebra #SVD
-# using Interpolations # used in XPSmeas.jl
-# using Printf
-# using utilsFun
+using LinearAlgebra #SVD and eigen value decomposition
 
-# export the functions for the end user
+# useful operators
 export D0th,D1st, D2nd, D3rd, D4th, reg_inv, pseudo_inv
-export F_gaussian, G_gaussian, F_convex_conjugate_gaussian, prox_F_conj_gaussian, prox_G_gaussian, alg2_cp_gaussian
-export F_gaussian_un, G_gaussian_un, F_convex_conjugate_gaussian_un, G_convex_conjugate_gaussian_un, prox_F_conj_gaussian_un, prox_G_gaussian_un, alg2_cp_gaussian_un, alg2_cp_gaussian_un_no_mem
-export F_gaussian_un_val, G_gaussian_un_val, F_convex_conjugate_gaussian_un_val, G_convex_conjugate_gaussian_un_val, prox_F_conj_gaussian_un_val, prox_G_gaussian_un_val, alg2_cp_gaussian_un_val, alg2_cp_gaussian_un_no_mem_val
-export F_gaussian_un_vals, G_gaussian_un_vals, F_convex_conjugate_gaussian_un_vals, G_convex_conjugate_gaussian_un_vals, prox_F_conj_gaussian_un_vals, prox_G_gaussian_un_vals, alg2_cp_gaussian_un_vals, alg2_cp_gaussian_un_no_mem_vals
-export alg2_cp_quad, alg2_cp_quad_un
-
-include("usualFun.jl")
-include("cp_gauss.jl")
-include("cp_quad.jl")
-include("cp_quad_uncertainty.jl")
-include("cp_gauss_uncertainty.jl")
-include("cp_gauss_uncertainty_bulk_value.jl")
-include("cp_gauss_uncertainty_values.jl")     # should replace cp_gauss_uncertainty_bulk_value.jl in future versions
 
 
+##
+## ALG2
+##
+
+# call function for ALG2/CP
+export alg2_cp_gaussian, alg2_cp_gaussian_un, alg2_cp_gaussian_un_no_mem
+export alg2_cp_gaussian_un_val, alg2_cp_gaussian_un_no_mem_val
+export alg2_cp_gaussian_un_vals, alg2_cp_gaussian_un_no_mem_vals
+export alg2_cp_quad, alg2_cp_quad_un # these are the two functions that lead to acceptable results (the only function of real use for this particular problem)
+
+include("XPSinv/usualFun.jl")
+include("XPSinv/cp_gauss.jl")
+include("XPSinv/cp_quad.jl")
+include("XPSinv/cp_quad_uncertainty.jl")
+include("XPSinv/cp_gauss_uncertainty.jl")
+include("XPSinv/cp_gauss_uncertainty_bulk_value.jl")
+include("XPSinv/cp_gauss_uncertainty_values.jl")     # should replace cp_gauss_uncertainty_bulk_value.jl in future versions
+
+##
+## NSO
+##
 export low_rank_reconstruction,rest_reconstruction,one_iteration_nso, null_nso, iterative_nso
 export low_rank_reconstruction_un, model_un_mat_img
-include("nso.jl")
+include("XPSinv/nso.jl")
 
 export low_rank_reconstruction_un_2, one_iteration_nso_un_2, null_nso_un_2, iterative_nso_un_2, data_sample_nso_un, model_un
 export shuffle_data, shuffle_data_sample_nso_un
-include("nso_un.jl")
+include("XPSinv/nso_un.jl")
 
 
 end # module
