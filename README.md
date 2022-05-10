@@ -1,10 +1,11 @@
-# XPSinv.jl
-  this package should contain tools for the estimation of the concentration profiles of a  chemical species across a microjet (i.e. a very small stream) probed with X-rays. The data are the spectra of the emitted photoelectrons from the core subshell in the ground state (i.e. 1s orbital).
+# XPS packages
+  this suite of packages should contain tools for the estimation of the concentration profiles of a  chemical species across a microjet (i.e. a very small stream) probed with X-rays. The data are the spectra of the emitted photoelectrons from the core subshell in the ground state (i.e. 1s orbital).
 
-The package is divided into two:
+The package is divided into three:
 
-- XPSpack: model (deterministic and associated uncertainty)
-- XPSinv:  some inversion methods (or these could be taken from another package, and only included in this package)
+- XPSpack:     model (deterministic and associated uncertainty)
+- XPSinv:      some inversion methods (or these could be taken from another package, and only included in this package)
+- XPSsampling: estimate the covariance of the posterior distribution being optimized by XPSinv
 
 The repository can be found at [XPSinv](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv)
 
@@ -13,12 +14,12 @@ Two models are implemented in this module; both are modelling the photoelectric 
 ### Single point spectrum
 The PE point model describes each data point collected by a kinetic energy analyzer with solid angular aperture &alpha; and gain T. It takes into account the total photon current F(h&nu;)&sigma;(h&nu;,Ke) and the attenuation of the amount of electrons depending on the depth at which the electron is emitted through an integral term spanning  the depth of the target -- the photon attenuation is not accounted for since it is negligible in the relevant cases. It assumes that the background signal (e.g. fluorescence, inelastic electron scattering, etc) has already been extracted using a baseline removal algorithm (e.g. that implemented by the function baseline_removal in XPSutils.jl). The intensity measured for an photon of energy h&nu; and a electron emitted with kinetic energy Ke is given by [1]:
 
-I(h&nu;,Ke) - I<sub>bg</sub>(h&nu;,Ke) = &alpha;T(&mu;<sub>Ke</sub>) F(h&nu;)&sigma;(h&nu;,Ke) &int;<sub>[0,&infin;[</sub> &rho;<sub>A</sub>(z) e<sup>-g(z)&frasl;&lambda;(Ke)</sup> dz +  &epsilon;(h&nu;,Ke)
+I(h&nu;,Ke) - I<sub>bg</sub>(h&nu;,Ke) = &alpha;T(&mu;<sub>Ke</sub>) F(h&nu;)&sigma;(h&nu;,Ke) &int;<sub>&Omega;</sub> &rho;<sub>A</sub>(x,y,z) e<sup>-d(x,y,z)&frasl;&lambda;(Ke)</sup> dxdydz +  &epsilon;(h&nu;,Ke)
 
-where g is the function that gives the relative amount of matter the emitted electron has to go through depending on the depth -- asymptotically, it is equivalent to identity.
+where d is the function that gives the relative amount of matter the emitted electron has to go through depending on the depth -- asymptotically, it is equivalent to the simple distance.
 The term &epsilon;(h&nu;,Ke) is a stochastic term that describes the measurement noise due to uncontrolled parameters -- it can also include uncertainty due to the deterministic term of the model itself when inverting the data.
 
-The deterministic part of the model is implemented by the functions whose names begin with &Psi; in the XPSmeas.jl file. In particular Ψ_lin_peaks_mean_and_std, implements the linear basis operator and some uncertainty for the deterministic part of the above equation.
+The deterministic part of the model is implemented by the function  &Psi;_lin_peak in the XPSmeas.jl file. The covariance of the uncertainty related to the attenuation length is computed by the function cov_H_cylinder. #TODO: The rest of the uncertainty still needs to be implemented
 
 In this model, the effect of the analyzer is reduced to two parameters &alpha; and T. As much as the angular aperture is a good model for the integration of the angular density of the isotropic orbital 1s, the factor T might not be as good of a model. Indeed, the mechanisms by which the kinetic energy spectrum is collected, see [2] for an overview of principles, are probably more complex than just the multiplication by the factor T; however, for fine enough resolution and discrimination power, the complexity of the analyzer may be well approximated by a single multiplicative factor.
 
@@ -53,21 +54,41 @@ One very interesting case is the ratio involving C1s and O1s signals. Indeed, th
 
 R<sub>C1s,O1s</sub>(h&nu;<sub>1</sub>, &mu;<sub>Ke<sub>1</sub></sub>,h&nu;<sub>2</sub>, &mu;<sub>Ke<sub>2</sub></sub>) = A<sub>C1s</sub>(h&nu;<sub>1</sub>, &mu;<sub>Ke<sub>1</sub></sub>)/A<sub>O1s</sub>(h&nu;<sub>2</sub>, &mu;<sub>Ke<sub>2</sub></sub>)
 
-NOTE: the peak area and relative area are not implemented as such in the package, but rather derive from the PE signal model and and implemented in examples.
+NOTE: the relative area is not implemented as such in the package, but rather derive from the PE signal model and implemented in examples.
+
+### Geometry of the sample
+The XPSpack package propses several geometries for the sample depending on the level of approximation and the actual shape of the sample, one may choose in the following options:
+- beam/finger: is the zeroth order approxiamtion of any experiment and does not bear much physical information (the signal is assumed to be focused along a beam in the sample, ignoring the rest of the signal)
+- plane: this is probably a good approximation for all experiments involving a flat sample/vaccum interface
+- cylinder: well suited for liquid microjet samples
 
 ## Inversion: XPSinv
 
 ### inversion algorithms
 
-- Null Space Optimization: seems to work for simple cases, but not for all cases
-- Chambolle and Pock (CP) Primal-Dual optimization is somewhat more time consuming but the results are more consistent
+- Null Space Optimization [5]: seems to work for simple cases, but not for all cases (probably going to be deprecated soon since it does not provide a clear advantage over CP)
+- Chambolle and Pock (CP) Primal-Dual optimization [6] is somewhat more time consuming but the results are more consistent (but they are not really time consuming so far) The advantage of this algorithm is that it relies on fairly simple formula contrary to other more intuitive algorithms.
 
 ### Sampling
 
 The data and the measurement model can be sampled so that the uncertainty due to measurement noise and parameter uncertainty can be assessed in the final result, i.e. the concentration profile
 
+## Posterior density sampling
+In the package XPSsampling, you will find a Metropolis Hastings [7,8] implementation of the sampler. The point here is to be able to estimate the covariance of the distribution to give an idea of the uncertainty of the profile estimate due to the Bayesian formulation. Note that it is different from the variability due to the noise in the data -- this can be estimated if one knows the noise level in the data.
 ## Examples
 
+### Geometry
+compare the different sample geometries, based on XPSpack
+[link to file](test/geom.jl)
+
+### Inversion
+- inversion using the strong conditional P(&rho;|y,H) and weak formulation P(&rho;|y) and sampling of the two posteriors [link to file](test/profileEstimation.jl)
+- inversion using only the strong conditional P(&rho;|y,H), but the marginalization leading to the weak formulation is done by sampling the measurement operator space [link to file](test/profileEstimationSampleMarg.jl)
+
+### data simulation and measurement operator
+the source of all data in the latest development is coded in [link to file](data/dataGenAndSave.jl)
+
+<!--- 
 ### data_generation_exp.jl
 
 Test for:
@@ -102,6 +123,7 @@ Test for:
 - simulation of some data
 
 [link to file](test/data_gen_exp_5.jl)
+--->
 
 ## Refs
 
@@ -109,7 +131,10 @@ Test for:
 - [2] D. Roy and D. Tremblay, Design of electron spectrometers, Reports on Progress in Physics, 1990, Vol. 53, No. 12, p. 1621 ([DOI: 10.1088/0034-4885/53/12/003](https://www.doi.org/10.1088/0034-4885/53/12/003))
 - [3] S. Manson and J. Cooper, Photo-Ionization in the Soft x-Ray Range: 1 Z Dependence in a Central-Potential Model, Physical Review, 1968, Vol. 165, p. 126 ([DOI: 10.1103/PhysRev.165.126](https://www.doi.org/10.1103/PhysRev.165.126))
 - [4] J. Yeh and I. Lindau, Atomic subshell photoionization cross sections and asymmetry parameters: 1⩽ Z⩽ 103, 1985, Vol. 32, No. 1, p. 1--155, ([DOI: 10.1016/0092-640X(85)90016-6](https://www.doi.org/10.1016/0092-640X\(85\)90016-6))
-
+- [5] D. Stolzenburg, M. Ozon, M.  Kulmala, K. Lehtinen, K. Lehtipalo and J. Kangasluoma, 2022, Combining instrument inversions for sub-10 nm aerosol number size-distribution measurements, Journal of Aerosol Science, Vol. 159, p. 105862, [DOI: 10.1016/j.jaerosci.2021.105862](https://www.doi.org/10.1016/j.jaerosci.2021.105862)
+- [6] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging. Journal of mathematical imaging and vision, 40(1), pp.120-145, [DOI: 10.1007/s10851-010-0251-1](https://www.doi.org/10.1007/s10851-010-0251-1)
+- [7] N. Metropolis et S. Ulam, The Monte Carlo method,  Journal of the American Statistical Association, vol. 44, no 247, 1949, p. 335–341, [DOI: 10.2307/2280232](https://www.doi.org/10.2307/2280232)
+- [8] W.K. Hastings, Monte Carlo Sampling Methods Using Markov Chains and Their Applications, Biometrika, vol. 57, no 1, 1970, p. 97–109, [DOI: 10.2307/2334940](https://www.doi.org/10.2307/2334940)
 
 # Dependence
 
