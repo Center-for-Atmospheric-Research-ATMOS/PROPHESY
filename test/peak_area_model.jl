@@ -1,9 +1,9 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
-fm = PyPlot.matplotlib.font_manager.json_load("/home/mattoz/.cache/matplotlib/fontlist-v310.json")
-fm.findfont("serif", rebuild_if_missing=false)
-fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
+fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json")
+# fm.findfont("serif", rebuild_if_missing=false)
+# fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
 rc("font",family="serif",serif="Computer Modern Roman")
 rc("text", usetex=true)
 using myPlot
@@ -34,7 +34,7 @@ using XPSinv
 ## load some data
 ##
 σ_noise = 0.002;
-data_folder = "./data/lin/4peaks/0.0020/";
+data_folder = "/home/matthew/Data/XPS/lin/4peaks/0.0020/"; # "./data/lin/4peaks/0.0020/";
 folder_res = "./results/lin/4peaks/0.0020/"
 
 # σ_noise = 0.02;
@@ -49,46 +49,46 @@ PLOT_MEAS_OP = false;
 
 mkpath(folder_res)
 if DATA1
-   d_IA_1 = CSV.File(string(data_folder,"IA_1.csv"); delim=",", header=false) |> DataFrame;
+   d_IA_1 = CSV.File(string(data_folder,"IA_1.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
    IA_1 = Matrix{Cdouble}(d_IA_1)[1,:];
-   d_IA_1_clean = CSV.File(string(data_folder,"IA_1_clean.csv"); delim=",", header=false) |> DataFrame;
+   d_IA_1_clean = CSV.File(string(data_folder,"IA_1_clean.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
    IA_1_clean = Matrix{Cdouble}(d_IA_1_clean)[1,:];
-   d_ρA_1 = CSV.File(string(data_folder,"rhoA_1.csv"); delim=",", header=false) |> DataFrame;
+   d_ρA_1 = CSV.File(string(data_folder,"rhoA_1.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
    ρA_1 = Matrix{Cdouble}(d_ρA_1)[1,:];
 end
 
 if DATA2
-   d_IA_1 = CSV.File(string(data_folder,"IA_2.csv"); delim=",", header=false) |> DataFrame;
+   d_IA_1 = CSV.File(string(data_folder,"IA_2.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
    IA_1 = Matrix{Cdouble}(d_IA_1)[1,:];
-   d_IA_1_clean = CSV.File(string(data_folder,"IA_2_clean.csv"); delim=",", header=false) |> DataFrame;
+   d_IA_1_clean = CSV.File(string(data_folder,"IA_2_clean.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
    IA_1_clean = Matrix{Cdouble}(d_IA_1_clean)[1,:];
-   d_ρA_1 = CSV.File(string(data_folder,"rhoA_2.csv"); delim=",", header=false) |> DataFrame;
+   d_ρA_1 = CSV.File(string(data_folder,"rhoA_2.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
    ρA_1 = Matrix{Cdouble}(d_ρA_1)[1,:];
 end
 
 if DATA3
-   d_IA_1 = CSV.File(string(data_folder,"IA_3.csv"); delim=",", header=false) |> DataFrame;
+   d_IA_1 = CSV.File(string(data_folder,"IA_3.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
    IA_1 = Matrix{Cdouble}(d_IA_1)[1,:];
-   d_IA_1_clean = CSV.File(string(data_folder,"IA_3_clean.csv"); delim=",", header=false) |> DataFrame;
+   d_IA_1_clean = CSV.File(string(data_folder,"IA_3_clean.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
    IA_1_clean = Matrix{Cdouble}(d_IA_1_clean)[1,:];
-   d_ρA_1 = CSV.File(string(data_folder,"rhoA_3.csv"); delim=",", header=false) |> DataFrame;
+   d_ρA_1 = CSV.File(string(data_folder,"rhoA_3.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
    ρA_1 = Matrix{Cdouble}(d_ρA_1)[1,:];
 end
-d_Zi_high_res = CSV.File(string(data_folder,"depth.csv"); delim=",", header=false) |> DataFrame;
+d_Zi_high_res = CSV.File(string(data_folder,"depth.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
 Zi_high = Matrix{Cdouble}(d_Zi_high_res)[1,:];
 
 
 ##
 ## load the model
 ##
-model_folder = "./data/lin/4peaks/low_res_50/";
-d_H = CSV.File(string(model_folder,"H.csv"); delim=",", header=false) |> DataFrame;
+model_folder = "/home/matthew/Data/XPS/lin/4peaks/low_res_50/"; # "./data/lin/4peaks/low_res_50/";
+d_H = CSV.File(string(model_folder,"H.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
 H = Matrix{Cdouble}(d_H);
-d_H_std = CSV.File(string(model_folder,"H_standard_deviation.csv"); delim=",", header=false) |> DataFrame;
+d_H_std = CSV.File(string(model_folder,"H_standard_deviation.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
 H_std = Matrix{Cdouble}(d_H_std);
-d_Zi = CSV.File(string(model_folder,"depth.csv"); delim=",", header=false) |> DataFrame;
+d_Zi = CSV.File(string(model_folder,"depth.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
 Zi = Matrix{Cdouble}(d_Zi)[1,:];
-d_Ke = CSV.File(string(model_folder,"kinetic_energy.csv"); delim=",", header=false) |> DataFrame;
+d_Ke = CSV.File(string(model_folder,"kinetic_energy.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
 Ke = Matrix{Cdouble}(d_Ke)[1,:];
 
 
@@ -190,15 +190,15 @@ Nh = 121
 Ns = 25
 ρ_samples_nso_h = zeros(Cdouble,Nh*Ns,N);
 t_elapsed = @elapsed for i in 1:Nh
-   d_H = CSV.File(string(model_folder,i,"/","H.csv"); delim=",", header=false) |> DataFrame;
-   H = 10.0Matrix{Cdouble}(d_H);
+   local d_H = CSV.File(string(model_folder,i,"/","H.csv"); delim=",", header=false,ntasks=1) |> DataFrame;
+   local H = Matrix{Cdouble}(d_H); # 10.0*
 
-   A1 = 1.0*dKe1*dropdims(sum(H[1:100,:],dims=1),dims=1);
-   A2 = 1.0*dKe2*dropdims(sum(H[101:200,:],dims=1),dims=1);
-   A3 = 2.0*dKe3*dropdims(sum(H[201:300,:],dims=1),dims=1);
-   A4 = 2.0*dKe4*dropdims(sum(H[301:400,:],dims=1),dims=1);
+   local A1 = 1.0*dKe1*dropdims(sum(H[1:100,:],dims=1),dims=1);
+   local A2 = 1.0*dKe2*dropdims(sum(H[101:200,:],dims=1),dims=1);
+   local A3 = 2.0*dKe3*dropdims(sum(H[201:300,:],dims=1),dims=1);
+   local A4 = 2.0*dKe4*dropdims(sum(H[301:400,:],dims=1),dims=1);
 
-   A = Matrix{Cdouble}([A1 A2 A3 A4]');
+   local A = Matrix{Cdouble}([A1 A2 A3 A4]');
 
    # compute reconstruction with the given model
    for j in 1:Ns
@@ -232,10 +232,10 @@ Ns = 5 # 00;
 t_elapsed = @elapsed for i in 2:Ns
    # idx = shuffle_data(Nke,Npeak;Nmin=Nmin);
    # A = [H[idx,:]; Matrix{Cdouble}(I,N,N); D_2nd; B];
-   x0 = 0.0*ρA_1[idx_res]
-   s0 = AA*x0
+   local x0 = 0.0*ρA_1[idx_res]
+   local s0 = AA*x0
    # ρ_samples[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,IA_1[idx],ρ0,ρB,A,γ[idx],γ_H[idx,:],γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
-   ρ_samples[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_clean+γ.*randn(4),ρ0,ρB,AA,γ,γ_H,γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
+   global ρ_samples[i,:],_,_,_,_,_,_,_,_,N_last= alg2_cp_gaussian_un_no_mem_val(x0,s0,y_all_clean+γ.*randn(4),ρ0,ρB,AA,γ,γ_H,γ_D,γ0,γB,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
 end
 
 μ_ρ = dropdims(mean(ρ_samples,dims=1),dims=1);
