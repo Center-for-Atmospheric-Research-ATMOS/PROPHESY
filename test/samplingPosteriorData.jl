@@ -27,6 +27,7 @@ using utilsFun  # for the softMax functions
 # modeling XPS
 using XPSpack
 using XPSinv
+using XPSsampling
 
 
 
@@ -146,7 +147,6 @@ figure(); plot(y_data')
 w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
 # w = σw*(1.0.-ρA_1.+0.1); # too optimal because we known the solution (but the general sigmoid shape could be used because it's not a big a priori)
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=15.0)));
-p0 = 0.5 # 0.02; #starting acceptance rate of uphill moves
 ρB = [ρA_1[1]; ρA_1[end]];
 σB = [0.01; 0.01];
 Ns = 1000000;
@@ -154,15 +154,16 @@ Ns = 1000000;
 Γρ_I = zeros(Cdouble,Nr,Nr,Nnoise);
 μρ_I = zeros(Cdouble,Nr,Nnoise);
 
-PLOT_FIG = false
+PLOT_FIG = (false & (Threads.nthreads()==1)) # to much mess if more than one thread, generating a segfault
 
-for k in 1:Nnoise
+Threads.@threads  for k in 1:Nnoise
+    println(k,"/",Nnoise)
 
-    ρ_all = samplePosteriorModelMargin(0.0ρA_1,Γsqrt,p0*ones(Cdouble,Ns),y_data[k,:],ΓIinv[:,:,k],H_better,Γbetter,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
+    local ρ_all = samplePosteriorModelMargin(0.0ρA_1,Γsqrt,y_data[k,:],ΓIinv[:,:,k],H_better,Γbetter,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
 
     # compute a covariance matrix from the samples 
-    μρ_I[:,k] = dropdims(mean(ρ_all,dims=1),dims=1);
-    Γρ_I[:,:,k] = cov(ρ_all);
+    global μρ_I[:,k] = dropdims(mean(ρ_all,dims=1),dims=1);
+    global Γρ_I[:,:,k] = cov(ρ_all);
 
     if PLOT_FIG
         figure();
@@ -174,10 +175,10 @@ for k in 1:Nnoise
 
 
         # TODO: observe the burn in period and don't use it for the computation of the mean and the covariance... not really showing up (which is good news)
-        Elikelihood  = zeros(Cdouble,Ns+1);
-        EpriorSmooth = zeros(Cdouble,Ns+1);
-        EpriorVal    = zeros(Cdouble,Ns+1);
-        EpriorModel  = zeros(Cdouble,Ns+1);
+        local Elikelihood  = zeros(Cdouble,Ns+1);
+        local EpriorSmooth = zeros(Cdouble,Ns+1);
+        local EpriorVal    = zeros(Cdouble,Ns+1);
+        local EpriorModel  = zeros(Cdouble,Ns+1);
         for i in 1:Ns+1
             Elikelihood[i]  = (y_data[k,:]-H_better*ρ_all[i,:])'*ΓIinv[:,:,k]*(y_data[k,:]-H_better*ρ_all[i,:])
             EpriorSmooth[i] = ρ_all[i,:]'Bprior*ρ_all[i,:]
@@ -187,9 +188,9 @@ for k in 1:Nnoise
             end
         end
 
-        Etot = Elikelihood+EpriorSmooth+EpriorVal+EpriorModel;
+        local Etot = Elikelihood+EpriorSmooth+EpriorVal+EpriorModel;
         Etot[isnan.(Etot)] .= Inf;
-        val_min,idx_min = findmin(Etot);
+        local val_min,idx_min = findmin(Etot);
 
         figure()
         semilogx(collect(1:Ns+1),Elikelihood,label="likelihood")

@@ -27,6 +27,7 @@ using utilsFun  # for the softMax functions
 # modeling XPS
 using XPSpack
 using XPSinv
+using XPSsampling
 
 
 # create some data with a fairly fine discretization and another operator with a different resolution
@@ -141,35 +142,38 @@ r_y_tol=0.005;
 ρ_est_block       = zeros(Cdouble,Nnoise,Nr_lowres);
 ρ_est_cp_block    = zeros(Cdouble,Nnoise,Nr_lowres);
 ρ_est_cp_block_un = zeros(Cdouble,Nnoise,Nr_lowres);
-ΓHΓyinv           = zeros(Cdouble,N_lowres,N_lowres);
+# ΓHΓyinv           = zeros(Cdouble,N_lowres,N_lowres);
 
 
 
-for i in 1:Nnoise
+for i in 1:Nnoise # does not look like this look is safe for multithreading, probably because of the shared memory Threads.@threads  
+    println(i,"/",Nnoise)
     local Y = [y_tilde[i,:]; yd];
 
     local ρ_trunc = inv(Htrunc'*Htrunc)*Htrunc'*Y;
 
     # ρ_est_block[i,:] = [ρA_1[1]; ρ_trunc; ρA_1[N_lowres+2:end]]
-    ρ_est_block[i,:] = [ρA_1[1]; ρ_trunc; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
+    global ρ_est_block[i,:] = [ρA_1[1]; ρ_trunc; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
 
     # local w = [(1.0/σnoise[i])*ones(Cdouble,Ndata); (1.0/0.1)*ones(Cdouble,N+1)];
     
     # local ρ_est,sn,taun,X_ALL,S_ALL,T_ALL,N_last = alg2_cp_gaussian(0.5ones(Cdouble,N),Y,Htrunc,w,W_stop;tau0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol);
     # local ρ_est,sn,taun,X_ALL,S_ALL,T_ALL,N_last = alg2_cp_quad(0.5ones(Cdouble,N),y_tilde[i,:],yd,Htrunc,ΓI[:,:,i],Γd::Array{Cdouble,2},W_stop;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
     local ρ_est,sn,taun,X_ALL,S_ALL,T_ALL,N_last = alg2_cp_quad(0.5ones(Cdouble,N_lowres),y_tilde[i,:],yd,Htrunc,ΓI[:,:,i],Γd_lowres,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
-    
+    println(N_last,"/",N_max_iter," i = ",i)
+
     # marginalization of uncertainty
-    global ΓHΓyinv .= 0.0;
+    local ΓHΓyinv = zeros(Cdouble,N_lowres,N_lowres);
     for k in 1:Ndata
         # ΓHΓyinv = ΓHΓyinv + diagm(diag(ΓH[2:N0_lowres,2:N0_lowres,k])/ΓI[k,k,i])
         ΓHΓyinv = ΓHΓyinv + ΓH[2:N0_lowres,2:N0_lowres,k]/(ΓI[k,k,i]+(σB*σεH[k])^2)
     end
     local ρ_est_un,sn,taun,X_ALL,S_ALL,T_ALL,N_last = alg2_cp_quad_un(0.5ones(Cdouble,N_lowres),y_tildeμ[i,:],yd,Htrunc_un,ΓI[:,:,i],Γd_lowres,ΓHΓyinv,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
-    
+    println(N_last,"/",N_max_iter," i = ",i)
+
     # ρ_est_cp_block[i,:] = [ρA_1[1]; ρ_est; ρA_1[N_lowres+2:end]]
-    ρ_est_cp_block[i,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
-    ρ_est_cp_block_un[i,:] = [ρA_1[1]; ρ_est_un; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
+    global ρ_est_cp_block[i,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
+    global ρ_est_cp_block_un[i,:] = [ρA_1[1]; ρ_est_un; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
 end
 
 

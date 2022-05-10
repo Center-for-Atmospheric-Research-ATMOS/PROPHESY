@@ -2,8 +2,7 @@
 σw = 1.0e-3 # 0.001; # small compared with the amplitude of the state 
 w = σw*ones(Cdouble,N_lowres); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
-p0 = 0.5 # 8.0*0.05 # 0.02; #starting acceptance rate of uphill moves
-Ns = 1000000;
+Ns = 100000#0;
 
 ΓIinv = zeros(Cdouble,Ndata,Ndata,Nnoise);
 for i in 1:Nnoise
@@ -14,23 +13,25 @@ end
 Γρ_I = zeros(Cdouble,N_lowres,N_lowres,Nnoise);
 μρ_I_un = zeros(Cdouble,N_lowres,Nnoise);
 Γρ_I_un = zeros(Cdouble,N_lowres,N_lowres,Nnoise);
-for i in 1:Nnoise
+for i in 1:Nnoise 
+    println(i,"/",Nnoise," posterior sampling")
     # conditional to data and model
-    local ρ_all = samplePosterior(μρ[2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tilde[i,:],yd,ΓIinv[:,:,i],Γd_lowres,H_tilde,D_tilde;Ns=Ns);
+    local ρ_all,_ = samplePosterior(μρ[2:N0_lowres],Γsqrt,y_tilde[i,:],yd,ΓIinv[:,:,i],Γd_lowres,H_tilde,D_tilde;Ns=Ns);
+    
 
     # error marginalization
-    global ΓHΓyinv .= 0.0;
+    local ΓHΓyinv = zeros(Cdouble,N_lowres,N_lowres);
     for k in 1:Ndata
         # ΓHΓyinv = ΓHΓyinv + diagm(diag(ΓH[2:N0_lowres,2:N0_lowres,k])/ΓI[k,k,i])
         ΓHΓyinv = ΓHΓyinv + ΓH[2:N0_lowres,2:N0_lowres,k]/(ΓI[k,k,i]+(σB*σεH[k])^2)
     end
-    local ρ_all_un = samplePosteriorMargin(μρ_un[2:N0_lowres],Γsqrt,p0*ones(Cdouble,Ns),y_tildeμ[i,:],yd,ΓIinv[:,:,i],Γd_lowres,μH_tilde,D_tilde,ΓHΓyinv;Ns=Ns);
-
+    local ρ_all_un,_ = samplePosteriorMargin(μρ_un[2:N0_lowres],Γsqrt,y_tildeμ[i,:],yd,ΓIinv[:,:,i],Γd_lowres,μH_tilde,D_tilde,ΓHΓyinv;Ns=Ns);
+    
     # compute a covariance matrix from the samples 
-    μρ_I[:,i] = dropdims(mean(ρ_all,dims=1),dims=1);
-    Γρ_I[:,:,i] = cov(ρ_all);
-    μρ_I_un[:,i] = dropdims(mean(ρ_all_un,dims=1),dims=1);
-    Γρ_I_un[:,:,i] = cov(ρ_all_un);
+    global μρ_I[:,i] = dropdims(mean(ρ_all,dims=1),dims=1);
+    global Γρ_I[:,:,i] = cov(ρ_all);
+    global μρ_I_un[:,i] = dropdims(mean(ρ_all_un,dims=1),dims=1);
+    global Γρ_I_un[:,:,i] = cov(ρ_all_un);
 end
 
 μμρ_I = dropdims(mean(μρ_I,dims=2),dims=2);

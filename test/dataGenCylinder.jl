@@ -56,14 +56,14 @@ Nλ = 21;
 δκ = 0.005;
 
 for i in 1:Ndata
-    H_better[i,:],_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λbetter0[i]);
-    κ = δκ*(2.0*rand()-1.0);
-    H_lowres[i,:],_,_,_,_ = cylinder_gain_H(r_lowres,θ,y,x0,y0,z0,μ0,(1.0+κ)*λbetter0[i]); # 0.999999999
+    global H_better[i,:],_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λbetter0[i]);
+    local κ = δκ*(2.0*rand()-1.0);
+    global H_lowres[i,:],_,_,_,_ = cylinder_gain_H(r_lowres,θ,y,x0,y0,z0,μ0,(1.0+κ)*λbetter0[i]); # 0.999999999
     # local λrange = collect(range(0.95λbetter0[i],1.05λbetter0[i],length=Nλ))
     # local λrange = collect(range(0.98λbetter0[i],1.02λbetter0[i],length=Nλ))
     local λrange = (1.0+κ)*collect(range((1.0-δκ)*λbetter0[i],(1.0+δκ)*λbetter0[i],length=Nλ))
     local Pλ = (1.0/((λrange[2]-λrange[1])*Nλ))*ones(Cdouble,Nλ)
-    ΓH[:,:,i], μH[:,i]   = cov_H_cylinder(r_lowres, θ,y,x0,y0,z0,μ0,λrange,Pλ)
+    global ΓH[:,:,i], μH[:,i]   = cov_H_cylinder(r_lowres, θ,y,x0,y0,z0,μ0,λrange,Pλ)
 end
 
 H_better = reverse(H_better,dims=2);

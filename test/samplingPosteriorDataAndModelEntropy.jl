@@ -27,6 +27,7 @@ using utilsFun  # for the softMax functions
 # modeling XPS
 using XPSpack
 using XPSinv
+using XPSsampling
 
 
 
@@ -125,28 +126,27 @@ figure(); plot(y_data')
 σw = 1.0e-1 # 0.001; # small compared with the amplitude of the state 
 w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=15.0)));
-p0 = 0.05 # 0.02; # starting acceptance rate of uphill moves
 # ρB = [ρA_1[1]; ρA_1[end]]; # known values 
 # σB = [0.01; 0.01];         # how much do we trust these known values
 # for noise levels: σnoise = [0.001; 0.01; 0.1; 1.0; 10.0], use the following entropy weights
 # wE = [1.0e8; 1.0e6; 1.0e4; 1.0e2; 1.0e0]
 wE = 1.0e2*ones(Cdouble,Nnoise);
 ρE = logistic.(1000.0reverse(μ0.-r).-2.0,0.0,1.0,2.0); # purposefully choose a wrong a priori profile
-Ns = 1000000; # number of samples... no idea a priori how many samples are needed
+Ns = 10000#00; # number of samples... no idea a priori how many samples are needed
 
 Γρ_IG = zeros(Cdouble,Nr,Nr,Nnoise);
 μρ_IG = zeros(Cdouble,Nr,Nnoise);
 
-PLOT_FIG = false
+PLOT_FIG = (true & (Threads.nthreads()==1)) # to much mess if more than one thread, generating a segfault
 
 for k in 1:Nnoise
     # actually run the sampling
-    # ρ_all = samplePosterior(zeros(Cdouble,Nr),Γsqrt,p0*ones(Cdouble,Ns),y_data[k,:],ΓIinv[:,:,k],H_better,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
-    ρ_all = samplePosteriorEntropy(zeros(Cdouble,Nr),Γsqrt,p0*ones(Cdouble,Ns),y_data[k,:],ΓIinv[:,:,k],H_better,ρE,wE[k];Ns=Ns)
+    # ρ_all = samplePosterior(zeros(Cdouble,Nr),Γsqrt,y_data[k,:],ΓIinv[:,:,k],H_better,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
+    local ρ_all = samplePosteriorEntropy(zeros(Cdouble,Nr),Γsqrt,y_data[k,:],ΓIinv[:,:,k],H_better,ρE,wE[k];Ns=Ns)
 
     # compute a covariance matrix from the samples 
-    μρ_IG[:,k] = dropdims(mean(ρ_all,dims=1),dims=1);
-    Γρ_IG[:,:,k] = cov(ρ_all);
+    global μρ_IG[:,k] = dropdims(mean(ρ_all,dims=1),dims=1);
+    global Γρ_IG[:,:,k] = cov(ρ_all);
 
     if PLOT_FIG
         figure();
@@ -159,13 +159,13 @@ for k in 1:Nnoise
 
         
         # observe the quantities used for the sampling (note that the burn in period is not too long with the communication kernel in use)
-        Elikelihood  = zeros(Cdouble,Ns+1);
-        EpriorEntropy = zeros(Cdouble,Ns+1);
+        local Elikelihood  = zeros(Cdouble,Ns+1);
+        local EpriorEntropy = zeros(Cdouble,Ns+1);
         for i in 1:Ns+1
             Elikelihood[i]   = (y_data[k,:]-H_better*ρ_all[i,:])'*ΓIinv[:,:,k]*(y_data[k,:]-H_better*ρ_all[i,:])
             EpriorEntropy[i] = sum(ρ_all[i,:]-ρE - ρ_all[i,:].*log.(ρ_all[i,:]./ρE));
         end
-        Etot = Elikelihood+EpriorEntropy;
+        local Etot = Elikelihood+EpriorEntropy;
         Etot[isnan.(Etot)] .= Inf;
 
         figure()
@@ -174,7 +174,7 @@ for k in 1:Nnoise
         semilogx(collect(1:Ns+1),Etot,label="total")
         legend()
 
-        val_min,idx_min = findmin(Etot)
+        local val_min,idx_min = findmin(Etot)
         figure();
         plot(μ0.-r,ρA_1,label="GT")
         plot(μ0.-r,ρ_all[idx_min,:],label="min Etot")
