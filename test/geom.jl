@@ -4,7 +4,7 @@ using PyPlot
 fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json")
 # fm.findfont("serif", rebuild_if_missing=false)
 # fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
-rc("font",family="serif",serif="Computer Modern Roman")
+# rc("font",family="serif",serif="Computer Modern Roman")
 rc("text", usetex=true)
 
 # data manipulation (loading, writing, etc)
@@ -23,7 +23,7 @@ using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack
-using XPSinv
+# using XPSinv
 
 
 
