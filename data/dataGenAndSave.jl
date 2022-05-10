@@ -20,7 +20,6 @@ using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack
-# using XPSinv
 
 # tags
 LOW_RES   = true               # set to true for computing the low resolution measurement models

@@ -9,34 +9,33 @@ using LinearAlgebra # for the definition of the I matrix in XPSutils... could be
 using Interpolations # used in XPSmeas.jl
 using Printf
 using utilsFun
+using NewtonMethod  # used in XPSutils.jl
 
-# penetration depth and cross-section values: not sure it's really useful in this model since the values are supposed to be known to create the models
+# penetration depth and cross-section values: not sure it's really useful in this module since the values are supposed to be known to create the models
 export λe, σ_cs_orb 
 include("penetration_depth.jl")
 include("cross_section.jl")
 
+
 # data enhancement: baseline correction and peak fitting (requires sampling of the spectra)
 export baseline_removal, EM_peaks, cross_section_spread_function, cross_section_spread_function_sample # in XPSutils.jl
 
-# objects modelling experiment and device
-export XPSdevice, XPSsetup
 
 # possible geometry of the sample
 export fingerGeom, planeGeom, cylinderGeom
 # distance and geometry factors
 export d_plane_P, d_cylinder_P, d_cylinder_P_simple, d_sphere_P, plane_gain_H, finger_gain_H, cylinder_gain_H
 export cov_H_cylinder
-# acquisition parameters
-export XPSacq
 
-export Ψ_lin_peaks # implemented in XPSmeas_simple
+# objects modelling experiment and device
+export XPSacq # acquisition parameters
+export Ψ_lin_peaks # implemented in XPSmeas.jl
 
 # include the implementation of the exported functions and objects
-# include("XPSexp.jl")   # implements XPSexp object -> now replaced by XPSacq
 include("XPSmeas.jl")  # implement most function exported so far
 
-using NewtonMethod
-include("XPSutils.jl") # common algorithms used for data processing #TODO: move to XPSinv package
+
+include("XPSutils.jl") # common algorithms used for data processing
 
 # MAYBE: move to another package/module
 export samplePosterior, acceptSample, transmissionMechanism, smoothnessCovariance, corrCovariance
