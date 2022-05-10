@@ -23,7 +23,6 @@ using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack
-# using XPSinv
 
 
 
