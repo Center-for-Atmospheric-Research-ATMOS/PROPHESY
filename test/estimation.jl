@@ -307,15 +307,33 @@ r_n_tol=0.001;
 r_y_tol=0.001;
 r_y_tol_un=r_y_tol; 
 
+w = σw*ones(Cdouble,N_lowres); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
+Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
+Ns      = 1000000;
+Ns_burn =  100000;
+
 
 # for each noise sample
-Nsample = min(30,Nrep);
+Nsample = min(30,Nrep); #10
 ρ_cp    = zeros(Cdouble,Nsample,Nr_lowres);
+μρ_HI = zeros(Cdouble,N_lowres,Nsample);
+Γρ_HI = zeros(Cdouble,N_lowres,N_lowres,Nsample);
+deltaU = zeros(Cdouble,Ns,Nsample);
+
 Threads.@threads  for i in 1:Nsample
     println(i,"/",Nsample)
+    # argmax estimate
     local ρ_est,_,_,_,_,_,N_last = alg2_cp_quad(x00,y_tilde[i,:],yd,Htrunc,ΓItrunc,Γd_lowres,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
     global ρ_cp[i,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)];
     println(N_last,"/",N_max_iter)
+
+    # posterior covariance estimation (conditional to data and model)
+    println("posterior sampling: ",i)
+    local ρ_all, deltaU[:,i] = samplePosterior(ρ_cp[i,2:N0_lowres],Γsqrt,y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
+
+    # compute a covariance matrix from the samples 
+    global μρ_HI[:,i] = dropdims(mean(ρ_all[Ns_burn:Ns,:],dims=1),dims=1);
+    global Γρ_HI[:,:,i] = cov(ρ_all[Ns_burn:Ns,:]);
 end
 
 # variability due to noise in data
@@ -323,109 +341,182 @@ end
 μρ = dropdims(mean(ρ_cp[1:Nsample,:],dims=1),dims=1);
 Γρ = cov(ρ_cp[1:Nsample,:]);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#
-# posterior covariance estimation (get an idea of how good the estimation can be)
-#
-
-w = σw*ones(Cdouble,N_lowres); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
-Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
-Ns      = 1000000;
-Ns_burn =  100000;
-
-
-μρ_HI = zeros(Cdouble,N_lowres,Nsample);
-Γρ_HI = zeros(Cdouble,N_lowres,N_lowres,Nsample);
-deltaU = zeros(Cdouble,Ns);
-Threads.@threads  for i in 1:Nsample
-    println(i,"/",Nsample)
-    # conditional to data and model
-    local ρ_all, deltaU[:] = samplePosterior(ρ_cp[i,2:N0_lowres],Γsqrt,y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
-
-    # compute a covariance matrix from the samples 
-    global μρ_HI[:,i] = dropdims(mean(ρ_all[Ns_burn:Ns,:],dims=1),dims=1);
-    global Γρ_HI[:,:,i] = cov(ρ_all[Ns_burn:Ns,:]);
-end
-
 # marginalization P(ρ|H) = ∫P(ρ|H,y)P(y)dy -> mean and covariance of ρ∼P(ρ|H)
 μρ_H = dropdims(mean(μρ_HI,dims=2),dims=2); # μ_{ρ|H}
 Γρ_H = dropdims(mean(Γρ_HI,dims=3),dims=3); # Γ_{ρ|H}
 
 
 
-figure(); plot(cumsum(-deltaU)); # plot(cumsum(-deltaUun))
-if SAVE_FIG
-    savefig(string(filename_save,"_energy_values.png"))
-    savefig(string(filename_save,"_energy_values.pdf"))
+
+
+
+
+##
+## marginalization over the meas. op. space
+##
+
+i_sample       = min(1,Nsample);
+N_model_sample = 30;
+ρ_cp_HI        = zeros(Cdouble,N_model_sample,Nr_lowres);
+deltaUh        = zeros(Cdouble,Ns,N_model_sample);
+μρ_HI_sample   = zeros(Cdouble,N_lowres,N_model_sample);
+Γρ_HI_sample   = zeros(Cdouble,N_lowres,N_lowres,N_model_sample);
+# 
+Threads.@threads for m in 1:min(N_model_sample,100) # this loop is just meant for sampling the model, so, each iteration is independent
+    println(m,"/",min(N_model_sample,100))
+    local num_sample;
+    if (m<10)
+        num_sample = string("00",m,"/")
+    elseif ((m>=10) & (m<100))
+        num_sample = string("0",m,"/")
+    else
+        num_sample = string(m,"/")
+    end
+    local dfH_lowres = CSV.File(string(model_folder_lowres_un,"/",num_sample,"H_lowres.csv");header=true,ntasks=1) |> DataFrame
+    local H_lowres   = Matrix{Cdouble}(dfH_lowres);
+
+
+
+    # slice the model (3 terms: boundary, surface and bulk)
+    local H0 = H_lowres[:,1];
+    local H_tilde = H_lowres[:,2:N0_lowres];
+    local Hb = H_lowres[:,N0_lowres+1:end];
+
+    # data and noise correction 
+    local Δy      = dropdims(sum(Hb,dims=2),dims=2)*ρA_1[end];
+    local δy      = H0*ρA_1[1];
+    local y_tilde = repData.-(Δy+δy)';
+    local Hnot    = [H0 Hb];
+    local Hnot1   = sum(Hnot;dims=2);
+    local ΓItrunc = ΓI + σB^2*Hnot1*Hnot1';
+    local ΓIinv   = inv(ΓItrunc);
+
+
+    # smoosh together the several part of the model into augmented operators
+    local Htrunc = [H_tilde; D_tilde];                                     # conditional to data and measurement model
+
+    # data inversion: estimation of the concentration profile using CP algorithm
+    println(i_sample," data, model: ",m)
+    local ρ_est,_,_,_,_,_,N_last = alg2_cp_quad(x00,y_tilde[i_sample,:],yd,Htrunc,ΓItrunc,Γd_lowres,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
+    global ρ_cp_HI[m,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
+    println(N_last,"/",N_max_iter," model ",m)
+
+    # sample the posterior distribution for the fixed data y_tilde[i_sample,:]
+    # posterior covariance estimation (conditional to data and model)
+    println("posterior sampling: ",i_sample," model ",m)
+    local ρ_all, deltaUh[:,m]  = samplePosterior(ρ_cp_HI[m,2:N0_lowres],Γsqrt,y_tilde[i_sample,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
+
+    # compute a covariance matrix from the samples 
+    global μρ_HI_sample[:,m]   = dropdims(mean(ρ_all[Ns_burn:Ns,:],dims=1),dims=1);
+    global Γρ_HI_sample[:,:,m] = cov(ρ_all[Ns_burn:Ns,:]);
 end
 
-# plot the estimation for both version (conditional to data and model, and conditional to data only) showing the covariance of the posterior 
-# and the variability due to the noise in the data. For each profile, plot in one figure different level of noise and different level of model uncertainty (2 of each)
+# compute the estimate variability due to the variation in the model
+mean_ρ_y = dropdims(mean(ρ_cp_HI[1:min(N_model_sample,100),:],dims=1),dims=1);
+var_ρ_y = cov(ρ_cp_HI[1:min(N_model_sample,100),:]);
 
-figure(figsize=[10,6])
-ax1 = subplot(121)
-  # 
-l_cp_post_est,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H,color="tab:red")
-l_cp_post_cov    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H-sqrt.(diag(Γρ_H)),μρ_H+sqrt.(diag(Γρ_H)),alpha=0.5,color="tab:red")
+# marginal mean and covariance
+μρ_y = dropdims(mean(μρ_HI_sample,dims=2),dims=2); # μ_{ρ|y}
 
-l_cp_noise_mean, = plot(1000.0(μ0.-r_lowres),μρ,color="tab:blue")
-l_cp_noise_cov   = fill_between(1000.0(μ0.-r_lowres),μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color="tab:blue")
 
+Γρ_y_mean = dropdims(mean(Γρ_HI_sample,dims=3),dims=3)
+ΔΓρ_y1 = (1.0/N_model_sample^2)*μρ_y*μρ_y';
+ΔΓρ_y2 = μρ_HI_sample[:,1]*μρ_HI_sample[:,1]';
+[global ΔΓρ_y2 = ΔΓρ_y2 + μρ_HI_sample[:,i]*μρ_HI_sample[:,i]'; for i in 2:N_model_sample]
+ΔΓρ_y2 = (1.0/N_model_sample)*ΔΓρ_y2;
+
+Γρ_y = Γρ_y_mean - ΔΓρ_y1 + ΔΓρ_y2; # Γ_{ρ|y}
+
+# figure(); imshow(Γρ_y); colorbar()
+# figure(); imshow(Γρ_y_mean); colorbar()
+# figure(); imshow(ΔΓρ_y1); colorbar()
+# figure(); imshow(ΔΓρ_y2); colorbar()
+
+figure(figsize=[10,6]); # plot(1000.0(μ0.-r_lowres),ρ_cp_HI');
+
+# conditional to y: variability
+l_cp_var_mod,    = plot(1000.0(μ0.-r_lowres),mean_ρ_y,color="tab:red")
+l_cp_var_mod_cov = fill_between(1000.0(μ0.-r_lowres),mean_ρ_y-sqrt.(diag(var_ρ_y)),mean_ρ_y+sqrt.(diag(var_ρ_y)),alpha=0.5,color="tab:red")
+# conditional to y: mean and covariance of the distribution
+l_cp_post_est_y, = plot(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_y,color="tab:cyan")
+l_cp_post_cov_y  =fill_between(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_y-sqrt.(diag(Γρ_y)),μρ_y+sqrt.(diag(Γρ_y)),alpha=0.25,color="tab:cyan")
+
+# conditional to H: variability
+l_cp_noise_mean, = plot(1000.0(μ0.-r_lowres),μρ,color="tab:orange")
+l_cp_noise_cov   = fill_between(1000.0(μ0.-r_lowres),μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color="tab:orange")
+# conditional to H: mean and covariance of the distribution
+# l_cp_post_est,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H,color="tab:red")
+# l_cp_post_cov    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H-sqrt.(diag(Γρ_H)),μρ_H+sqrt.(diag(Γρ_H)),alpha=0.5,color="tab:red")
+l_cp_post_est,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_HI[:,i_sample],color="tab:blue")
+l_cp_post_cov    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_HI[:,i_sample]-sqrt.(diag(Γρ_HI[:,:,i_sample])),μρ_HI[:,i_sample]+sqrt.(diag(Γρ_HI[:,:,i_sample])),alpha=0.5,color="tab:blue")
+
+# ground truth
 l_gt,            = plot(1000.0(μ0.-r),ρA_1,color="tab:green")
-legend([(l_cp_post_est,l_cp_post_cov),(l_cp_noise_mean,l_cp_noise_cov),l_gt],["sampled posterior","est.+noise variability","GT"],fontsize=14,loc="lower right")
+legend([(l_cp_post_est,l_cp_post_cov),(l_cp_post_est_y,l_cp_post_cov_y),(l_cp_noise_mean,l_cp_noise_cov),(l_cp_var_mod,l_cp_var_mod_cov),l_gt],["sampled posterior P\$(\\rho|H,y)\$","sampled posterior P\$(\\rho|y)\$","\$E[\\hat{\\rho}|H]\\pm\\Gamma[\\hat{\\rho}|H]\$","\$E[\\hat{\\rho}|y]\\pm\\Gamma[\\hat{\\rho}|y]\$","GT"],fontsize=14,loc="upper right")
+
 xlim(0.0,10.0)
-ylim(0.0,1.5maximum(ρA_1))
+ylim(-0.1,2.5maximum(ρA_1))
 xlabel("depth [nm]",fontsize=14)
 xticks(fontsize=14)
 ylabel("concentration [a.u.]",fontsize=14)
 yticks(fontsize=14)
 
-ax2 = subplot(122)
+# if false
 
-xlim(0.0,10.0)
-ylim(0.0,1.5maximum(ρA_1))
-xlabel("depth [nm]",fontsize=14)
-xticks(fontsize=14)
-ylabel("concentration [a.u.]",fontsize=14)
-yticks(fontsize=14)
 
-tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
-ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
-ax1.annotate("P\$(\\rho|H,I)\$", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
-ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
-ax2.annotate("P\$(\\rho|I)\$",   xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
+#     # plot the relative evolution of the energy (-log(P(ρ|H,y))) to check if the sampling is acceptable
+#     if SAVE_FIG
+#         figure(); plot(cumsum(-deltaU,dims=1)[1:1000:end,:]);
+#         savefig(string(filename_save,"_energy_values.png"))
+#         savefig(string(filename_save,"_energy_values.pdf"))
+#     end
+#     if SAVE_FIG
+#         figure(); plot(cumsum(-deltaUh,dims=1)[1:1000:end,:]);
+#         figure(); plot(cumsum(-deltaUh,dims=1)[1:Ns_burn,:]);
+#         figure(); plot(cumsum(-deltaUh,dims=1)[end-10000:end,:]);
+#         savefig(string(filename_save,"_energy_values.png"))
+#         savefig(string(filename_save,"_energy_values.pdf"))
+#     end
 
-if SAVE_FIG
-    println("saving: ",filename_save)
-    savefig(string(filename_save,".png"))
-    savefig(string(filename_save,".pdf"))
-end
+#     # plot the estimation for both version (conditional to data and model, and conditional to data only) showing the covariance of the posterior 
+#     # and the variability due to the noise in the data. For each profile, plot in one figure different level of noise and different level of model uncertainty (2 of each)
+
+#     figure(figsize=[10,6])
+#     ax1 = subplot(121)
+#     # 
+#     l_cp_post_est,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H,color="tab:red")
+#     l_cp_post_cov    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H-sqrt.(diag(Γρ_H)),μρ_H+sqrt.(diag(Γρ_H)),alpha=0.5,color="tab:red")
+
+#     l_cp_noise_mean, = plot(1000.0(μ0.-r_lowres),μρ,color="tab:blue")
+#     l_cp_noise_cov   = fill_between(1000.0(μ0.-r_lowres),μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color="tab:blue")
+
+#     l_gt,            = plot(1000.0(μ0.-r),ρA_1,color="tab:green")
+#     legend([(l_cp_post_est,l_cp_post_cov),(l_cp_noise_mean,l_cp_noise_cov),l_gt],["sampled posterior","est.+noise variability","GT"],fontsize=14,loc="lower right")
+#     xlim(0.0,10.0)
+#     ylim(0.0,1.5maximum(ρA_1))
+#     xlabel("depth [nm]",fontsize=14)
+#     xticks(fontsize=14)
+#     ylabel("concentration [a.u.]",fontsize=14)
+#     yticks(fontsize=14)
+
+#     ax2 = subplot(122)
+
+#     xlim(0.0,10.0)
+#     ylim(0.0,1.5maximum(ρA_1))
+#     xlabel("depth [nm]",fontsize=14)
+#     xticks(fontsize=14)
+#     ylabel("concentration [a.u.]",fontsize=14)
+#     yticks(fontsize=14)
+
+#     tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+#     ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+#     ax1.annotate("P\$(\\rho|H,I)\$", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
+#     ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+#     ax2.annotate("P\$(\\rho|I)\$",   xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
+
+#     if SAVE_FIG
+#         println("saving: ",filename_save)
+#         savefig(string(filename_save,".png"))
+#         savefig(string(filename_save,".pdf"))
+#     end
+# end
