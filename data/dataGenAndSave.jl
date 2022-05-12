@@ -1,7 +1,6 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
-fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json") # TODO: look for the path automatically
 rc("text", usetex=true)
 rc("figure",max_open_warning=50)
 using myPlot
