@@ -83,7 +83,7 @@ end
 # tau0:  initial value of τ in Alg2 chambolle2011first "A first-order primal-dual algorithm for convex problems with applications to imaging"
 # Niter: number of iterations TODO: change the stopping criteria to a better one, maybe the relative variation between two steps or the distance between primal and dual
 """
-    alg2_cp_gaussian(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
+    alg2_cp_quad(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
 
     run the algorithm 2 described in [1] for the minimization problem
         min {F(A*x) + G(x)}
@@ -167,4 +167,82 @@ function alg2_cp_quad(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdoubl
 
     # return primal and dual states (maybe the primal and dual problems' values and the path of x and s for debugging purposes)
     xn,sn,τn,X_ALL,S_ALL,T_ALL,N_last
+end
+
+
+"""
+    alg2_cp_quad(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
+
+    run the algorithm 2 described in [1] for the minimization problem
+        min {F(A*x) + G(x)}
+    with:
+        F(z) = (yy-z[1:M])^T Γy^{-1} (yy-z[1:M]) + (yd-z[M+1:end])^T Γd^{-1} (yd-z[M+1:end]) 
+    and G the indicator function of the positive quadrant (R^+)^N.
+
+    [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
+    Journal of mathematical imaging and vision, 40(1), pp.120-145.
+"""
+function alg2_cp_quad_LM(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},A::Array{Cdouble,2},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2},W_stop::Array{Cdouble,1};τ0::Cdouble=1.0,Niter::Int64=100,r_n_tol::Cdouble=1.0e-6,r_y_tol::Cdouble=0.5)
+    # init algorithm's parameters
+    N = length(x0);
+    if (N!=size(A,2))
+        throw("alg2_chpo: operator A and state x0 do not have compatible dimensions")
+    end
+    L = opnorm(A,2); # spectral norm of the operator A (if it's a matrix, it is the Lipschitz constant)
+    σ0 = 1.0/(τ0*L^2);
+    dxhx0 = sqrt(N); # just a rough estimate (upper estimate) of the distance between the initial state and the true state ||x^{\star}-x0||
+    γ = 2.0*dxhx0/τ0; # makes the convergence faster
+
+    # eigen decomposition of the covariance matrices
+    Fy = eigen(Γy)
+    Py = real(Fy.vectors)
+    Dy = real(Fy.values)
+    Fd = eigen(Γd)
+    Pd = real(Fd.vectors)
+    Dd = real(Fd.values)
+
+    # iteration
+    σn     = σ0;
+    τn     = τ0
+    xn     = copy(x0);
+    sn     = zeros(Cdouble,size(A,1)); # could this be a problem? is sn allowed to take whatever value?
+    xn_pre = copy(x0);
+    xn_bar = copy(x0);
+    idxdd = findall(yy.>0)
+    idxnn = findall(yy.==0)
+    Y_rel = zeros(Cdouble,length(yy));
+    dX_W = copy(x0);
+    N_last = Niter
+    for i in 1:Niter
+        # dual step
+        sn = prox_F_conj_quad(sn+σn*A*xn_bar,yy,yd,σn,Py,Dy,Pd,Dd)
+        # primal step
+        xn_pre = xn;
+        xn     = prox_G_quad(xn-τn*A'*sn);
+        # update algortihm paramters
+        θn = 1.0/sqrt(1.0+2.0γ*τn);
+        τn   = θn*τn;
+        σn = σn/θn;
+        # bar update: linear combination of the previous and current state
+        xn_bar = xn + θn*(xn-xn_pre);
+
+        # compute stopping criteria
+        #    data fidelity
+        Y_rel[idxdd] = abs.(yy[idxdd] - A[idxdd,:]*xn)./yy[idxdd]
+        Y_rel[idxnn] = abs.(A[idxnn,:]*xn)
+        #    norm of the relative step length
+        dX_W = W_stop.*(xn-xn_pre);
+        normdX_W = sum(dX_W.^2);
+        normX_W = sum((W_stop.*xn).^2)
+        #    both criteria must be met: data fidelity and relative change
+        if ((median(Y_rel)<=r_y_tol) & (sqrt.(normdX_W./normX_W)<=r_n_tol))
+            N_last = i;
+            i = Niter+1;
+            break
+        end
+
+    end
+
+    # return primal and dual states 
+    xn,sn,N_last
 end

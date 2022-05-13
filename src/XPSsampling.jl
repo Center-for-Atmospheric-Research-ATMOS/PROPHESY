@@ -14,7 +14,7 @@ module XPSsampling
     export transmissionMechanism
 
     # sampling
-    export samplePosterior, acceptSample
+    export samplePosterior, acceptSample, samplePosteriorMeanAndCov
     export samplePosteriorModelMargin, acceptSampleModelMargin # marginalization over the measurement operator space (or some approximation of it)
     # export samplePosteriorEntropy, acceptSampleEntropy # does ot serve much purpose (except for showing that it's not gonna be used)
     export samplePosteriorMargin, acceptSampleMargin

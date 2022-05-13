@@ -37,6 +37,33 @@ function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::
     ρ_all,deltaU
 end
 
+function samplePosteriorMeanAndCov(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},yd::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2},H::Array{Cdouble,2},D::Array{Cdouble,2};Ns::Int64=10000,Nburn::Int64=1000)
+    # all samples
+    ρ_curr = copy(ρ_start);
+    ρ_prop = copy(ρ_start);
+    μρ_cum = zeros(Cdouble,length(ρ_start));
+    Γρ_cum = zeros(Cdouble,length(ρ_start),length(ρ_start));
+    deltaU = zeros(Cdouble,Ns);
+    for i in 1:Ns
+        # global ρ_prop
+        # global deltaU
+        # draw a new sample from a distribution not to far from the actual one
+        ρ_prop = transmissionMechanismSmooth(ρ_curr,Γsqrt)
+        ρ_prop[ρ_prop.<0.0] .= 0.0  
+        
+        # accept or reject the sample
+        ρ_prop,deltaU[i] = acceptSample(ρ_curr,ρ_prop,y,yd,ΓIinv,Γdinv,H,D)
+        if (i>=Nburn)
+            μρ_cum = μρ_cum + ρ_prop; # global 
+            Γρ_cum = Γρ_cum + ρ_prop*ρ_prop'; #global 
+        end
+        ρ_curr = ρ_prop;
+    end
+    μρ_cum = μρ_cum/(Ns-Nburn+1);
+    Γρ_cum = (1.0/(Ns-Nburn))*(Γρ_cum - (Ns-Nburn+1)*μρ_cum*μρ_cum');
+    μρ_cum,Γρ_cum,deltaU
+end
+
 
 ##
 ## adding marginalization of model error
@@ -81,3 +108,4 @@ function samplePosteriorMargin(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,
     end
     ρ_all,deltaU
 end
+

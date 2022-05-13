@@ -32,6 +32,7 @@ export alg2_cp_gaussian, alg2_cp_gaussian_un, alg2_cp_gaussian_un_no_mem
 export alg2_cp_gaussian_un_val, alg2_cp_gaussian_un_no_mem_val
 export alg2_cp_gaussian_un_vals, alg2_cp_gaussian_un_no_mem_vals
 export alg2_cp_quad, alg2_cp_quad_un # these are the two functions that lead to acceptable results (the only function of real use for this particular problem)
+export alg2_cp_quad_LM               # not tracking all variable so that it limits the memory print
 
 include("XPSinv/usualFun.jl")
 include("XPSinv/cp_gauss.jl")
