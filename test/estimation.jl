@@ -30,8 +30,8 @@ SAVE_FIG = false;
 # tags
 FLAG_0001 = false             # selection of the profile (one must be true and the others false)
 FLAG_0002 = false
-FLAG_0003 = false
-FLAG_0004 = true
+FLAG_0003 = true
+FLAG_0004 = false
 
 MODEL_ERROR_1 = false         # selection of the error level in the measurement model (1->0.5%, 2->1%, 3->2.5%)
 MODEL_ERROR_2 = false
@@ -48,8 +48,8 @@ FLAG_NOISE_1 = false         # selection of the noise level (one must be true an
 FLAG_NOISE_2 = false
 FLAG_NOISE_3 = false
 FLAG_NOISE_4 = false
-FLAG_NOISE_5 = false
-FLAG_NOISE_6 = true
+FLAG_NOISE_5 = true
+FLAG_NOISE_6 = false
 
 STRONG_PRIOR = false
 
@@ -323,17 +323,24 @@ deltaU = zeros(Cdouble,Ns,Nsample);
 Threads.@threads  for i in 1:Nsample
     println(i,"/",Nsample)
     # argmax estimate
-    local ρ_est,_,_,_,_,_,N_last = alg2_cp_quad(x00,y_tilde[i,:],yd,Htrunc,ΓItrunc,Γd_lowres,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
+    local x00_loc = copy(x00);
+    local yd_loc = copy(yd);
+    local Htrunc_loc = copy(Htrunc);
+    local ΓItrunc_loc = copy(ΓItrunc);
+    local Γd_lowres_loc = copy(Γd_lowres);
+    local W_stop_lowres_loc = copy(W_stop_lowres);
+    local ρ_est,_,N_last = alg2_cp_quad_LM(x00_loc,y_tilde[i,:],yd_loc,Htrunc_loc,ΓItrunc_loc,Γd_lowres_loc,W_stop_lowres_loc;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
     global ρ_cp[i,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)];
     println(N_last,"/",N_max_iter)
 
     # posterior covariance estimation (conditional to data and model)
     println("posterior sampling: ",i)
-    local ρ_all, deltaU[:,i] = samplePosterior(ρ_cp[i,2:N0_lowres],Γsqrt,y_tilde[i,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
-
-    # compute a covariance matrix from the samples 
-    global μρ_HI[:,i] = dropdims(mean(ρ_all[Ns_burn:Ns,:],dims=1),dims=1);
-    global Γρ_HI[:,:,i] = cov(ρ_all[Ns_burn:Ns,:]);
+    local Γsqrt_loc = copy(Γsqrt);
+    local ΓIinv_loc = copy(ΓIinv);
+    local Γd_lowres_inv_loc = copy(Γd_lowres_inv);
+    local H_tilde_loc = copy(H_tilde);
+    local D_tilde_loc = copy(D_tilde);
+    μρ_HI[:,i],Γρ_HI[:,:,i],deltaU[:,i] = samplePosteriorMeanAndCov(ρ_cp[i,2:N0_lowres],Γsqrt_loc,y_tilde[i,:],yd_loc,ΓIinv_loc,Γd_lowres_inv_loc,H_tilde_loc,D_tilde_loc;Ns=Ns,Nburn=Ns_burn);
 end
 
 # variability due to noise in data
@@ -355,7 +362,7 @@ var_ρ_H  = cov(ρ_cp[1:Nsample,:]);
 ## marginalization over the meas. op. space
 ##
 
-i_sample       = min(2,Nsample);
+i_sample       = min(2,Nsample); # select a sample with noise (the first sample is not corrupted by noise)
 N_model_sample = 30;
 ρ_cp_HI        = zeros(Cdouble,N_model_sample,Nr_lowres);
 deltaUh        = zeros(Cdouble,Ns,N_model_sample);
@@ -397,18 +404,15 @@ Threads.@threads for m in 1:min(N_model_sample,100) # this loop is just meant fo
 
     # data inversion: estimation of the concentration profile using CP algorithm
     println(i_sample," data, model: ",m)
-    local ρ_est,_,_,_,_,_,N_last = alg2_cp_quad(x00,y_tilde[i_sample,:],yd,Htrunc,ΓItrunc,Γd_lowres,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
+    local ρ_est,_,N_last = alg2_cp_quad_LM(x00,y_tilde[i_sample,:],yd,Htrunc,ΓItrunc,Γd_lowres,W_stop_lowres;τ0=τ0,Niter=N_max_iter,r_n_tol=r_n_tol,r_y_tol=r_y_tol)
     global ρ_cp_HI[m,:] = [ρA_1[1]; ρ_est; ρA_1[end]*ones(Cdouble,Nr_lowres-N0_lowres)]
     println(N_last,"/",N_max_iter," model ",m)
 
     # sample the posterior distribution for the fixed data y_tilde[i_sample,:]
     # posterior covariance estimation (conditional to data and model)
     println("posterior sampling: ",i_sample," model ",m)
-    local ρ_all, deltaUh[:,m]  = samplePosterior(ρ_cp_HI[m,2:N0_lowres],Γsqrt,y_tilde[i_sample,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
-
-    # compute a covariance matrix from the samples 
-    global μρ_HI_sample[:,m]   = dropdims(mean(ρ_all[Ns_burn:Ns,:],dims=1),dims=1);
-    global Γρ_HI_sample[:,:,m] = cov(ρ_all[Ns_burn:Ns,:]);
+    # local ρ_all, deltaUh[:,m]  =                                   samplePosterior(ρ_cp_HI[m,2:N0_lowres],Γsqrt,y_tilde[i_sample,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns);
+    μρ_HI_sample[:,m],Γρ_HI_sample[:,:,m],deltaUh[:,m] = samplePosteriorMeanAndCov(ρ_cp_HI[m,2:N0_lowres],Γsqrt,y_tilde[i_sample,:],yd,ΓIinv,Γd_lowres_inv,H_tilde,D_tilde;Ns=Ns,Nburn=Ns_burn);
 end
 
 # compute the estimate variability due to the variation in the model
@@ -472,6 +476,7 @@ l_μρ_y, = plot(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_y,color="tab:red")
 l_Γρ_y  = fill_between(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_y-sqrt.(diag(Γρ_y)),μρ_y+sqrt.(diag(Γρ_y)),alpha=0.25,color="tab:red")
 # conditional to H: mean and covariance of the distribution
 l_μρ_H,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H,color="tab:orange")
+# (Ns-Ns_burn)/(Ns-Ns_burn-1)*(Γρ_H+μρ_H*μρ_H') - μρ_H*μρ_H'
 l_Γρ_H    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H-sqrt.(diag(Γρ_H)),μρ_H+sqrt.(diag(Γρ_H)),alpha=0.5,color="tab:orange")
 # ground truth
 l_gt,       = plot(1000.0(μ0.-r),ρA_1,color="tab:green")
@@ -499,37 +504,14 @@ ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords
 # CSV.write: μρ_HI_sample, Γρ_HI_sample, μρ_y, Γρ_y                                  # sampling the meas. op. to compute the conditional to meas. noise
 # CSV.write: μρ_HI, Γρ_HI, μρ_H, Γρ_H                                                # sampling the meas. noise to compute the conditional to meas. op.
 
-function displayCov(figNum::Int64,r::Array{Cdouble,1},Γ::Array{Cdouble,2};_sub::Int64=111,fontsize_ticks::Int64=14)
-    min_Γ,max_Γ = extrema(Γ);
-    fig,ax,pcm = imshowData(figNum,r,r,Γ;_norm=:NoNorm,_vmin=min_Γ,_vmax=max_Γ,_edgecolors="face",_shading="None", _sub=_sub);
-    xticks(fontsize=fontsize_ticks)
-    yticks(fontsize=fontsize_ticks)
-    fig,ax,pcm
-end
 
-function setVerticalColorbar(fig::Figure,pcm::PyPlot.PyObject,x::Cdouble,y::Cdouble,dx::Cdouble,dy::Cdouble,slabel::String;fontsize_label::Int64=10,fontsize_ticks::Int64=10,color::String="white",_power_lim::Bool=true)
-    rc("ytick",color=color)
-    cax = fig.add_axes([x, y, dx, dy])
-    cb = fig.colorbar(pcm, orientation="vertical", cax=cax)
-    cb.set_label(slabel, fontsize=fontsize_label, color=color) # 
-    cb.ax.yaxis.set_tick_params(color=color)
-    cb.ax.tick_params(labelsize=fontsize_ticks)
-    cb.outline.set_edgecolor(color)
-    if _power_lim
-        cb.formatter.set_powerlimits((-1,2))
-        cb.ax.yaxis.offsetText.set_size(fontsize_ticks)
-    end
-    cb.update_ticks()
-    rc("ytick",color="black") # back to black
-    cb
-end
 
 fig = figure(128,figsize=[5,10]);
-_,ax1,pcm1 = displayCov(128,1000.0(μ0.-r_lowres[2:N0_lowres]),sqrt(Γρ_HI[:,:,1]);_sub=311)
+_,ax1,pcm1 = displayCov(128,1000.0(μ0.-r_lowres[2:N0_lowres]),real(sqrt(Γρ_HI[:,:,1]));_sub=311)
 ylabel("depth [nm]",fontsize=14)
-_,ax2,pcm2 = displayCov(128,1000.0(μ0.-r_lowres[2:N0_lowres]),sqrt(Γρ_y);_sub=312)
+_,ax2,pcm2 = displayCov(128,1000.0(μ0.-r_lowres[2:N0_lowres]),real(sqrt(Γρ_y));_sub=312)
 ylabel("depth [nm]",fontsize=14)
-_,ax3,pcm3 = displayCov(128,1000.0(μ0.-r_lowres[2:N0_lowres]),sqrt(Γρ_H);_sub=313)
+_,ax3,pcm3 = displayCov(128,1000.0(μ0.-r_lowres[2:N0_lowres]),real(sqrt(Γρ_H));_sub=313)
 xlabel("depth [nm]",fontsize=14)
 ylabel("depth [nm]",fontsize=14)
 
