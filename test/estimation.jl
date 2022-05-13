@@ -28,28 +28,28 @@ println("you're running this script with ",Threads.nthreads()," threads") #WARNI
 SAVE_FIG = false;
 
 # tags
-FLAG_0001 = true             # selection of the profile (one must be true and the others false)
+FLAG_0001 = false             # selection of the profile (one must be true and the others false)
 FLAG_0002 = false
 FLAG_0003 = false
-FLAG_0004 = false
+FLAG_0004 = true
 
-MODEL_ERROR_1 = true         # selection of the error level in the measurement model (1->0.5%, 2->1%, 3->2.5%)
+MODEL_ERROR_1 = false         # selection of the error level in the measurement model (1->0.5%, 2->1%, 3->2.5%)
 MODEL_ERROR_2 = false
-MODEL_ERROR_3 = false
+MODEL_ERROR_3 = true
 
 
 SHORT_RANGE = false          # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 
-MODEL_5   = false            # select the number of attenuation lengths probed
+MODEL_5   = true            # select the number of attenuation lengths probed
 MODEL_10  = false
-MODEL_20  = true
+MODEL_20  = false
 
-FLAG_NOISE_1 = false          # selection of the noise level (one must be true and the others false)
+FLAG_NOISE_1 = false         # selection of the noise level (one must be true and the others false)
 FLAG_NOISE_2 = false
 FLAG_NOISE_3 = false
 FLAG_NOISE_4 = false
-FLAG_NOISE_5 = true
-FLAG_NOISE_6 = false
+FLAG_NOISE_5 = false
+FLAG_NOISE_6 = true
 
 STRONG_PRIOR = false
 
@@ -338,8 +338,8 @@ end
 
 # variability due to noise in data
 # marginalization P(ρ|H) = ∫P(ρ|H,y)P(y)dy -> mean and covariance of ρ_HI = argmax P(ρ|H,y)
-μρ = dropdims(mean(ρ_cp[1:Nsample,:],dims=1),dims=1);
-Γρ = cov(ρ_cp[1:Nsample,:]);
+mean_ρ_H = dropdims(mean(ρ_cp[1:Nsample,:],dims=1),dims=1);
+var_ρ_H  = cov(ρ_cp[1:Nsample,:]);
 
 # marginalization P(ρ|H) = ∫P(ρ|H,y)P(y)dy -> mean and covariance of ρ∼P(ρ|H)
 μρ_H = dropdims(mean(μρ_HI,dims=2),dims=2); # μ_{ρ|H}
@@ -355,7 +355,7 @@ end
 ## marginalization over the meas. op. space
 ##
 
-i_sample       = min(1,Nsample);
+i_sample       = min(2,Nsample);
 N_model_sample = 30;
 ρ_cp_HI        = zeros(Cdouble,N_model_sample,Nr_lowres);
 deltaUh        = zeros(Cdouble,Ns,N_model_sample);
@@ -432,91 +432,134 @@ var_ρ_y = cov(ρ_cp_HI[1:min(N_model_sample,100),:]);
 # figure(); imshow(ΔΓρ_y1); colorbar()
 # figure(); imshow(ΔΓρ_y2); colorbar()
 
+
+
+
+
+
+
 figure(figsize=[10,6]); # plot(1000.0(μ0.-r_lowres),ρ_cp_HI');
 
+
+ax1         = subplot(121) # variability of the estimates
+l_ρ_cp,     = plot(1000.0(μ0.-r_lowres),ρ_cp[i_sample,:],color="tab:blue")
 # conditional to y: variability
-l_cp_var_mod,    = plot(1000.0(μ0.-r_lowres),mean_ρ_y,color="tab:red")
-l_cp_var_mod_cov = fill_between(1000.0(μ0.-r_lowres),mean_ρ_y-sqrt.(diag(var_ρ_y)),mean_ρ_y+sqrt.(diag(var_ρ_y)),alpha=0.5,color="tab:red")
-# conditional to y: mean and covariance of the distribution
-l_cp_post_est_y, = plot(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_y,color="tab:cyan")
-l_cp_post_cov_y  =fill_between(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_y-sqrt.(diag(Γρ_y)),μρ_y+sqrt.(diag(Γρ_y)),alpha=0.25,color="tab:cyan")
-
+l_mean_ρ_y, = plot(1000.0(μ0.-r_lowres),mean_ρ_y,color="tab:red")
+l_var_ρ_y   = fill_between(1000.0(μ0.-r_lowres),mean_ρ_y-sqrt.(diag(var_ρ_y)),mean_ρ_y+sqrt.(diag(var_ρ_y)),alpha=0.65,color="tab:red")
 # conditional to H: variability
-l_cp_noise_mean, = plot(1000.0(μ0.-r_lowres),μρ,color="tab:orange")
-l_cp_noise_cov   = fill_between(1000.0(μ0.-r_lowres),μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color="tab:orange")
-# conditional to H: mean and covariance of the distribution
-# l_cp_post_est,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H,color="tab:red")
-# l_cp_post_cov    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H-sqrt.(diag(Γρ_H)),μρ_H+sqrt.(diag(Γρ_H)),alpha=0.5,color="tab:red")
-l_cp_post_est,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_HI[:,i_sample],color="tab:blue")
-l_cp_post_cov    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_HI[:,i_sample]-sqrt.(diag(Γρ_HI[:,:,i_sample])),μρ_HI[:,i_sample]+sqrt.(diag(Γρ_HI[:,:,i_sample])),alpha=0.5,color="tab:blue")
-
+l_mean_ρ_H, = plot(1000.0(μ0.-r_lowres),mean_ρ_H,color="tab:orange")
+l_var_ρ_H   = fill_between(1000.0(μ0.-r_lowres),mean_ρ_H-sqrt.(diag(var_ρ_H)),mean_ρ_H+sqrt.(diag(var_ρ_H)),alpha=0.25,color="tab:orange")
 # ground truth
-l_gt,            = plot(1000.0(μ0.-r),ρA_1,color="tab:green")
-legend([(l_cp_post_est,l_cp_post_cov),(l_cp_post_est_y,l_cp_post_cov_y),(l_cp_noise_mean,l_cp_noise_cov),(l_cp_var_mod,l_cp_var_mod_cov),l_gt],["sampled posterior P\$(\\rho|H,y)\$","sampled posterior P\$(\\rho|y)\$","\$E[\\hat{\\rho}|H]\\pm\\Gamma[\\hat{\\rho}|H]\$","\$E[\\hat{\\rho}|y]\\pm\\Gamma[\\hat{\\rho}|y]\$","GT"],fontsize=14,loc="upper right")
+l_gt,       = plot(1000.0(μ0.-r),ρA_1,color="tab:green")
+l_variability = [l_ρ_cp,(l_mean_ρ_y,l_var_ρ_y),(l_mean_ρ_H,l_var_ρ_H),l_gt];
+l_names     = ["estimate \$\\hat{\\rho}|H,y\$","meas. op. var. \$\\hat{\\rho}|y\$","meas. noise var. \$\\hat{\\rho}|H\$","GT"]
+legend(l_variability,l_names,fontsize=14,loc="upper right")
+# legend([(l_cp_post_est,l_cp_post_cov),(l_cp_post_est_y,l_cp_post_cov_y),(l_cp_noise_mean,l_cp_noise_cov),(l_cp_var_mod,l_cp_var_mod_cov),l_gt],["sampled posterior P\$(\\rho|H,y)\$","sampled posterior P\$(\\rho|y)\$","\$E[\\hat{\\rho}|H]\\pm\\Gamma[\\hat{\\rho}|H]\$","\$E[\\hat{\\rho}|y]\\pm\\Gamma[\\hat{\\rho}|y]\$","GT"],fontsize=14,loc="upper right")
 
-xlim(0.0,10.0)
-ylim(-0.1,2.5maximum(ρA_1))
+xlim(0.0,8.5)
+ylim(-0.1,1.5maximum(ρA_1))
 xlabel("depth [nm]",fontsize=14)
 xticks(fontsize=14)
 ylabel("concentration [a.u.]",fontsize=14)
 yticks(fontsize=14)
 
-# if false
+ax2 = subplot(122) # distributions and their marginalizations
+# conditional to y and H
+l_μρ_HI, = plot(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_HI[:,i_sample],color="tab:blue")
+l_Γρ_HI  = fill_between(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_HI[:,i_sample]-sqrt.(diag(Γρ_HI[:,:,i_sample])),μρ_HI[:,i_sample]+sqrt.(diag(Γρ_HI[:,:,i_sample])),alpha=0.25,color="tab:blue")
+# conditional to y: mean and covariance of the distribution
+l_μρ_y, = plot(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_y,color="tab:red")
+l_Γρ_y  = fill_between(1000.0(μ0.-r_lowres)[2:N0_lowres],μρ_y-sqrt.(diag(Γρ_y)),μρ_y+sqrt.(diag(Γρ_y)),alpha=0.25,color="tab:red")
+# conditional to H: mean and covariance of the distribution
+l_μρ_H,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H,color="tab:orange")
+l_Γρ_H    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H-sqrt.(diag(Γρ_H)),μρ_H+sqrt.(diag(Γρ_H)),alpha=0.5,color="tab:orange")
+# ground truth
+l_gt,       = plot(1000.0(μ0.-r),ρA_1,color="tab:green")
+
+l_post    = [(l_μρ_HI,l_Γρ_HI),(l_μρ_y,l_Γρ_y),(l_μρ_H,l_Γρ_H),l_gt];
+l_names   = ["P\$(\\rho|H,y)\$","P\$(\\rho|y)\$","P\$(\\rho|H)\$","GT"]
+legend(l_post,l_names,fontsize=14,loc="upper right")
+
+xlim(0.0,8.5)
+ylim(-0.1,1.5maximum(ρA_1))
+xlabel("depth [nm]",fontsize=14)
+xticks(fontsize=14)
+ylabel("concentration [a.u.]",fontsize=14)
+yticks(fontsize=14)
 
 
-#     # plot the relative evolution of the energy (-log(P(ρ|H,y))) to check if the sampling is acceptable
-#     if SAVE_FIG
-#         figure(); plot(cumsum(-deltaU,dims=1)[1:1000:end,:]);
-#         savefig(string(filename_save,"_energy_values.png"))
-#         savefig(string(filename_save,"_energy_values.pdf"))
-#     end
-#     if SAVE_FIG
-#         figure(); plot(cumsum(-deltaUh,dims=1)[1:1000:end,:]);
-#         figure(); plot(cumsum(-deltaUh,dims=1)[1:Ns_burn,:]);
-#         figure(); plot(cumsum(-deltaUh,dims=1)[end-10000:end,:]);
-#         savefig(string(filename_save,"_energy_values.png"))
-#         savefig(string(filename_save,"_energy_values.pdf"))
-#     end
+tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+# ax1.annotate("P\$(\\rho|H,I)\$", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
+ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+# ax2.annotate("P\$(\\rho|I)\$",   xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
 
-#     # plot the estimation for both version (conditional to data and model, and conditional to data only) showing the covariance of the posterior 
-#     # and the variability due to the noise in the data. For each profile, plot in one figure different level of noise and different level of model uncertainty (2 of each)
 
-#     figure(figsize=[10,6])
-#     ax1 = subplot(121)
-#     # 
-#     l_cp_post_est,   = plot(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H,color="tab:red")
-#     l_cp_post_cov    = fill_between(1000.0(μ0.-r_lowres[2:N0_lowres]),μρ_H-sqrt.(diag(Γρ_H)),μρ_H+sqrt.(diag(Γρ_H)),alpha=0.5,color="tab:red")
+# CSV.write: r_lowres, ρ_cp, mean_ρ_y, var_ρ_y, ρ_cp_HI, mean_ρ_H, var_ρ_H, r, ρA_1  # estimates, mean and variability
+# CSV.write: μρ_HI_sample, Γρ_HI_sample, μρ_y, Γρ_y                                  # sampling the meas. op. to compute the conditional to meas. noise
+# CSV.write: μρ_HI, Γρ_HI, μρ_H, Γρ_H                                                # sampling the meas. noise to compute the conditional to meas. op.
 
-#     l_cp_noise_mean, = plot(1000.0(μ0.-r_lowres),μρ,color="tab:blue")
-#     l_cp_noise_cov   = fill_between(1000.0(μ0.-r_lowres),μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color="tab:blue")
+function displayCov(figNum::Int64,r::Array{Cdouble,1},Γ::Array{Cdouble,2};_sub::Int64=111,fontsize_ticks::Int64=14)
+    min_Γ,max_Γ = extrema(Γ);
+    fig,ax,pcm = imshowData(figNum,r,r,Γ;_norm=:NoNorm,_vmin=min_Γ,_vmax=max_Γ,_edgecolors="face",_shading="None", _sub=_sub);
+    xticks(fontsize=fontsize_ticks)
+    yticks(fontsize=fontsize_ticks)
+    fig,ax,pcm
+end
 
-#     l_gt,            = plot(1000.0(μ0.-r),ρA_1,color="tab:green")
-#     legend([(l_cp_post_est,l_cp_post_cov),(l_cp_noise_mean,l_cp_noise_cov),l_gt],["sampled posterior","est.+noise variability","GT"],fontsize=14,loc="lower right")
-#     xlim(0.0,10.0)
-#     ylim(0.0,1.5maximum(ρA_1))
-#     xlabel("depth [nm]",fontsize=14)
-#     xticks(fontsize=14)
-#     ylabel("concentration [a.u.]",fontsize=14)
-#     yticks(fontsize=14)
+function setVerticalColorbar(fig::Figure,pcm::PyPlot.PyObject,x::Cdouble,y::Cdouble,dx::Cdouble,dy::Cdouble,slabel::String;fontsize_label::Int64=10,fontsize_ticks::Int64=10,color::String="white",_power_lim::Bool=true)
+    rc("ytick",color=color)
+    cax = fig.add_axes([x, y, dx, dy])
+    cb = fig.colorbar(pcm, orientation="vertical", cax=cax)
+    cb.set_label(slabel, fontsize=fontsize_label, color=color) # 
+    cb.ax.yaxis.set_tick_params(color=color)
+    cb.ax.tick_params(labelsize=fontsize_ticks)
+    cb.outline.set_edgecolor(color)
+    if _power_lim
+        cb.formatter.set_powerlimits((-1,2))
+        cb.ax.yaxis.offsetText.set_size(fontsize_ticks)
+    end
+    cb.update_ticks()
+    rc("ytick",color="black") # back to black
+    cb
+end
 
-#     ax2 = subplot(122)
+fig = figure(128,figsize=[5,10]);
+_,ax1,pcm1 = displayCov(128,1000.0(μ0.-r_lowres[2:N0_lowres]),sqrt(Γρ_HI[:,:,1]);_sub=311)
+ylabel("depth [nm]",fontsize=14)
+_,ax2,pcm2 = displayCov(128,1000.0(μ0.-r_lowres[2:N0_lowres]),sqrt(Γρ_y);_sub=312)
+ylabel("depth [nm]",fontsize=14)
+_,ax3,pcm3 = displayCov(128,1000.0(μ0.-r_lowres[2:N0_lowres]),sqrt(Γρ_H);_sub=313)
+xlabel("depth [nm]",fontsize=14)
+ylabel("depth [nm]",fontsize=14)
 
-#     xlim(0.0,10.0)
-#     ylim(0.0,1.5maximum(ρA_1))
-#     xlabel("depth [nm]",fontsize=14)
-#     xticks(fontsize=14)
-#     ylabel("concentration [a.u.]",fontsize=14)
-#     yticks(fontsize=14)
+cb1 = setVerticalColorbar(fig,pcm1,0.17,0.815,0.04,0.15,"concentration [a.u.]";fontsize_label=14,fontsize_ticks=12) # \$^2\$ # 
+cb2 = setVerticalColorbar(fig,pcm2,0.17,0.495,0.04,0.15,"concentration [a.u.]";fontsize_label=14,fontsize_ticks=12)
+cb3 = setVerticalColorbar(fig,pcm3,0.17,0.178,0.04,0.15,"concentration [a.u.]";fontsize_label=14,fontsize_ticks=12)
 
-#     tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
-#     ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
-#     ax1.annotate("P\$(\\rho|H,I)\$", xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
-#     ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
-#     ax2.annotate("P\$(\\rho|I)\$",   xy=(3, 1),  xycoords="data", xytext=(0.6, 0.85), textcoords="axes fraction", color="black",fontsize=14)
+tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
-#     if SAVE_FIG
-#         println("saving: ",filename_save)
-#         savefig(string(filename_save,".png"))
-#         savefig(string(filename_save,".pdf"))
-#     end
-# end
+ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+ax3.annotate("c)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+
+
+fig = figure(129,figsize=[5,10]);
+_,ax1,pcm1 = displayCov(129,1000.0(μ0.-r_lowres[2:N0_lowres]),Γρ_HI[:,:,1];_sub=311)
+ylabel("depth [nm]",fontsize=14)
+_,ax2,pcm2 = displayCov(129,1000.0(μ0.-r_lowres[2:N0_lowres]),Γρ_y;_sub=312)
+ylabel("depth [nm]",fontsize=14)
+_,ax3,pcm3 = displayCov(129,1000.0(μ0.-r_lowres[2:N0_lowres]),Γρ_H;_sub=313)
+xlabel("depth [nm]",fontsize=14)
+ylabel("depth [nm]",fontsize=14)
+
+cb1 = setVerticalColorbar(fig,pcm1,0.17,0.815,0.04,0.15,"concentration\$^2\$ [a.u.]";fontsize_label=14,fontsize_ticks=12) 
+cb2 = setVerticalColorbar(fig,pcm2,0.17,0.495,0.04,0.15,"concentration\$^2\$ [a.u.]";fontsize_label=14,fontsize_ticks=12)
+cb3 = setVerticalColorbar(fig,pcm3,0.17,0.178,0.04,0.15,"concentration\$^2\$ [a.u.]";fontsize_label=14,fontsize_ticks=12)
+
+tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+
+ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+ax3.annotate("c)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
+
