@@ -67,7 +67,7 @@ var_ρ_y = cov(ρ_cp_HI[1:N_model_sample,:]);
 Γρ_y_mean = dropdims(mean(Γρ_HI_sample,dims=3),dims=3)
 ΔΓρ_y1 = (1.0/N_model_sample^2)*μρ_y*μρ_y';
 ΔΓρ_y2 = μρ_HI_sample[:,1]*μρ_HI_sample[:,1]';
-[ΔΓρ_y2 = ΔΓρ_y2 + μρ_HI_sample[:,i]*μρ_HI_sample[:,i]'; for i in 2:N_model_sample]
+[global ΔΓρ_y2 = ΔΓρ_y2 + μρ_HI_sample[:,i]*μρ_HI_sample[:,i]'; for i in 2:N_model_sample]
 ΔΓρ_y2 = (1.0/N_model_sample)*ΔΓρ_y2;
 
 Γρ_y = Γρ_y_mean - ΔΓρ_y1 + ΔΓρ_y2; # Γ_{ρ|y}
