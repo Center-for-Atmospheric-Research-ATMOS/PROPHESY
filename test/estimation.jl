@@ -28,8 +28,8 @@ println("you're running this script with ",Threads.nthreads()," threads") #WARNI
 
 # tags
 FLAG_0001 = false             # selection of the profile (one must be true and the others false)
-FLAG_0002 = false
-FLAG_0003 = true
+FLAG_0002 = true
+FLAG_0003 = false
 FLAG_0004 = false
 
 STRONG_PRIOR = false
