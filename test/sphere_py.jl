@@ -18,9 +18,15 @@ import pandas as pd
 from math import cos, sin, pi
 from alive_progress import alive_bar
 
+## versions:
+# numpy==1.20.1
+# pandas==1.2.4
+# plotly==5.9.0
+
 def d_sphere_P(r, θ, φ, x0, y0, z0, μ0):
     dp = np.zeros((len(r), len(θ), len(φ)))
-    RAD, TETA, PHI, DIST = [], [], [], []
+    dp_dict = {'r':[], 'θ':[], 'φ':[], 'dp':[]}
+    
     with alive_bar(len(r)*len(θ)*len(φ), force_tty=True) as bar:
         for i, R in enumerate(r):
             for j, Ө in enumerate(θ):
@@ -31,25 +37,23 @@ def d_sphere_P(r, θ, φ, x0, y0, z0, μ0):
                     zm = R*cos(Φ)
 
                     ## compute all cos/sin
-                    cosω = (x0 - xm) / ((x0-xm)**2 + (y0-ym)**2)**.5
-                    sinω = (y0 - ym) / ((x0-xm)**2 + (y0-ym)**2)**.5
-                    cosβ = (z0 - zm) / ((x0-xm)**2 + (y0-ym)**2 + (z0-zm)**2)**.5
-                    sinβ = ((x0-xm)**2 + (y0-ym)**2)**.5 / ((x0-xm)**2 + (y0-ym)**2 + (z0-zm)**2)**.5
-                    cosα = sin(φ[k]) * cosβ * (
+                    cosω = (x0-xm) / ((x0-xm)**2 + (y0-ym)**2)**.5
+                    sinω = (y0-ym) / ((x0-xm)**2 + (y0-ym)**2)**.5
+                    
+                    cosβ = ((x0-xm)**2 + (y0-ym)**2)**.5 / ((x0-xm)**2 + (y0-ym)**2 + (z0-zm)**2)**.5
+                    sinβ = (z0-zm) / ((x0-xm)**2 + (y0-ym)**2 + (z0-zm)**2)**.5
+                    
+                    cosα = sin(Φ) * cosβ * (
                         cos(Ө) * cosω + sin(Ө) * sinω) + cos(Φ) * sinβ
 
-                    dp[i,j,k] = -R * cosα + (μ0**2 - R**2 * (1 - cosα**2))**.5
+                    dp[i,j,k] =  (μ0**2 - R**2 * (1-cosα**2))**.5 - R * cosα
 
-                    RAD.append(R)
-                    TETA.append(Ө)
-                    PHI.append(Φ)
-                    DIST.append(dp[i,j,k])
+                    dp_dict['r'].append(R)
+                    dp_dict['θ'].append(Ө)
+                    dp_dict['φ'].append(Φ)
+                    dp_dict['dp'].append(dp[i,j,k])
                     bar()
-    df = pd.DataFrame([RAD, TETA, PHI, DIST])
-    df = df.transpose()
-    df.columns=['r', 'θ', 'φ', 'dp']
-    dp[dp<0] = 0
-    return dp, df
+    return dp, pd.DataFrame(dp_dict)
 """
 
 ## alias
