@@ -1,22 +1,10 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
-fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json")
-# fm.findfont("serif", rebuild_if_missing=false)
-# fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
-# rc("font",family="serif",serif="Computer Modern Roman")
 rc("text", usetex=true)
 
 # data manipulation (loading, writing, etc)
 using Printf
-
-# scientific package from the official Julia repositories
-# using LinearAlgebra
-# using Statistics
-# using DSP
-# using SpecialMatrices
-# using Polynomials
-# using StatsBase
 
 # implemented scientific packages
 using utilsFun  # for the softMax functions
