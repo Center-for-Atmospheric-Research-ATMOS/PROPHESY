@@ -109,6 +109,6 @@ ax2.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-1.27-0.08, 0.99), textc
 ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.07-0.01, 0.99), textcoords="axes fraction", color="black",fontsize=14)
 
 
-savefig("compare_acquisition_in_out_sharp.pdf")
-savefig("compare_acquisition_in_out_sharp.png")
+# savefig("compare_acquisition_in_out_sharp.pdf")
+# savefig("compare_acquisition_in_out_sharp.png")
 
