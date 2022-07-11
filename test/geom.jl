@@ -6,6 +6,7 @@ fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/f
 # fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
 rc("font",family="serif",serif="Computer Modern Roman")
 rc("text", usetex=true)
+using myPlot
 
 # data manipulation (loading, writing, etc)
 using Printf
@@ -36,10 +37,11 @@ using XPSinv
 L = 3μ0;
 
 N = 51;
-K = 256;
-J = 257
+K = 51 # 256;
+J = 51 # 257
 r = collect(range(0.0,μ0,length=N));
 θ = collect(range(0.0,2π,length=J)) ; #collect(0:0.1:2π);
+φ = collect(range(0.0,π,length=K));
 y = 0.0
 Y = 0.0μ0 .+ collect(range(-0.5L,0.5L,length=K));
 
@@ -57,7 +59,7 @@ z0_far = 200.0;
 
 ## compute and plot distances for two cases (near and far), and compare the full model and its approximation
 include("distance.jl")
-
+include("distance_sphere.jl")
 
 ##
 ## cylindrical model and finger model

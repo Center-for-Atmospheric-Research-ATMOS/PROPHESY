@@ -256,8 +256,6 @@ end
 """
     d_sphere_P(r::Array{Cdouble,1},θ::Array{Cdouble,1},φ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
 
-    NOT IMPLEMENTED YET!
-
     In the spherical geometry, e.g. droplet, this function computes the distance from any
     point M:(r,θ,φ) in the sample to the surface in direction to some point P:(x0,y0,z0).
     Note: M is given in spherical coordinates and P in Cartesian coordinates.
@@ -268,7 +266,28 @@ end
     μ0 is the radius of the cylinder
 """
 function d_sphere_P(r::Array{Cdouble,1},θ::Array{Cdouble,1},φ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
-    # TODO
+    dp = zeros(Cdouble,length(r),length(θ),length(φ)); # create matrix of disctances
+    for i in 1:length(r)
+        for j in 1:length(θ)
+            for k in 1:length(φ)
+                ## M coordinates, spherical --> cartesian
+                xm = r[i]*cos(θ[j])*sin(φ[k]);
+                ym = r[i]*sin(θ[j])*sin(φ[k]);
+                zm = r[i]*cos(φ[k]);
+
+                ## compute all cos/sin
+                cosω = (x0 - xm) / sqrt((x0-xm)^2 + (y0-ym)^2);
+                sinω = (y0 - ym) / sqrt((x0-xm)^2 + (y0-ym)^2);
+                cosβ = (z0 - zm) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2);
+                sinβ = sqrt((x0-xm)^2 + (y0-ym)^2) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2);
+                cosα = sin(φ[k]) * cosβ * (cos(θ[j]) * cosω + sin(θ[j]) * sinω) + cos(φ[k]) * sinβ;
+
+                dp[i,j,k] = -r[i] * cosα + sqrt(μ0^2 - r[i]^2 * (1 - cosα^2)); # distance from intersection to P
+            end
+        end
+    end
+    dp[dp.<0.0] .= 0.0;
+    dp
 end
 
 
