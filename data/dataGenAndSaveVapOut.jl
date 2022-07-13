@@ -20,19 +20,22 @@ using utilsFun  # for the softMax functions
 # modeling XPS
 using XPSpack
 
+# Poisson distribution
+using Distributions
+
 # tags
 LOW_RES   = true               # set to true for computing the low resolution measurement models
 MARG_UN   = (false & LOW_RES)    # set to true for computing the mean measurement operator as well as the covarainces
 SHORT_RANGE = false              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 SIMULATE_DATA = true            # set true for simulating some data (several nose level)
-SAVE_DATA = (true & SIMULATE_DATA)                # set to true for saving the generated variables
-SAVE_MODEL = true               # set to true to save the models
+SAVE_DATA = (false & SIMULATE_DATA)                # set to true for saving the generated variables
+SAVE_MODEL = false               # set to true to save the models
 
 MODEL_5   = false               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = true
 
-SAMPLE_MODEL = (true & LOW_RES) # if set to true, generate plenty of models by drawing attenuation lengths (only in low resolution, and does not compute the marginalization)
+SAMPLE_MODEL = (false & LOW_RES) # if set to true, generate plenty of models by drawing attenuation lengths (only in low resolution, and does not compute the marginalization)
 N_model_sample = 100;           # 100 should be more than enough for 5 attenuation length, but maybe not for 20
 
 FLAG_0001 = (true & SIMULATE_DATA)               # selection of the profile (one must be true and the others false)
@@ -119,101 +122,153 @@ else
 end
 λe = 1.0e-3collect(range(λe1,λe2,Ndata));              # attenuation length range
 
+##
+## compute model
+##
+
+H_highres = zeros(Cdouble,Ndata,Nr);                   # high resolution operator used for the data simulation (the attenuation length used for the computation of this operator are the reference ones)
+H_lowres  = zeros(Cdouble,Ndata,Nr_lowres);
+for i in 1:Ndata
+    # high resolution measurement operator (using true λe values)
+    H_highres[i,:],_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λe[i]);
+    H_lowres[i,:],_,_,_,_  = cylinder_gain_H(r_lowres,θ,y,x0,y0,z0,μ0,λe[i]);
+end
+H_highres = reverse(H_highres,dims=2);
+H_lowres = reverse(H_lowres,dims=2);
+if SAVE_MODEL
+    mkpath(save_folder)
+    CSV.write(string(save_folder,"radial_discretization.csv"),DataFrame(reverse(r)',:auto);header=true)
+    CSV.write(string(save_folder,"attenuation_length.csv"),DataFrame(λe',:auto);header=false)
+    CSV.write(string(save_folder,"H_highres.csv"),DataFrame(H_highres,:auto);header=true)
+end
 
 
+##
+## geometry and concentration factor 
+##
 
-if LOW_RES
-    δκ = [0.5; 1.0; 2.5]/100.0                             # relative error bound (attenuation length)
-    H_lowres = zeros(Cdouble,Ndata,Nr_lowres);             # low resolution operator computed with corrupted attenuation length values
-    save_folder_lowres = string(save_folder,"lowres/")     # base folder name where to save the models
-    if SAVE_MODEL
-        mkpath(save_folder_lowres)
-        CSV.write(string(save_folder_lowres,"radial_discretization_lowres.csv"),DataFrame(reverse(r_lowres)',:auto);header=true)
-    end
-    if SAMPLE_MODEL
-        for m in 1:min(N_model_sample,999)
-            println(m,"/",min(N_model_sample,999)," model sample")
-            for k in 1:length(δκ) # for each uncertainty level in the measurement model
-                println(k,"/",length(δκ)," model uncertainty")
-                for i in 1:Ndata
-                    # draw the relative error 
-                    κ = δκ[k]*(2.0*rand()-1.0);
-                    # compute the operator with the corrupted attenuation length values
-                    H_lowres[i,:],_,_,_,_ = cylinder_gain_H(r_lowres,θ,y,x0,y0,z0,μ0,(1.0+κ)*λe[i]);
-                end
-                global H_lowres = reverse(H_lowres,dims=2);
-    
-                # save the files where they belong
-                if SAVE_MODEL
-                    if (m<10)
-                        mkpath(string(save_folder_lowres,"error_model_",δκ[k],"_percent/00",m,"/"))
-                        CSV.write(string(save_folder_lowres,"error_model_",δκ[k],"_percent/00",m,"/","H_lowres.csv"),DataFrame(H_lowres,:auto);header=true)
-                    elseif ((m>=10) & (m<100))
-                        mkpath(string(save_folder_lowres,"error_model_",δκ[k],"_percent/0",m,"/"))
-                        CSV.write(string(save_folder_lowres,"error_model_",δκ[k],"_percent/0",m,"/","H_lowres.csv"),DataFrame(H_lowres,:auto);header=true)
-                    else
-                        mkpath(string(save_folder_lowres,"error_model_",δκ[k],"_percent/",m,"/"))
-                        CSV.write(string(save_folder_lowres,"error_model_",δκ[k],"_percent/",m,"/","H_lowres.csv"),DataFrame(H_lowres,:auto);header=true)
-                    end
-                end
-            end
-        end
-    else
-        Nλ = 21;                                               # number of discretization point for the distribution of each attenuation length
-        μH = Array{Cdouble}(undef,Nr_lowres,Ndata);            # mean value operator (w.r.t. λe distribution)
-        ΓH = Array{Cdouble}(undef,Nr_lowres,Nr_lowres,Ndata);  # covariance of the corrupted measurement operator (w.r.t. λe distribution)
-        for k in 1:length(δκ) # for each uncertainty level in the measurement model
-            for i in 1:Ndata
-                # draw the relative error 
-                κ = δκ[k]*(2.0*rand()-1.0);
-                # compute the operator with the corrupted attenuation length values
-                H_lowres[i,:],_,_,_,_ = cylinder_gain_H(r_lowres,θ,y,x0,y0,z0,μ0,(1.0+κ)*λe[i]);
-                if MARG_UN
-                    # compute the mean operator and covariance for the marginalization of error (to make it realistic, I use the corrupted values as the center of the distribution instead of the true values which would not be accessible)
-                    local λrange = (1.0+κ)*collect(range((1.0-δκ[k])*λe[i],(1.0+δκ[k])*λe[i],length=Nλ))
-                    local Pλ = (1.0/((λrange[2]-λrange[1])*Nλ))*ones(Cdouble,Nλ)
-                    ΓH[:,:,i], μH[:,i]   = cov_H_cylinder(r_lowres, θ,y,x0,y0,z0,μ0,λrange,Pλ)
-                end
-            end
-            global H_lowres = reverse(H_lowres,dims=2);
-            if MARG_UN
-                global ΓH = reverse(ΓH,dims=(1,2));
-                global μH = reverse(μH,dims=1);
-            end
+M_HCj = H_highres*ρA_1;
 
-            # save the files where they belong
-            if SAVE_MODEL
-                mkpath(string(save_folder_lowres,"error_model_",δκ[k],"_percent/"))
-                CSV.write(string(save_folder_lowres,"error_model_",δκ[k],"_percent/","H_lowres.csv"),DataFrame(H_lowres,:auto);header=true)
-                if MARG_UN
-                    mkpath(string(save_folder_lowres,"error_model_",δκ[k],"_percent/cov/"))
-                    CSV.write(string(save_folder_lowres,"error_model_",δκ[k],"_percent/","mean_H_lowres.csv"),DataFrame(μH,:auto);header=true)
-                    for i in 1:Ndata
-                        CSV.write(string(save_folder_lowres,"error_model_",δκ[k],"_percent/cov/","cov_H_lowres_",i,".csv"),DataFrame(ΓH[:,:,i],:auto);header=false)
-                    end
-                end
-            end
-        end
-    end
+## 
+## cross section density
+## 
+
+dKe = 0.05;
+Be = collect(286.0:dKe:298.0);
+Nspectrum = length(Be);
+μBe = [290.2; 292.0; 293.0] # assume that the peaks are at the same location for every photon energy
+
+σ_be = [0.45; 0.25; 0.6];
+
+p_peak = zeros(Cdouble,Ndata,3);
+p_peak[:,1] = 0.85 .+ (0.77-0.85)*(λe.-λe[1])./(λe[end]-λe[1]);
+p_peak[:,2] = 0.125 .+ (0.12-0.125)*(λe.-λe[1])./(λe[end]-λe[1]);
+p_peak[:,3] = 1.0 .- (p_peak[:,1]+p_peak[:,2]);
+sum(p_peak,dims=2)
+
+figure()
+for i in 1:Ndata
+    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-0.5*(Be.-μBe[1]).^2/(2.0σ_be[1]^2));
+    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-0.5*(Be.-μBe[2]).^2/(2.0σ_be[2]^2));
+    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-0.5*(Be.-μBe[3]).^2/(2.0σ_be[3]^2));
+    plot(Be,p_peak[i,1]*σ_peak_1+p_peak[i,2]*σ_peak_2+p_peak[i,3]*σ_peak_3)
+end
+
+
+function σ_cs(hν::Cdouble,Ke::Cdouble,μKe::Cdouble;μKe0::Cdouble=50.0,μKe1::Cdouble=1200.0)
+    Be = hν-Ke;
+    # partial cross section (one for each chemical state)
+    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-0.5*(Be-μBe[1])^2/(2.0σ_be[1]^2));
+    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-0.5*(Be-μBe[2])^2/(2.0σ_be[2]^2));
+    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-0.5*(Be-μBe[3])^2/(2.0σ_be[3]^2));
+    # quantity of chemical states
+    p1 = 0.85 .+ (0.77-0.85)*(μKe.-μKe0)./(μKe1-μKe0);
+    p2 = 0.125 .+ (0.12-0.125)*(μKe.-μKe0)./(μKe1-μKe0);
+    p3 = 1.0-(p1+p2);
+
+    # cross section value (only for hν ∈ [295,1500.0])
+    XPSpack.σ_C1s_interp[hν]*(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3)
+end
+#TODO: save cross section density and total cross section (check Yeah 1985 values)
+
+##
+## simple analyzer model
+##
+
+# for a given photon energy νj, measure a spectrum
+hν = collect(LinRange(365.0,1500.0,Ndata));
+dhν = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0));
+Fνj = 1.0e3*ones(Cdouble,Ndata);
+j = 1 # Ndata
+j = Ndata
+Tj   = collect(LinRange(5.0,10.0,Ndata));       # one transmission factor per photon energy
+# μKe  = collect(LinRange(50.0,1200.0,Ndata));    # one central kinetic energy per photon energy
+σ_ke = 2.0*dKe*collect(LinRange(1.0,2.0,Ndata)); # one spread per pass energy
+Keij = reverse(hν[j] .- Be) ;
+μKe = 0.5*(Keij[1]+Keij[end]);
+
+
+φi  = Array{Function,1}(undef,Nspectrum);
+for i in 1:Nspectrum
+    φi[i] = (x::Cdouble->(Tj[j]/sqrt(2π*σ_ke[j]^2))*exp(-(x-Keij[i])^2/(2σ_ke[j]^2)))
+end
+
+
+# TODO: plot some φi
+figure()
+for i in 10:20
+    plot(Keij,φi[i].(Keij))
+end
+
+# TODO: compute a spectral spread of the beamline for a given photon energy (does not really matter at low energy, but becomes a problem at high energy)
+function F_density(hν::Cdouble,hνj::Cdouble,Δν::Cdouble)
+    (Fνj[j]/sqrt(2π*Δν^2))*exp(-(hν-hνj)^2/(2Δν^2))
 end
 
 
 
+figure(); plot(collect(LinRange(hν[j]-3.0hν[j]/20000.0,hν[j]+3.0hν[j]/20000.0,11)),F_density.(collect(LinRange(hν[j]-3.0hν[j]/20000.0,hν[j]+3.0hν[j]/20000.0,11)),hν[j],hν[j]/20000.0))
 
 
-if SIMULATE_DATA
-    H_highres = zeros(Cdouble,Ndata,Nr);                   # high resolution operator used for the data simulation (the attenuation length used for the computation of this operator are the reference ones)
-    for i in 1:Ndata
-        # high resolution measurement operator (using true λe values)
-        H_highres[i,:],_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λe[i]);
+
+Gm = dKe*ones(Cdouble,Nspectrum);
+Gm[1] = 0.5dKe;
+Gm[end] = 0.5dKe
+hνjl = collect(hν[j]-5*dKe:dKe:hν[j]+5*dKe)
+NdensF = length(hνjl)
+Fl = dKe*ones(Cdouble,NdensF);
+Fl[1] = 0.5dKe;
+Fl[end] = 0.5dKe
+
+Aij = zeros(Cdouble,Nspectrum,NdensF);
+Sj = Array{Cdouble,1}(undef,Nspectrum);
+Ssignal = Array{Cdouble,2}(undef,Nspectrum,Ndata);
+for i in 1:Nspectrum
+    for m in 1:Nspectrum
+        for l in 1:NdensF
+            Aij[m,l] = φi[i](Keij[m])*F_density(hνjl[l],hν[j],dhν[j])*σ_cs(hνjl[l],Keij[m],μKe);
+        end
     end
-    H_highres = reverse(H_highres,dims=2);
-    if SAVE_MODEL
-        mkpath(save_folder)
-        CSV.write(string(save_folder,"radial_discretization.csv"),DataFrame(reverse(r)',:auto);header=true)
-        CSV.write(string(save_folder,"attenuation_length.csv"),DataFrame(λe',:auto);header=false)
-        CSV.write(string(save_folder,"H_highres.csv"),DataFrame(H_highres,:auto);header=true)
-    end
+    Sj[i] = Gm'*Aij*Fl;
+    Ssignal[i,j] = Sj[i]*M_HCj[j];
+end
+
+figure(); imshow(Aij); colorbar()
+
+figure(); plot(Keij,Sj)
+figure(); plot(Keij,σ_cs.(hν[j],Keij,μKe))
+# figure(); plot(Keij,Sj/maximum(Sj)); plot(Keij,σ_cs.(hν[j],Keij,μKe)/maximum(σ_cs.(hν[j],Keij,μKe)))
+
+figure(); plot(Keij,Sj); plot(Keij,Tj[j]*σ_cs.(hν[j],Keij,μKe))
+figure(); plot(Keij,Sj); plot(Keij,Tj[j]*σ_cs.(hν[j],Keij,μKe)); scatter(Keij,Sj+0.005randn(Cdouble,Nspectrum))
+
+figure(); plot(Be,Ssignal[:,j]); scatter(Be,rand.(Poisson.(Ssignal[:,j])))
+
+
+# TODO: save cross section and image of the cross section
+# TODO: add noise
+
+if false
     save_folder_data = string(save_folder,exp_tag,"/")
     # generate some data (data point and covariance)
     Nnoise = 200;
@@ -221,7 +276,7 @@ if SIMULATE_DATA
     SNR_level = [5.0; 10.0; 50.0; 100.0; 500.0; 1000.0];
     Signal_level = abs.(H_highres*ρA_1);
 
-    
+
     for k in 1:length(SNR_level)
         # figure()
         y_data = zeros(Cdouble,Nnoise,Ndata);
@@ -240,29 +295,6 @@ if SIMULATE_DATA
     if SAVE_DATA
         CSV.write(string(save_folder_data,"concentration_profile.csv"),DataFrame(ρA_1',:auto);header=true)
     end
-end
 
-
-# 
-# spectrum generation
-# 
-
-dKe = 0.05;
-Be = collect(286.0:dKe:298.0);
-μBe = [290.2; 292.0; 293.5] # assume that the peaks are at the same location for every photon energy
-
-σ_be = [0.65; 0.45; 0.6];
-
-p_peak = zeros(Cdouble,Ndata,3);
-p_peak[:,1] = 0.62 .+ (0.4-0.62)*(λe.-λe[1])./(λe[end]-λe[1]);
-p_peak[:,2] = 0.35 .+ (0.3-0.35)*(λe.-λe[1])./(λe[end]-λe[1]);
-p_peak[:,3] = 1.0 .- (p_peak[:,1]+p_peak[:,2]);
-
-figure()
-for i in 1:Ndata
-    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-0.5*(Be.-μBe[1]).^2/(2.0σ_be[1]^2));
-    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-0.5*(Be.-μBe[2]).^2/(2.0σ_be[2]^2));
-    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-0.5*(Be.-μBe[3]).^2/(2.0σ_be[3]^2));
-    plot(Be,p_peak[i,1]*σ_peak_1+p_peak[i,2]*σ_peak_2+p_peak[i,3]*σ_peak_3)
 end
 
