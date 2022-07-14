@@ -18,10 +18,10 @@ using StatsBase
 using utilsFun  # for the softMax functions
 
 # modeling XPS
-using XPSpack
+using XPSpack # experiment model (geometry factor and cross section estimation)
+using ATTIRE  # kinetic energy analyzer
 
-# Poisson distribution
-using Distributions
+
 
 # tags
 LOW_RES   = true               # set to true for computing the low resolution measurement models
@@ -208,11 +208,12 @@ Keij = reverse(hν[j] .- Be) ;
 μKe = 0.5*(Keij[1]+Keij[end]);
 
 
-φi  = Array{Function,1}(undef,Nspectrum);
-for i in 1:Nspectrum
-    φi[i] = (x::Cdouble->(Tj[j]/sqrt(2π*σ_ke[j]^2))*exp(-(x-Keij[i])^2/(2σ_ke[j]^2)))
-end
+# φi  = Array{Function,1}(undef,Nspectrum);
+# for i in 1:Nspectrum
+#     φi[i] = (x::Cdouble->(Tj[j]/sqrt(2π*σ_ke[j]^2))*exp(-(x-Keij[i])^2/(2σ_ke[j]^2)))
+# end
 
+φi = Φi(Keij,σ_ke[j],Tj[j])
 
 # TODO: plot some φi
 figure()
@@ -221,16 +222,19 @@ for i in 10:20
 end
 
 # TODO: compute a spectral spread of the beamline for a given photon energy (does not really matter at low energy, but becomes a problem at high energy)
-function F_density(hν::Cdouble,hνj::Cdouble,Δν::Cdouble)
-    (Fνj[j]/sqrt(2π*Δν^2))*exp(-(hν-hνj)^2/(2Δν^2))
-end
+# function F_density(hν::Cdouble,hνj::Cdouble,Δν::Cdouble)
+#     (Fνj[j]/sqrt(2π*Δν^2))*exp(-(hν-hνj)^2/(2Δν^2))
+# end
+
+hνplot = collect(LinRange(hν[j]-3.0hν[j]/20000.0,hν[j]+3.0hν[j]/20000.0,11))
+# F_density.(hνplot,hν[j],hν[j]/20000.0)
 
 
+figure(); plot(hνplot,sourceSpread.(hνplot,hν[j],dhν[j],hν[j]))
+# figure(); plot(hνplot,F_density.(hνplot,hν[j],hν[j]/20000.0))
 
-figure(); plot(collect(LinRange(hν[j]-3.0hν[j]/20000.0,hν[j]+3.0hν[j]/20000.0,11)),F_density.(collect(LinRange(hν[j]-3.0hν[j]/20000.0,hν[j]+3.0hν[j]/20000.0,11)),hν[j],hν[j]/20000.0))
 
-
-
+# discretization of the spectral integrations: source and analyzer
 Gm = dKe*ones(Cdouble,Nspectrum);
 Gm[1] = 0.5dKe;
 Gm[end] = 0.5dKe
@@ -240,30 +244,54 @@ Fl = dKe*ones(Cdouble,NdensF);
 Fl[1] = 0.5dKe;
 Fl[end] = 0.5dKe
 
-Aij = zeros(Cdouble,Nspectrum,NdensF);
+# compute the signal measured
+Aij = zeros(Cdouble,Nspectrum,NdensF); # discretization of the spread of the source and analyzer
 Sj = Array{Cdouble,1}(undef,Nspectrum);
 Ssignal = Array{Cdouble,2}(undef,Nspectrum,Ndata);
 for i in 1:Nspectrum
     for m in 1:Nspectrum
         for l in 1:NdensF
-            Aij[m,l] = φi[i](Keij[m])*F_density(hνjl[l],hν[j],dhν[j])*σ_cs(hνjl[l],Keij[m],μKe);
+            Aij[m,l] = φi[i](Keij[m])*sourceSpread(hνjl[l],hν[j],dhν[j],Fνj[j])*σ_cs(hνjl[l],Keij[m],μKe);
         end
     end
     Sj[i] = Gm'*Aij*Fl;
     Ssignal[i,j] = Sj[i]*M_HCj[j];
 end
 
+# plot spread of the signal due to the source and the measurement device
 figure(); imshow(Aij); colorbar()
 
-figure(); plot(Keij,Sj)
-figure(); plot(Keij,σ_cs.(hν[j],Keij,μKe))
-# figure(); plot(Keij,Sj/maximum(Sj)); plot(Keij,σ_cs.(hν[j],Keij,μKe)/maximum(σ_cs.(hν[j],Keij,μKe)))
+# compare the signals, without background
+# figure(); plot(Keij,Sj)
+# figure(); plot(Keij,σ_cs.(hν[j],Keij,μKe))
+figure(); plot(Keij,Sj/Fνj[j]); plot(Keij,Tj[j]*σ_cs.(hν[j],Keij,μKe))
 
-figure(); plot(Keij,Sj); plot(Keij,Tj[j]*σ_cs.(hν[j],Keij,μKe))
-figure(); plot(Keij,Sj); plot(Keij,Tj[j]*σ_cs.(hν[j],Keij,μKe)); scatter(Keij,Sj+0.005randn(Cdouble,Nspectrum))
 
-figure(); plot(Be,Ssignal[:,j]); scatter(Be,rand.(Poisson.(Ssignal[:,j])))
+##
+## add background and noise
+##
 
+# parameters used for the simulation of the inelastic background 
+# Here, the background is made up of electrons that undergo inelastic collisions,
+# at least one so that they don't appear in the sharp peak, but at lower kinetic energy
+# the model is fairly simple and arbitrary, but it's better than no the background at all
+BeC1s = mean(Be);
+ΔBeC1s = (Be[end]-Be[1])/5;
+SbgC1s = 0.5Keij./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s)); # the inelastic collision background
+
+# add the noise on the signal that hit the sensor, i.e. signal with background
+SC1snoise = countElectrons(SbgC1s+reverse(Ssignal[:,j]))
+SC1s = SC1snoise - SbgC1s; # noisy signal without background -> negative values appears
+
+# plot signals w.r.t. the kinetic energy
+figure(); plot(Keij,reverse(Ssignal[:,j])); scatter(Keij,SC1s)
+figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+reverse(Ssignal[:,j])); scatter(Keij,rand.(Poisson.(SbgC1s+reverse(Ssignal[:,j]))))
+# plot the signal w.r.t. the binding energy
+figure(); plot(Be,Ssignal[:,j]); scatter(Be,reverse(SC1snoise-SbgC1s))
+
+# Kedumdum = collect(0.0:1.5maximum(Keij));
+# Sdumdum = 900.0exp.(-0.5*(Kedumdum.-(hν[j]-BeC1s)).^2);
+# figure(); plot(Kedumdum,0.2Kedumdum./(1.0.+exp.((Kedumdum.-(hν[j]-BeC1s))./ΔBeC1s))+Sdumdum)
 
 # TODO: save cross section and image of the cross section
 # TODO: add noise
