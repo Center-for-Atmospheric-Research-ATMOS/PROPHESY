@@ -79,22 +79,26 @@ r_th  = 2.346; # 2.0
 
 if FLAG_0001
     # ρA_1 = logistic.(1000.0reverse(μ0.-r).-r_th,ρ_vac,ρ0,2.0); # r_th=2.0
-    ρA_1 = logistic.(1000.0reverse(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0);
+    # ρA_1 = logistic.(1000.0reverse(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0);
+    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0);
     exp_tag     = "0001"
 end
 if FLAG_0002
     # ρA_1 = logistic.(1000.0reverse(μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ 2.0exp.(-(1000.0reverse(μ0.-r).-1.0).^2. /(2.0*0.25^2)); # r_th=2.0
-    ρA_1 = logistic.(1000.0reverse(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ 2.0exp.(-(1000.0reverse(μ0.-r_surf).-0.0).^2. /(2.0*0.25^2));
+    # ρA_1 = logistic.(1000.0reverse(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ 2.0exp.(-(1000.0reverse(μ0.-r_surf).-0.0).^2. /(2.0*0.25^2));
+    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ 2.0exp.(-(1000.0*(μ0.-r_surf).-0.0).^2. /(2.0*0.25^2));
     exp_tag     = "0002"
 end
 if FLAG_0003
     # ρA_1 = logistic.(1000.0reverse(μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ exp.(-(1000.0reverse(μ0.-r).-1.5).^2. /(2.0*0.5^2)); # r_th=2.0
-    ρA_1 = logistic.(1000.0reverse(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ exp.(-(1000.0reverse(μ0.-r_surf).-0.5).^2. /(2.0*0.5^2));
+    # ρA_1 = logistic.(1000.0reverse(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ exp.(-(1000.0reverse(μ0.-r_surf).-0.5).^2. /(2.0*0.5^2));
+    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ exp.(-(1000.0*(μ0.-r_surf).-0.5).^2. /(2.0*0.5^2));
     exp_tag     = "0003"
 end
 if FLAG_0004
     # ρA_1 = exp.(-(1000.0reverse(μ0.-r).-2.5).^2. /(2.0*0.5^2));
-    ρA_1 = exp.(-(1000.0(reverse(δr.+μ0.-r).-δr)).^2. /(2.0*0.5^2));
+    # ρA_1 = exp.(-(1000.0(reverse(δr.+μ0.-r).-δr)).^2. /(2.0*0.5^2));
+    ρA_1 = exp.(-(1000.0((δr.+μ0.-r).-δr)).^2. /(2.0*0.5^2));
     exp_tag     = "0004"
 end
 
@@ -134,8 +138,8 @@ for i in 1:Ndata
     H_highres[i,:],_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λe[i]);
     H_lowres[i,:],_,_,_,_  = cylinder_gain_H(r_lowres,θ,y,x0,y0,z0,μ0,λe[i]);
 end
-H_highres = reverse(H_highres,dims=2);
-H_lowres = reverse(H_lowres,dims=2);
+# H_highres = reverse(H_highres,dims=2);
+# H_lowres = reverse(H_lowres,dims=2);
 if SAVE_MODEL
     mkpath(save_folder)
     CSV.write(string(save_folder,"radial_discretization.csv"),DataFrame(reverse(r)',:auto);header=true)
@@ -159,7 +163,7 @@ Be = collect(286.0:dKe:298.0);
 Nspectrum = length(Be);
 μBe = [290.2; 292.0; 293.0] # assume that the peaks are at the same location for every photon energy
 
-σ_be = [0.45; 0.25; 0.6];
+σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
 
 p_peak = zeros(Cdouble,Ndata,3);
 p_peak[:,1] = 0.85 .+ (0.77-0.85)*(λe.-λe[1])./(λe[end]-λe[1]);
@@ -169,19 +173,21 @@ sum(p_peak,dims=2)
 
 figure()
 for i in 1:Ndata
-    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-0.5*(Be.-μBe[1]).^2/(2.0σ_be[1]^2));
-    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-0.5*(Be.-μBe[2]).^2/(2.0σ_be[2]^2));
-    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-0.5*(Be.-μBe[3]).^2/(2.0σ_be[3]^2));
+    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(Be.-μBe[1]).^2/(2.0σ_be[1]^2));
+    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(Be.-μBe[2]).^2/(2.0σ_be[2]^2));
+    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(Be.-μBe[3]).^2/(2.0σ_be[3]^2));
     plot(Be,p_peak[i,1]*σ_peak_1+p_peak[i,2]*σ_peak_2+p_peak[i,3]*σ_peak_3)
 end
+ax = gca()
+ax.invert_xaxis();
 
 
 function σ_cs(hν::Cdouble,Ke::Cdouble,μKe::Cdouble;μKe0::Cdouble=50.0,μKe1::Cdouble=1200.0)
-    Be = hν-reverse(Ke);
+    Be = hν-Ke;
     # partial cross section (one for each chemical state)
-    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-0.5*(Be-μBe[1])^2/(2.0σ_be[1]^2));
-    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-0.5*(Be-μBe[2])^2/(2.0σ_be[2]^2));
-    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-0.5*(Be-μBe[3])^2/(2.0σ_be[3]^2));
+    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(Be-μBe[1])^2/(2.0σ_be[1]^2));
+    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(Be-μBe[2])^2/(2.0σ_be[2]^2));
+    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(Be-μBe[3])^2/(2.0σ_be[3]^2));
     # quantity of chemical states
     p1 = 0.85 .+ (0.77-0.85)*(μKe.-μKe0)./(μKe1-μKe0);
     p2 = 0.125 .+ (0.12-0.125)*(μKe.-μKe0)./(μKe1-μKe0);
@@ -201,7 +207,8 @@ hν = collect(LinRange(365.0,1500.0,Ndata));
 dhν = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0));
 Fνj = 1.0e3*ones(Cdouble,Ndata);
 j = 1 # Ndata
-j = Ndata
+# j = Ndata
+# j = 10
 Tj   = collect(LinRange(5.0,10.0,Ndata));       # one transmission factor per photon energy
 # μKe  = collect(LinRange(50.0,1200.0,Ndata));    # one central kinetic energy per photon energy
 σ_ke = 2.0*dKe*collect(LinRange(1.0,2.0,Ndata)); # one spread per pass energy
@@ -216,11 +223,11 @@ Keij = reverse(hν[j] .- Be) ;
 
 φi = Φi(Keij,σ_ke[j],Tj[j])
 
-# TODO: plot some φi
-figure()
-for i in 10:20
-    plot(Keij,φi[i].(Keij))
-end
+# plot some φi
+# figure()
+# for i in 10:20
+#     plot(Keij,φi[i].(Keij))
+# end
 
 # TODO: compute a spectral spread of the beamline for a given photon energy (does not really matter at low energy, but becomes a problem at high energy)
 # function F_density(hν::Cdouble,hνj::Cdouble,Δν::Cdouble)
@@ -249,7 +256,7 @@ Fl[end] = 0.5dKe
 Aij = zeros(Cdouble,Nspectrum,NdensF); # discretization of the spread of the source and analyzer
 Sj = Array{Cdouble,1}(undef,Nspectrum);
 Ssignal = Array{Cdouble,2}(undef,Nspectrum,Ndata);
-for i in 1:Ndata
+for i in 1:Nspectrum #Ndata
     for m in 1:Nspectrum
         for l in 1:NdensF
             Aij[m,l] = φi[i](Keij[m])*sourceSpread(hνjl[l],hν[j],dhν[j],Fνj[j])*σ_cs(hνjl[l],Keij[m],μKe);
@@ -281,14 +288,16 @@ BeC1s = mean(Be);
 SbgC1s = 0.5Keij./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s)); # the inelastic collision background
 
 # add the noise on the signal that hit the sensor, i.e. signal with background
-SC1snoise = countElectrons(SbgC1s+reverse(Ssignal[:,j]))
+SC1snoise = countElectrons(SbgC1s+Ssignal[:,j])
 SC1s = SC1snoise - SbgC1s; # noisy signal without background -> negative values appears
 
 # plot signals w.r.t. the kinetic energy
-figure(); plot(Keij,reverse(Ssignal[:,j])); scatter(Keij,SC1s)
-figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+reverse(Ssignal[:,j])); scatter(Keij,rand.(Poisson.(SbgC1s+reverse(Ssignal[:,j]))))
+figure(); plot(Keij,Ssignal[:,j]); scatter(Keij,SC1s)
+figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+Ssignal[:,j]); scatter(Keij,rand.(Poisson.(SbgC1s+Ssignal[:,j])))
 # plot the signal w.r.t. the binding energy
-figure(); plot(Be,Ssignal[:,j]); scatter(Be,reverse(SC1snoise-SbgC1s))
+figure(); plot(Be,reverse(Ssignal[:,j])); scatter(Be,reverse(SC1snoise-SbgC1s))
+ax = gca()
+ax.invert_xaxis();
 
 # Kedumdum = collect(0.0:1.5maximum(Keij));
 # Sdumdum = 900.0exp.(-0.5*(Kedumdum.-(hν[j]-BeC1s)).^2);
@@ -304,17 +313,27 @@ figure(); plot(Be,Ssignal[:,j]); scatter(Be,reverse(SC1snoise-SbgC1s))
 function simulateSpectrum(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble,
     Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1},
-    r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe::Cdouble,
+    r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λ::Cdouble,
     ρ::Array{Cdouble,1})
+
+    ##
+    ## analyzer
+    ##
     # efficiency functions of the analyzer
-    Ndata = length(Ki); # number of readings in a spectrum
+    Nchannel = length(Ki); # number of readings in a spectrum
     φi = Φi(Ki,ΔKi,T);
 
+    ##
+    ## photon beam spectrum
+    ##
     # photon energy discretization space
     nν = 5 # this should depend on the relative value ΔKi and Δνj
-    Δhν = ΔKi;
+    Δhν = ΔKi; # discretization step in the photon energy space, note: not the same as the bandwith of the photon spectrum Δνj
     hνjl = collect(hνj-nν*Δhν:Δhν:hνj+nν*Δhν); # discretization of the photon energy space
 
+    ##
+    ## spread of the ionization cross section: light source and analyzer
+    ##
     # number of discretization point in the kinetic energy space and in the photon energy space
     Nspectrum = length(Ki); # NOTE: the discretization of the kinetic enegy space does not have to coincide with the center of the channel, it can be whatever subdivision of that space
     NdensF = length(hνjl);
@@ -325,12 +344,11 @@ function simulateSpectrum(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     # define an interpolating tool whose nodes are Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1}
     σ_cs_interp = extrapolate(interpolate((Be0,), σ_cs_0, Gridded(Linear())),Line())
     # for each hν, compute the binding energies for Be = hν-reverse(Ki);
-    Be = hνjl[1] .- reverse(Ki);
-    σ_cs_interp[Be]
+    # Be = hνjl[1] .- reverse(Ki);
 
     # compute the "convolution" of the corss section by the spread of the light source and the spread of the kinetic energy analyzer
-    Aij = zeros(Cdouble,Nspectrum,NdensF); # discretization of the spread of the source and analyzer
-    Sj = Array{Cdouble,1}(undef,Nspectrum);
+    Aij = zeros(Cdouble,Nspectrum,NdensF);  # discretization of the spread of the source and analyzer
+    Sj = Array{Cdouble,1}(undef,Nspectrum); 
     # F_dens = sourceSpread.(hνjl,hνj,Δνj,Fνj)
     # σ_tot = σ_C1s_interp[hνjl] 
     # σ_val = Array{Cdouble,NdensF,Nspectrum}
@@ -340,14 +358,16 @@ function simulateSpectrum(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     #     σ_val[l,:] = σ_tot[l]*σ_cs_interp[Be] # no need to repeat that computation at each iteration of the i loop, once at first is enough
     # end
     # TODO: there's a lot to optimize overhere! the efficiency functions can be evaluated once at the beginning, the corss section density can be evaluated once in the beginning too (see lines above)
-    for i in 1:Ndata 
+    for i in 1:Nchannel 
         # φi_val = φi[i].(Ki)
         for m in 1:Nspectrum
             for l in 1:NdensF
                 # total cross section for the given photon energy 
-                σ_tot =  σ_C1s_interp[hνjl[l]] 
+                σ_tot =  XPSpack.σ_C1s_interp[hνjl[l]] 
                 # interpolator for the current photon energy
-                Be = hνjl[l] .- reverse(Ki);
+                # Be = hνjl[l] .- reverse(Ki);
+                Be = hνjl[l] .- Ki;
+                # Be = hνjl[l] .- Ki;
                 σ_val = σ_tot*σ_cs_interp[Be[m]] # no need to repeat that computation at each iteration of the i loop, once at first is enough
                 Aij[m,l] = φi[i](Ki[m])*sourceSpread(hνjl[l],hνj,Δνj,Fνj)*σ_val # σ_cs(hνjl[l],Keij[m],μKe);
             end
@@ -355,17 +375,40 @@ function simulateSpectrum(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
         Sj[i] = Gm'*Aij*Fl;
     end
 
-    # geometry factor
-    H_highres,_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λe);
+    ##
+    ## geometry factor
+    ##
+    H_geom,_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λ);
     
-    # compute geometry signal
-    S_geom = H_highres*ρ;
-
-    # compute total signal
-    S_geom*Sj
+    ##
+    ## compute total signal
+    ##
+    (H_geom'*ρ)*Sj,H_geom,Sj,Keij
 end
 
 
+##
+## compute the cross section of the sample (to be estimated from the data in an estimation setting)
+##
+
+
+# Be0 = hν[j] .- reverse(Keij);
+Be0 = hν[j] .- Keij;
+σ_cs_0 =  σ_cs.(hν[j],Keij,μKe)./XPSpack.σ_C1s_interp[hν[j]] 
+
+figure(); plot(Keij,σ_cs_0)
+figure(); plot(Be0,σ_cs_0); ax = gca(); ax.invert_xaxis();
+
+SpectrumA_1,H_geom,S_anph = simulateSpectrum(Fνj[j],hν[j],dhν[j],
+    Keij,dKe,Tj[j],
+    reverse(Be0),reverse(σ_cs_0),
+    r,θ,y,x0,y0,z0,μ0,λe[j],
+    ρA_1)
+
+figure(); plot(Keij,SpectrumA_1)
+figure(); plot(Be0,SpectrumA_1); ax = gca(); ax.invert_xaxis()
+# figure(); plot(reverse(r),ρA_1); plot(reverse(r),H_geom)
+figure(); plot(r,ρA_1); plot(r,H_geom)
 # TODO: save cross section and image of the cross section
 # TODO: add noise
 
