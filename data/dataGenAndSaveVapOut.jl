@@ -13,6 +13,7 @@ using DataFrames
 # scientific package from the official Julia repositories
 using LinearAlgebra
 using StatsBase
+using Interpolations
 
 # implemented scientific packages
 using utilsFun  # for the softMax functions
@@ -176,7 +177,7 @@ end
 
 
 function σ_cs(hν::Cdouble,Ke::Cdouble,μKe::Cdouble;μKe0::Cdouble=50.0,μKe1::Cdouble=1200.0)
-    Be = hν-Ke;
+    Be = hν-reverse(Ke);
     # partial cross section (one for each chemical state)
     σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-0.5*(Be-μBe[1])^2/(2.0σ_be[1]^2));
     σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-0.5*(Be-μBe[2])^2/(2.0σ_be[2]^2));
@@ -248,7 +249,7 @@ Fl[end] = 0.5dKe
 Aij = zeros(Cdouble,Nspectrum,NdensF); # discretization of the spread of the source and analyzer
 Sj = Array{Cdouble,1}(undef,Nspectrum);
 Ssignal = Array{Cdouble,2}(undef,Nspectrum,Ndata);
-for i in 1:Nspectrum
+for i in 1:Ndata
     for m in 1:Nspectrum
         for l in 1:NdensF
             Aij[m,l] = φi[i](Keij[m])*sourceSpread(hνjl[l],hν[j],dhν[j],Fνj[j])*σ_cs(hνjl[l],Keij[m],μKe);
@@ -292,6 +293,78 @@ figure(); plot(Be,Ssignal[:,j]); scatter(Be,reverse(SC1snoise-SbgC1s))
 # Kedumdum = collect(0.0:1.5maximum(Keij));
 # Sdumdum = 900.0exp.(-0.5*(Kedumdum.-(hν[j]-BeC1s)).^2);
 # figure(); plot(Kedumdum,0.2Kedumdum./(1.0.+exp.((Kedumdum.-(hν[j]-BeC1s))./ΔBeC1s))+Sdumdum)
+
+"""
+    (Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble): photon beam's parameters
+    (Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble): analyzer's parameters
+    (r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0,y0,z0,μ0,λe): geometry factor (parameters)
+    (hν::Array{Cdouble,1},Ki::Array{Cdouble,1},Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1}): cross section
+    (ρ::Array{Cdouble,1}): concentration profile
+"""
+function simulateSpectrum(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
+    Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble,
+    Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1},
+    r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe::Cdouble,
+    ρ::Array{Cdouble,1})
+    # efficiency functions of the analyzer
+    Ndata = length(Ki); # number of readings in a spectrum
+    φi = Φi(Ki,ΔKi,T);
+
+    # photon energy discretization space
+    nν = 5 # this should depend on the relative value ΔKi and Δνj
+    Δhν = ΔKi;
+    hνjl = collect(hνj-nν*Δhν:Δhν:hνj+nν*Δhν); # discretization of the photon energy space
+
+    # number of discretization point in the kinetic energy space and in the photon energy space
+    Nspectrum = length(Ki); # NOTE: the discretization of the kinetic enegy space does not have to coincide with the center of the channel, it can be whatever subdivision of that space
+    NdensF = length(hνjl);
+    # discretization of the integral: piecewise linear basis function
+    Gm = dKe*ones(Cdouble,Nspectrum); Gm[1] = 0.5dKe; Gm[end] = 0.5dKe;
+    Fl = Δhν*ones(Cdouble,NdensF); Fl[1] = 0.5Δhν; Fl[end] = 0.5Δhν;
+
+    # define an interpolating tool whose nodes are Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1}
+    σ_cs_interp = extrapolate(interpolate((Be0,), σ_cs_0, Gridded(Linear())),Line())
+    # for each hν, compute the binding energies for Be = hν-reverse(Ki);
+    Be = hνjl[1] .- reverse(Ki);
+    σ_cs_interp[Be]
+
+    # compute the "convolution" of the corss section by the spread of the light source and the spread of the kinetic energy analyzer
+    Aij = zeros(Cdouble,Nspectrum,NdensF); # discretization of the spread of the source and analyzer
+    Sj = Array{Cdouble,1}(undef,Nspectrum);
+    # F_dens = sourceSpread.(hνjl,hνj,Δνj,Fνj)
+    # σ_tot = σ_C1s_interp[hνjl] 
+    # σ_val = Array{Cdouble,NdensF,Nspectrum}
+    # for l in 1:NdensF
+    #     # interpolator for the current photon energy
+    #     Be = hνjl[l] .- reverse(Ki);
+    #     σ_val[l,:] = σ_tot[l]*σ_cs_interp[Be] # no need to repeat that computation at each iteration of the i loop, once at first is enough
+    # end
+    # TODO: there's a lot to optimize overhere! the efficiency functions can be evaluated once at the beginning, the corss section density can be evaluated once in the beginning too (see lines above)
+    for i in 1:Ndata 
+        # φi_val = φi[i].(Ki)
+        for m in 1:Nspectrum
+            for l in 1:NdensF
+                # total cross section for the given photon energy 
+                σ_tot =  σ_C1s_interp[hνjl[l]] 
+                # interpolator for the current photon energy
+                Be = hνjl[l] .- reverse(Ki);
+                σ_val = σ_tot*σ_cs_interp[Be[m]] # no need to repeat that computation at each iteration of the i loop, once at first is enough
+                Aij[m,l] = φi[i](Ki[m])*sourceSpread(hνjl[l],hνj,Δνj,Fνj)*σ_val # σ_cs(hνjl[l],Keij[m],μKe);
+            end
+        end
+        Sj[i] = Gm'*Aij*Fl;
+    end
+
+    # geometry factor
+    H_highres,_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λe);
+    
+    # compute geometry signal
+    S_geom = H_highres*ρ;
+
+    # compute total signal
+    S_geom*Sj
+end
+
 
 # TODO: save cross section and image of the cross section
 # TODO: add noise
