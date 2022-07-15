@@ -290,7 +290,65 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))] = (eachcol(dfGeom),names(dfGeom))
 end
 
-mkpath(string(save_folder,exp_tag,"/"));
-XLSX.writetable(string(save_folder,exp_tag,"/data.xlsx"); dictAllData...) # TODO: get outside the loop
-XLSX.writetable(string(save_folder,exp_tag,"/model.xlsx"); dictAllGeom...)
+# mkpath(string(save_folder,exp_tag,"/"));
+# XLSX.writetable(string(save_folder,exp_tag,"/data.xlsx"); dictAllData...) # TODO: get outside the loop
+# XLSX.writetable(string(save_folder,exp_tag,"/model.xlsx"); dictAllGeom...)
+
+figure(figsize=[12, 10]); 
+ax1 = subplot(221)
+title("Eph = 365 [eV]",fontsize=14)
+symbol_h = :hν_365
+plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg,label="background"); 
+plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg+dictAllData[symbol_h][1].SpectrumA_1,label="noise free spectrum"); 
+scatter(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Snoisy,label="noisy spectrum"); 
+# GeomGain = dictAllGeom[Symbol("λe_1.3000000000000003")][1].H'*dictAllGeom[Symbol("λe_1.3000000000000003")][1].ρ
+# plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg+GeomGain*dictAllData[symbol_h][1].σ_cs_dens.*dictAllData[symbol_h][1].σ_tot.*dictAllData[symbol_h][1].T.*dictAllData[symbol_h][1].F,label="unaltered spectrum"); 
+# scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); 
+xlabel("kinetic energy [eV]",fontsize=14); ylabel("spectrum [a.u.]",fontsize=14) 
+xticks(fontsize=14); yticks(fontsize=14); 
+legend(fontsize=14)
+
+ax2 = subplot(222)
+title("Eph = 649 [eV]",fontsize=14)
+symbol_h = :hν_649
+plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg,label="background"); 
+plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg+dictAllData[symbol_h][1].SpectrumA_1,label="noise free spectrum"); 
+scatter(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Snoisy,label="noisy spectrum"); 
+# GeomGain = dictAllGeom[Symbol("λe_1.3000000000000003")][1].H'*dictAllGeom[Symbol("λe_1.3000000000000003")][1].ρ
+# plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg+GeomGain*dictAllData[symbol_h][1].σ_cs_dens.*dictAllData[symbol_h][1].σ_tot.*dictAllData[symbol_h][1].T.*dictAllData[symbol_h][1].F,label="unaltered spectrum"); 
+# scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); 
+xlabel("kinetic energy [eV]",fontsize=14); ylabel("spectrum [a.u.]",fontsize=14) 
+xticks(fontsize=14); yticks(fontsize=14); 
+legend(fontsize=14)
+
+ax3 = subplot(223)
+title("Eph = 932 [eV]",fontsize=14)
+symbol_h = :hν_932
+plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg,label="background"); 
+plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg+dictAllData[symbol_h][1].SpectrumA_1,label="noise free spectrum"); 
+scatter(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Snoisy,label="noisy spectrum"); 
+# GeomGain = dictAllGeom[Symbol("λe_1.3000000000000003")][1].H'*dictAllGeom[Symbol("λe_1.3000000000000003")][1].ρ
+# plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg+GeomGain*dictAllData[symbol_h][1].σ_cs_dens.*dictAllData[symbol_h][1].σ_tot.*dictAllData[symbol_h][1].T.*dictAllData[symbol_h][1].F,label="unaltered spectrum"); 
+# scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); 
+xlabel("kinetic energy [eV]",fontsize=14); ylabel("spectrum [a.u.]",fontsize=14) 
+xticks(fontsize=14); yticks(fontsize=14); 
+legend(fontsize=14)
+
+ax4 = subplot(224)
+title("Eph = 1216 [eV]",fontsize=14)
+symbol_h = :hν_1216
+plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg,label="background"); 
+plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg+dictAllData[symbol_h][1].SpectrumA_1,label="noise free spectrum"); 
+scatter(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Snoisy,label="noisy spectrum"); 
+# GeomGain = dictAllGeom[Symbol("λe_1.3000000000000003")][1].H'*dictAllGeom[Symbol("λe_1.3000000000000003")][1].ρ
+# plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg+GeomGain*dictAllData[symbol_h][1].σ_cs_dens.*dictAllData[symbol_h][1].σ_tot.*dictAllData[symbol_h][1].T.*dictAllData[symbol_h][1].F,label="unaltered spectrum"); 
+# scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); 
+xlabel("kinetic energy [eV]",fontsize=14); ylabel("spectrum [a.u.]",fontsize=14) 
+xticks(fontsize=14); yticks(fontsize=14); 
+legend(fontsize=14)
+
+tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+
+# savefig("full_measurement_model.png")
+# savefig("full_measurement_model.pdf")
 
