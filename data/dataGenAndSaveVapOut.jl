@@ -148,7 +148,7 @@ end
     (hν::Array{Cdouble,1},Ki::Array{Cdouble,1},Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1}): cross section
     (ρ::Array{Cdouble,1}): concentration profile
 """
-function simulateSpectrum(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
+function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble,
     Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1},
     r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λ::Cdouble,
@@ -224,7 +224,6 @@ hν = collect(LinRange(365.0,1500.0,Ndata));                         # central p
 dhν = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
 Fνj = 1.0e3*ones(Cdouble,Ndata);                                    # flux densities
 Tj   = collect(LinRange(5.0,10.0,Ndata));                           # transmission factors
-# μKe  = collect(LinRange(50.0,1200.0,Ndata));    
 σ_ke = 2.0*dKe*collect(LinRange(1.0,2.0,Ndata));                    # kinetic energy bandwidths of the analyzer (one per photon energy)
 
 # dictionary where to push the data and geometry factor
@@ -241,18 +240,11 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
 
     local Be0 = hν[j] .- Keij;
     local σ_cs_0 =  σ_cs.(hν[j],Keij,μKe)./XPSpack.σ_C1s_interp[hν[j]] 
-    # figure(); plot(Keij,σ_cs_0); xlabel("kinetic energy [eV]"); ylabel("cross section density")
-    # figure(); plot(Be0,σ_cs_0); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("cross section density")
-
-    local SpectrumA_1,H_geom,S_anph,Ki = simulateSpectrum(Fνj[j],hν[j],dhν[j],
+    local SpectrumA_1,H_geom,S_anph,Ki = simulateSpectrumGeom(Fνj[j],hν[j],dhν[j],
         Keij,σ_ke[j],Tj[j],
         reverse(Be0),reverse(σ_cs_0),
         r,θ,y,x0,y0,z0,μ0,λe[j],
         ρA_1)
-
-    # figure(); plot(Keij,SpectrumA_1); xlabel("kinetic energy [eV]"); ylabel("spectrum (no background) [a.u.]")
-    # figure(); plot(Be0,SpectrumA_1); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
-    # figure(); plot(r,ρA_1); plot(r,H_geom); ax = gca(); ax.invert_xaxis(); xlabel("distance from center [eV]"); ylabel("profile and geom gain [a.u.]") 
 
     ##
     ## add background and noise
@@ -271,7 +263,6 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     # SC1s = SC1snoise - SbgC1s; # noisy signal without background -> negative values appears
 
     # plot signals w.r.t. the kinetic energy
-    # figure(); plot(Keij,SpectrumA_1); scatter(Keij,SC1s); xlabel("kinetic energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
     figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+SpectrumA_1); scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); xlabel("kinetic energy [eV]"); ylabel("spectrum [a.u.]") 
     # plot the signal w.r.t. the binding energy
     # figure(); plot(Be,reverse(SpectrumA_1)); scatter(Be,reverse(SC1snoise-SbgC1s)); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
