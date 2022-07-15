@@ -7,7 +7,7 @@ using myPlot
 
 # data manipulation (loading, writing, etc)
 using Printf
-using CSV
+using XLSX # CSV does not deal with multiple sheets
 using DataFrames
 
 # scientific package from the official Julia repositories
@@ -25,24 +25,18 @@ using ATTIRE  # kinetic energy analyzer
 
 
 # tags
-LOW_RES   = true               # set to true for computing the low resolution measurement models
-MARG_UN   = (false & LOW_RES)    # set to true for computing the mean measurement operator as well as the covarainces
-SHORT_RANGE = false              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
-SIMULATE_DATA = true            # set true for simulating some data (several nose level)
-SAVE_DATA = (false & SIMULATE_DATA)                # set to true for saving the generated variables
-SAVE_MODEL = false               # set to true to save the models
+SHORT_RANGE = true              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 
-MODEL_5   = false               # select the number of attenuation lengths probed
+MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
-MODEL_20  = true
+MODEL_20  = false
 
-SAMPLE_MODEL = (false & LOW_RES) # if set to true, generate plenty of models by drawing attenuation lengths (only in low resolution, and does not compute the marginalization)
 N_model_sample = 100;           # 100 should be more than enough for 5 attenuation length, but maybe not for 20
 
-FLAG_0001 = (true & SIMULATE_DATA)               # selection of the profile (one must be true and the others false)
-FLAG_0002 = (false & SIMULATE_DATA)
-FLAG_0003 = (false & SIMULATE_DATA)
-FLAG_0004 = (false & SIMULATE_DATA)
+FLAG_0001 = false               # selection of the profile (one must be true and the others false)
+FLAG_0002 = false
+FLAG_0003 = false
+FLAG_0004 = true
 
 save_folder = "./";
 
@@ -82,11 +76,11 @@ if FLAG_0001
     exp_tag     = "0001"
 end
 if FLAG_0002
-    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ 2.0exp.(-(1000.0*(μ0.-r_surf).-0.0).^2. /(2.0*0.25^2));
+    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ 2.0exp.(-(1000.0*(μ0.-r).-0.0).^2. /(2.0*0.25^2));
     exp_tag     = "0002"
 end
 if FLAG_0003
-    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ exp.(-(1000.0*(μ0.-r_surf).-0.5).^2. /(2.0*0.5^2));
+    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ exp.(-(1000.0*(μ0.-r).-0.5).^2. /(2.0*0.5^2));
     exp_tag     = "0003"
 end
 if FLAG_0004
@@ -125,6 +119,8 @@ Be = collect(286.0:dKe:298.0);
 Nspectrum = length(Be);
 μBe = [290.2; 292.0; 293.0]
 σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
+BeC1s = mean(Be);
+ΔBeC1s = (Be[end]-Be[1])/5;
 
 
 function σ_cs(hν::Cdouble,Ke::Cdouble,μKe::Cdouble;μKe0::Cdouble=50.0,μKe1::Cdouble=1200.0)
@@ -142,25 +138,9 @@ function σ_cs(hν::Cdouble,Ke::Cdouble,μKe::Cdouble;μKe0::Cdouble=50.0,μKe1:
     XPSpack.σ_C1s_interp[hν]*(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3)
 end
 
-
 ##
 ## simple analyzer model
 ##
-
-# for a given photon energy νj, measure a spectrum
-hν = collect(LinRange(365.0,1500.0,Ndata));                         # central photon energy for each measurement
-dhν = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
-Fνj = 1.0e3*ones(Cdouble,Ndata);                                    # flux densities
-j = Ndata; # 1; # 10;                                               # select the photon energy
-Tj   = collect(LinRange(5.0,10.0,Ndata));                           # transmission factors
-# μKe  = collect(LinRange(50.0,1200.0,Ndata));    
-σ_ke = 2.0*dKe*collect(LinRange(1.0,2.0,Ndata));                    # kinetic energy bandwidths of the analyzer (one per photon energy)
-Keij = reverse(hν[j] .- Be) ;                                       # centers of the analyzer's channels
-μKe = 0.5*(Keij[1]+Keij[end]);                                      # central kinetic energy (a bit the same role as pass energy)
-
-
-
-
 """
     (Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble): photon beam's parameters
     (Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble): analyzer's parameters
@@ -238,98 +218,88 @@ function simulateSpectrum(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     (H_geom'*ρ)*Sj,H_geom,Sj,Keij
 end
 
+# acqusition parameters
+# j = Ndata; # 1; # 10;                                               # select the photon energy
+hν = collect(LinRange(365.0,1500.0,Ndata));                         # central photon energy for each measurement
+dhν = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
+Fνj = 1.0e3*ones(Cdouble,Ndata);                                    # flux densities
+Tj   = collect(LinRange(5.0,10.0,Ndata));                           # transmission factors
+# μKe  = collect(LinRange(50.0,1200.0,Ndata));    
+σ_ke = 2.0*dKe*collect(LinRange(1.0,2.0,Ndata));                    # kinetic energy bandwidths of the analyzer (one per photon energy)
 
-##
-## compute the cross section of the sample (to be estimated from the data in an estimation setting)
-##
+# dictionary where to push the data and geometry factor
+dictAllData = Dict() # TODO: get outside the loop
+dictAllGeom = Dict()
+for j in 1:Ndata # can potentially multi-thread this loop: but need to sync before writing files
+    # for a given photon energy νj, measure a spectrum
+    local Keij = reverse(hν[j] .- Be) ;                                       # centers of the analyzer's channels
+    local μKe = 0.5*(Keij[1]+Keij[end]);                                      # central kinetic energy (a bit the same role as pass energy)
 
-Be0 = hν[j] .- Keij;
-σ_cs_0 =  σ_cs.(hν[j],Keij,μKe)./XPSpack.σ_C1s_interp[hν[j]] 
-figure(); plot(Keij,σ_cs_0); xlabel("kinetic energy [eV]"); ylabel("cross section density")
-figure(); plot(Be0,σ_cs_0); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("cross section density")
+    ##
+    ## compute the cross section of the sample (to be estimated from the data in an estimation setting)
+    ##
 
-SpectrumA_1,H_geom,S_anph,Ki = simulateSpectrum(Fνj[j],hν[j],dhν[j],
-    Keij,σ_ke[j],Tj[j],
-    reverse(Be0),reverse(σ_cs_0),
-    r,θ,y,x0,y0,z0,μ0,λe[j],
-    ρA_1)
+    local Be0 = hν[j] .- Keij;
+    local σ_cs_0 =  σ_cs.(hν[j],Keij,μKe)./XPSpack.σ_C1s_interp[hν[j]] 
+    # figure(); plot(Keij,σ_cs_0); xlabel("kinetic energy [eV]"); ylabel("cross section density")
+    # figure(); plot(Be0,σ_cs_0); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("cross section density")
 
-figure(); plot(Keij,SpectrumA_1); xlabel("kinetic energy [eV]"); ylabel("spectrum (no background) [a.u.]")
-figure(); plot(Be0,SpectrumA_1); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
-figure(); plot(r,ρA_1); plot(r,H_geom); ax = gca(); ax.invert_xaxis(); xlabel("distance from center [eV]"); ylabel("profile and geom gain [a.u.]") 
-# TODO: save cross section density and total cross section (check Yeh 1985 values)
-# TODO: loop over the photon energy index j and save everything 
-#         - data: noisy, no noise and background
-#         - model: cross section (density and total), Be, Ke, r, H, hν, Fνj, Tj, λe for each photon energy
-#         - original concentration profile
+    local SpectrumA_1,H_geom,S_anph,Ki = simulateSpectrum(Fνj[j],hν[j],dhν[j],
+        Keij,σ_ke[j],Tj[j],
+        reverse(Be0),reverse(σ_cs_0),
+        r,θ,y,x0,y0,z0,μ0,λe[j],
+        ρA_1)
 
-# if SAVE_MODEL
-#     mkpath(save_folder)
-#     CSV.write(string(save_folder,"radial_discretization.csv"),DataFrame(r',:auto);header=true)
-#     CSV.write(string(save_folder,"attenuation_length.csv"),DataFrame(λe',:auto);header=false)
-#     CSV.write(string(save_folder,"H_highres.csv"),DataFrame(H_highres,:auto);header=true)
-# end
+    # figure(); plot(Keij,SpectrumA_1); xlabel("kinetic energy [eV]"); ylabel("spectrum (no background) [a.u.]")
+    # figure(); plot(Be0,SpectrumA_1); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
+    # figure(); plot(r,ρA_1); plot(r,H_geom); ax = gca(); ax.invert_xaxis(); xlabel("distance from center [eV]"); ylabel("profile and geom gain [a.u.]") 
 
+    ##
+    ## add background and noise
+    ##
 
+    # parameters used for the simulation of the inelastic background 
+    # Here, the background is made up of electrons that undergo inelastic collisions,
+    # at least one so that they don't appear in the sharp peak, but at lower kinetic energy
+    # the model is fairly simple and arbitrary, but it's better than no the background at all
+    local SbgC1s = 0.5Keij./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s)); # the inelastic collision background
 
-##
-## add background and noise
-##
+    # add the noise on the signal that hit the sensor, i.e. signal with background
+    # SC1snoise = countElectrons(SbgC1s+Ssignal[:,j])
+    local SC1snoise = countElectrons(SbgC1s+SpectrumA_1)
 
-# parameters used for the simulation of the inelastic background 
-# Here, the background is made up of electrons that undergo inelastic collisions,
-# at least one so that they don't appear in the sharp peak, but at lower kinetic energy
-# the model is fairly simple and arbitrary, but it's better than no the background at all
-BeC1s = mean(Be);
-ΔBeC1s = (Be[end]-Be[1])/5;
-SbgC1s = 0.5Keij./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s)); # the inelastic collision background
+    # SC1s = SC1snoise - SbgC1s; # noisy signal without background -> negative values appears
 
-# add the noise on the signal that hit the sensor, i.e. signal with background
-# SC1snoise = countElectrons(SbgC1s+Ssignal[:,j])
-SC1snoise = countElectrons(SbgC1s+SpectrumA_1)
-
-SC1s = SC1snoise - SbgC1s; # noisy signal without background -> negative values appears
-
-# plot signals w.r.t. the kinetic energy
-figure(); plot(Keij,SpectrumA_1); scatter(Keij,SC1s); xlabel("kinetic energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
-figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+SpectrumA_1); scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); xlabel("kinetic energy [eV]"); ylabel("spectrum [a.u.]") 
-# plot the signal w.r.t. the binding energy
-figure(); plot(Be,reverse(SpectrumA_1)); scatter(Be,reverse(SC1snoise-SbgC1s)); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
-
-
+    # plot signals w.r.t. the kinetic energy
+    # figure(); plot(Keij,SpectrumA_1); scatter(Keij,SC1s); xlabel("kinetic energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
+    figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+SpectrumA_1); scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); xlabel("kinetic energy [eV]"); ylabel("spectrum [a.u.]") 
+    # plot the signal w.r.t. the binding energy
+    # figure(); plot(Be,reverse(SpectrumA_1)); scatter(Be,reverse(SC1snoise-SbgC1s)); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
 
 
+    ##
+    ## push data to dicts
+    ##
 
+    local dictData = Dict( "Ke" => Keij, "Be" => Be0, "μKe" => μKe,
+        "σ_cs_dens" => σ_cs_0, "σ_tot" => XPSpack.σ_C1s_interp[hν[j]], 
+        "SpectrumA_1" => SpectrumA_1, "Sbg" => SbgC1s, 
+        "Stot" => SbgC1s+SpectrumA_1, "Snoisy" => SC1snoise,
+        "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
 
+    local dictGeom = Dict("model" => "sharp edge cylinder + outside vapor", 
+                "hν" => hν[j], "λ" => 1.0e3λe[j], "radius" => μ0, "max_depth" => k0*λe0,
+                    "x0" => x0, "y0" => y0, "z0" => z0, "δr" => δr,
+                    "r" => r, "H" => H_geom, "ρ" => ρA_1)
 
+    local dfGeom = DataFrame(dictGeom);
+    local dfData = DataFrame(dictData);
 
-if false
-    save_folder_data = string(save_folder,exp_tag,"/")
-    # generate some data (data point and covariance)
-    Nnoise = 200;
-    SNRmodulation = 1.0 .+ (λe.-λe[1])./(λe[end]-λe[1]);
-    SNR_level = [5.0; 10.0; 50.0; 100.0; 500.0; 1000.0];
-    Signal_level = abs.(H_highres*ρA_1);
-
-
-    for k in 1:length(SNR_level)
-        # figure()
-        y_data = zeros(Cdouble,Nnoise,Ndata);
-        ΓIsqrt = diagm(Signal_level./(SNR_level[k]*SNRmodulation));
-        y_data[1,:] = H_highres*ρA_1;
-        for i in 2:Nnoise
-            y_data[i,:] = y_data[1,:] + ΓIsqrt*randn(Cdouble,Ndata);
-            # scatter(collect(1:Ndata),y_data[i,:])
-        end
-        y_data[y_data.<0.0] = -y_data[y_data.<0.0]; # just making sure the integrated peak area are positive values
-        if SAVE_DATA
-            mkpath(string(save_folder_data,"/noise_level_",σ_level[k],"/"))
-            CSV.write(string(save_folder_data,"/noise_level_",σ_level[k],"/","repeated_data.csv"),DataFrame([λe';y_data],:auto);header=true)
-        end
-    end
-    if SAVE_DATA
-        CSV.write(string(save_folder_data,"concentration_profile.csv"),DataFrame(ρA_1',:auto);header=true)
-    end
-
+    dictAllData[Symbol(string("hν_",Int64(round(hν[j]))))] = (eachcol(dfData),names(dfData))
+    dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))] = (eachcol(dfGeom),names(dfGeom))
 end
+
+mkpath(string(save_folder,exp_tag,"/"));
+XLSX.writetable(string(save_folder,exp_tag,"/data.xlsx"); dictAllData...) # TODO: get outside the loop
+XLSX.writetable(string(save_folder,exp_tag,"/model.xlsx"); dictAllGeom...)
 
