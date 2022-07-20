@@ -25,7 +25,7 @@ using ATTIRE  # kinetic energy analyzer
 
 
 # tags
-SHORT_RANGE = true              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
+SHORT_RANGE = false              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 
 MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
@@ -33,10 +33,10 @@ MODEL_20  = false
 
 N_model_sample = 100;           # 100 should be more than enough for 5 attenuation length, but maybe not for 20
 
-FLAG_0001 = false               # selection of the profile (one must be true and the others false)
+FLAG_0001 = true               # selection of the profile (one must be true and the others false)
 FLAG_0002 = false
 FLAG_0003 = false
-FLAG_0004 = true
+FLAG_0004 = false
 
 save_folder = "./";
 
@@ -186,6 +186,8 @@ function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     # compute the "convolution" of the corss section by the spread of the light source and the spread of the kinetic energy analyzer
     Aij = zeros(Cdouble,Nspectrum,NdensF);  # discretization of the spread of the source and analyzer
     Sj = Array{Cdouble,1}(undef,Nspectrum); 
+
+    Aij0 = zeros(Cdouble,Nspectrum,NdensF,Nchannel); # potentially used for ploting purposes... maybe
     
     F_dens = sourceSpread.(hνjl,hνj,Δνj,Fνj)
     σ_tot = XPSpack.σ_C1s_interp[hνjl] 
@@ -204,6 +206,7 @@ function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
             end
         end
         Sj[i] = Gm'*Aij*Fl;
+        Aij0[:,:,i] = φi_val*F_dens';
     end
 
 
@@ -215,7 +218,7 @@ function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     ##
     ## compute total signal
     ##
-    (H_geom'*ρ)*Sj,H_geom,Sj,Keij
+    (H_geom'*ρ)*Sj,H_geom,Sj,Ki,Aij0 # Keij
 end
 
 # acqusition parameters
@@ -229,6 +232,7 @@ Tj   = collect(LinRange(5.0,10.0,Ndata));                           # transmissi
 # dictionary where to push the data and geometry factor
 dictAllData = Dict() # TODO: get outside the loop
 dictAllGeom = Dict()
+dictAllTran = Dict()
 for j in 1:Ndata # can potentially multi-thread this loop: but need to sync before writing files
     # for a given photon energy νj, measure a spectrum
     local Keij = reverse(hν[j] .- Be) ;                                       # centers of the analyzer's channels
@@ -240,7 +244,7 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
 
     local Be0 = hν[j] .- Keij;
     local σ_cs_0 =  σ_cs.(hν[j],Keij,μKe)./XPSpack.σ_C1s_interp[hν[j]] 
-    local SpectrumA_1,H_geom,S_anph,Ki = simulateSpectrumGeom(Fνj[j],hν[j],dhν[j],
+    local SpectrumA_1,H_geom,S_anph,Ki,Aij0 = simulateSpectrumGeom(Fνj[j],hν[j],dhν[j],
         Keij,σ_ke[j],Tj[j],
         reverse(Be0),reverse(σ_cs_0),
         r,θ,y,x0,y0,z0,μ0,λe[j],
@@ -287,7 +291,8 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     local dfData = DataFrame(dictData);
 
     dictAllData[Symbol(string("hν_",Int64(round(hν[j]))))] = (eachcol(dfData),names(dfData))
-    dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))] = (eachcol(dfGeom),names(dfGeom))
+    dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))]  = (eachcol(dfGeom),names(dfGeom))
+    dictAllTran[Symbol(string("hν_",Int64(round(hν[j]))))] = Aij0
 end
 
 # mkpath(string(save_folder,exp_tag,"/"));
@@ -351,4 +356,99 @@ tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
 # savefig("full_measurement_model.png")
 # savefig("full_measurement_model.pdf")
+
+
+
+figure()
+
+imshow(dictAllTran[:hν_932][:,:,120])
+
+colorbar()
+
+
+
+##
+## svd noise estimation
+##
+
+
+F_365  = svd(dictAllData[:hν_365][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_0.5")][1][:H]')
+F_649  = svd(dictAllData[:hν_649][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_1.75")][1][:H]')
+F_932  = svd(dictAllData[:hν_932][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_3.0")][1][:H]')
+F_1216 = svd(dictAllData[:hν_1216][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_4.25")][1][:H]')
+F_1500 = svd(dictAllData[:hν_1500][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_5.5")][1][:H]')
+
+
+F_365.U'*(dictAllData[:hν_365][1][:Snoisy]-dictAllData[:hν_365][1][:Sbg])
+
+
+bg_rm = 1.0
+s_th = 2
+
+UF_365  = F_365.U[:,s_th:end]'*(dictAllData[:hν_365][1][:Snoisy]-bg_rm*dictAllData[:hν_365][1][:Sbg]);
+UF_649  = F_649.U[:,s_th:end]'*(dictAllData[:hν_649][1][:Snoisy]-bg_rm*dictAllData[:hν_649][1][:Sbg]);
+UF_932  = F_932.U[:,s_th:end]'*(dictAllData[:hν_932][1][:Snoisy]-bg_rm*dictAllData[:hν_932][1][:Sbg]);
+UF_1216 = F_1216.U[:,s_th:end]'*(dictAllData[:hν_1216][1][:Snoisy]-bg_rm*dictAllData[:hν_1216][1][:Sbg]);
+UF_1500 = F_1500.U[:,s_th:end]'*(dictAllData[:hν_1500][1][:Snoisy]-bg_rm*dictAllData[:hν_1500][1][:Sbg]);
+
+noise_365  = F_365.U[:,s_th:end]*UF_365
+noise_649  = F_649.U[:,s_th:end]*UF_649
+noise_932  = F_932.U[:,s_th:end]*UF_932
+noise_1216 = F_1216.U[:,s_th:end]*UF_1216
+noise_1500 = F_1500.U[:,s_th:end]*UF_1500
+
+σ_365  = dictAllData[:hν_365][1][:Snoisy]-noise_365
+σ_649  = dictAllData[:hν_649][1][:Snoisy]-noise_649
+σ_932  = dictAllData[:hν_932][1][:Snoisy]-noise_932
+σ_1216 = dictAllData[:hν_1216][1][:Snoisy]-noise_1216
+σ_1500 = dictAllData[:hν_1500][1][:Snoisy]-noise_1500
+
+x_symbol = :Ke;
+figure(); 
+plot(dictAllData[:hν_365][1][x_symbol],dictAllData[:hν_365][1][:Stot]) # collect(1:241)
+scatter(dictAllData[:hν_365][1][x_symbol],σ_365)
+
+plot(dictAllData[:hν_649][1][x_symbol],dictAllData[:hν_649][1][:Stot])
+scatter(dictAllData[:hν_649][1][x_symbol],σ_649)
+
+plot(dictAllData[:hν_932][1][x_symbol],dictAllData[:hν_932][1][:Stot])
+scatter(dictAllData[:hν_932][1][x_symbol],σ_932)
+
+plot(dictAllData[:hν_1216][1][x_symbol],dictAllData[:hν_1216][1][:Stot])
+scatter(dictAllData[:hν_1216][1][x_symbol],σ_1216)
+
+plot(dictAllData[:hν_1500][1][x_symbol],dictAllData[:hν_1500][1][:Stot])
+scatter(dictAllData[:hν_1500][1][x_symbol],σ_1500)
+
+
+
+figure()
+scatter(collect(1:241),noise_365,color="tab:blue")
+fill_between(collect(1:241),-sqrt.(σ_365),sqrt.(σ_365),alpha=0.5,color="tab:blue")
+
+scatter(collect(1:241),noise_649,color="tab:orange")
+fill_between(collect(1:241),-sqrt.(σ_649),sqrt.(σ_649),alpha=0.5,color="tab:orange")
+
+scatter(collect(1:241),noise_932,color="tab:green")
+fill_between(collect(1:241),-sqrt.(σ_932),sqrt.(σ_932),alpha=0.5,color="tab:green")
+
+scatter(collect(1:241),noise_1216,color="tab:red")
+fill_between(collect(1:241),-sqrt.(σ_1216),sqrt.(σ_1216),alpha=0.5,color="tab:red")
+
+scatter(collect(1:241),noise_1500,color="tab:purple")
+fill_between(collect(1:241),-sqrt.(σ_1500),sqrt.(σ_1500),alpha=0.5,color="tab:purple")
+
+# τ_365 = (σ_365-dictAllData[:hν_365][1][:Sbg])./(dictAllData[:hν_365][1][:σ_cs_dens]*sum(dictAllGeom[Symbol("λe_0.5")][1][:H][1:183]))
+τ_365 = (σ_365-dictAllData[:hν_365][1][:Sbg])./(dictAllData[:hν_365][1][:σ_cs_dens]*(dictAllGeom[Symbol("λe_0.5")][1][:H]'*ρA_1))
+
+figure()
+plot(τ_365[σ_365.>0.1*maximum(σ_365)])
+ylim(0.0)
+
+dictAllData[:hν_365][1][:σ_tot].*dictAllData[:hν_365][1][:F].*dictAllData[:hν_365][1][:T]/mean(τ_365[σ_365.>0.1*maximum(σ_365)])
+
+
+noiseAndParameterEstimation(dictAllData[:hν_365][1][:σ_cs_dens],dictAllGeom[Symbol("λe_0.5")][1][:H],Array{Cdouble,1}(dictAllData[:hν_365][1][:Snoisy]),dictAllData[:hν_365][1][:Sbg],dictAllGeom[Symbol("λe_0.5")][1][:ρ])
+
+
 

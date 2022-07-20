@@ -235,3 +235,24 @@ function cross_section_spread_function_sample(I_nbl::Array{Cdouble,1},Kes::Array
    # return the results
    Xend,μ_XR,Γ_XR,R,σ_R,R_samples
 end
+
+
+"""
+   noiseAndParameterEstimation(σ_χ::Array{Cdouble,1},H::Array{Cdouble,1},I_data::Array{Cdouble,1},I_bg::Array{Cdouble,1},ρ::Array{Cdouble,1})
+
+   returns an estimate of the multiplicative factor in the measurement model (including the alignment factor)
+   and an estimate of the noise perturbations.
+
+   σ_χ is the cross section density
+   H is the geometrical factor
+   I_data is the raw data (including the background)
+   I_bg is the background
+   ρ is a rough profile (potentially the bulk concentration in the volume and 0 outside)
+"""
+function noiseAndParameterEstimation(σ_χ::Array{Cdouble,1},H::Array{Cdouble,1},I_data::Array{Cdouble,1},I_bg::Array{Cdouble,1},ρ::Array{Cdouble,1})
+   F  = svd(σ_χ*H')
+   noise_data = F.U[:,2:end]*(F.U[:,2:end]'*(I_data-I_bg));
+   σ_data = I_data-(I_bg-noise_data)
+
+   mean(σ_data[σ_χ.>0.1*maximum(σ_χ)]./(σ_χ[σ_χ.>0.1*maximum(σ_χ)]*(H'*ρ))),noise_data
+end

@@ -29,6 +29,9 @@ export cov_H_cylinder
 export XPSacq # acquisition parameters
 export Ψ_lin_peaks # implemented in XPSmeas.jl
 
+# function for noise estimation
+export noiseAndParameterEstimation
+
 # include the implementation of the exported functions and objects
 include("XPSpack/penetration_depth.jl")
 include("XPSpack/cross_section.jl")
