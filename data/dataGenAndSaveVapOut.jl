@@ -68,26 +68,21 @@ y = collect(range(-L/2.0,L/2.0,length=Ny));
 # concentration profiles (4 different cases)
 ρ0 = 1.0
 ρ_vac = 0.0
-r_th  = 2.346; # 2.0
 
 
 if FLAG_0001
-    # ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0);
     ρA_1 = logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0);
     exp_tag     = "0001"
 end
 if FLAG_0002
-    # ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ 2.0exp.(-(1000.0*(μ0.-r).-0.0).^2. /(2.0*0.25^2));
     ρA_1 = logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0) .+ 2.0exp.(-(1000.0*(μ0.-r).-0.0).^2. /(2.0*0.25^2));
     exp_tag     = "0002"
 end
 if FLAG_0003
-    # ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ exp.(-(1000.0*(μ0.-r).-0.5).^2. /(2.0*0.5^2));
     ρA_1 = logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0) .+ exp.(-(1000.0*(μ0.-r).-0.5).^2. /(2.0*0.5^2));
     exp_tag     = "0003"
 end
 if FLAG_0004
-    # ρA_1 = exp.(-(1000.0((δr.+μ0.-r).-δr)).^2. /(2.0*0.5^2));
     ρA_1 = exp.(-(1000.0((μ0.-r))).^2. /(2.0*0.5^2));
     exp_tag     = "0004"
 end
@@ -117,8 +112,8 @@ end
 ##
 ## alignment
 ##
-xc = 400.0;
-yc = 0.0;
+xc = 100.0 # 200.0 # 400.0;
+yc = 99.0 # 75.0; # 0.0;
 σx = 100.0;
 σy = 25.0;
 bp = beamProfile(xc,yc,σx,σy);
@@ -254,7 +249,6 @@ Tj   = α_Ω*(10.0.+0.0collect(LinRange(5.0,10.0,Ndata))); # LinRange(5.0,10.0,N
 σ_ke = 2.0*dKe*ones(Cdouble,Ndata); # collect(LinRange(1.0,2.0,Ndata)); #                      # kinetic energy bandwidths of the analyzer (one per photon energy)
 
 
-
 # dictionary where to push the data and geometry factor
 dictAllData = Dict() # TODO: get outside the loop
 dictAllGeom = Dict()
@@ -263,7 +257,7 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     # for a given photon energy νj, measure a spectrum
     local Keij = reverse(hν[j] .- Be) ;                                       # centers of the analyzer's channels
     local μKe = 0.5*(Keij[1]+Keij[end]);                                      # central kinetic energy (a bit the same role as pass energy)
-
+    # local σ_bg = 0.05*(hν[j]-BeC1s) # μKe;
     ##
     ## compute the cross section of the sample (to be estimated from the data in an estimation setting)
     ##
@@ -284,7 +278,9 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     # Here, the background is made up of electrons that undergo inelastic collisions,
     # at least one so that they don't appear in the sharp peak, but at lower kinetic energy
     # the model is fairly simple and arbitrary, but it's better than no the background at all
-    local SbgC1s = 0.5Keij./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s)); # the inelastic collision background
+    # local SbgC1s = (0.5Keij)./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s)); # the inelastic collision background
+    # local SbgC1s = (α_al[j]*Tj[j]*Fνj[j]*σ_bg[j]*Keij/(2.0μKe^2))./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s));
+    local SbgC1s = α_al[j]*Tj[j]*Fνj[j]*σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeC1s,ΔBeC1s);
 
     # add the noise on the signal that hit the sensor, i.e. signal with background
     # SC1snoise = countElectrons(SbgC1s+Ssignal[:,j])

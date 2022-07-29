@@ -12,7 +12,7 @@ using utilsFun
 using NewtonMethod  # used in XPSutils.jl
 
 # penetration depth and cross-section values: not sure it's really useful in this module since the values are supposed to be known to create the models
-export λe, σ_cs_orb 
+export λe, σ_cs_orb, σ_bg_density, σ_bg
 
 
 # data enhancement: baseline correction and peak fitting (requires sampling of the spectra)
