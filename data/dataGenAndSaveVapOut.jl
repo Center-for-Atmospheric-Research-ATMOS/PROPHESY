@@ -49,10 +49,10 @@ Nr_lowres = 101 ;    # for the low resolution model
 Nθ = 256;            # number of discretization points in the polar angle dimension
 Ny = 256;            # number of discretization points in the cylinder axis dimension
 μ0 = 10.0; # 20.0;   # radius of the cylinder
-L = 100.0;           # height of the irradiated sample
-x0 = sqrt(2.0)*100.0 # (x0,y0,z0) are the coordinates of the analyzer's apperture
+L = 25; # 100.0;     # height of the irradiated sample (the vertical extent of the beam is more like 20μm instead of 100μm)
+x0 = sqrt(2.0)*500.0 # (x0,y0,z0) are the coordinates of the analyzer's apperture
 y0 = 0.0;
-z0 = 100.0;
+z0 = 500.0;
 
 # soon add the option of sphere or plane geometry?
 save_folder = string(save_folder,"cylinder_radius_",μ0,"/")
@@ -72,19 +72,23 @@ r_th  = 2.346; # 2.0
 
 
 if FLAG_0001
-    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0);
+    # ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0);
+    ρA_1 = logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0);
     exp_tag     = "0001"
 end
 if FLAG_0002
-    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ 2.0exp.(-(1000.0*(μ0.-r).-0.0).^2. /(2.0*0.25^2));
+    # ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ 2.0exp.(-(1000.0*(μ0.-r).-0.0).^2. /(2.0*0.25^2));
+    ρA_1 = logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0) .+ 2.0exp.(-(1000.0*(μ0.-r).-0.0).^2. /(2.0*0.25^2));
     exp_tag     = "0002"
 end
 if FLAG_0003
-    ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ exp.(-(1000.0*(μ0.-r).-0.5).^2. /(2.0*0.5^2));
+    # ρA_1 = logistic.(1000.0*(δr.+μ0.-r).-r_th,ρ_vac,ρ0,2.0) .+ exp.(-(1000.0*(μ0.-r).-0.5).^2. /(2.0*0.5^2));
+    ρA_1 = logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0) .+ exp.(-(1000.0*(μ0.-r).-0.5).^2. /(2.0*0.5^2));
     exp_tag     = "0003"
 end
 if FLAG_0004
-    ρA_1 = exp.(-(1000.0((δr.+μ0.-r).-δr)).^2. /(2.0*0.5^2));
+    # ρA_1 = exp.(-(1000.0((δr.+μ0.-r).-δr)).^2. /(2.0*0.5^2));
+    ρA_1 = exp.(-(1000.0((μ0.-r))).^2. /(2.0*0.5^2));
     exp_tag     = "0004"
 end
 
@@ -109,6 +113,19 @@ else
     save_folder = string(save_folder,"eal_",Ndata,"/")
 end
 λe = 1.0e-3collect(range(λe1,λe2,Ndata));              # attenuation length range
+
+##
+## alignment
+##
+xc = 400.0;
+yc = 0.0;
+σx = 100.0;
+σy = 25.0;
+bp = beamProfile(xc,yc,σx,σy);
+α_al = zeros(Cdouble,Ndata);
+for i in 1:Ndata
+    H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,α_al[i] =  alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[i]);
+end
 
 ## 
 ## cross section density model: just a dummy model looking like C1s
@@ -213,7 +230,9 @@ function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     ##
     ## geometry factor
     ##
-    H_geom,_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λ);
+    # H_geom,_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λ);
+    H_deom,_,H_geom,_,_,_,_,_ = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λ)
+    println("true alignement factor: ",(H_geom'*ρ)/(H_deom'*ρ))
     
     ##
     ## compute total signal
@@ -221,13 +240,20 @@ function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     (H_geom'*ρ)*Sj,H_geom,Sj,Ki,Aij0 # Keij
 end
 
-# acqusition parameters
+
+##
+## acqusition parameters
+##
 # j = Ndata; # 1; # 10;                                               # select the photon energy
+θ_aperture = 0.5*π/4
+α_Ω = 4π*sin(θ_aperture/2.0)^2
 hν = collect(LinRange(365.0,1500.0,Ndata));                         # central photon energy for each measurement
 dhν = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
-Fνj = 1.0e3*ones(Cdouble,Ndata);                                    # flux densities
-Tj   = collect(LinRange(5.0,10.0,Ndata));                           # transmission factors
-σ_ke = 2.0*dKe*collect(LinRange(1.0,2.0,Ndata));                    # kinetic energy bandwidths of the analyzer (one per photon energy)
+Fνj = 1.5e11*ones(Cdouble,Ndata); #  1.0e3*ones(Cdouble,Ndata); # 3.0e11*α_al; #                                     # flux densities
+Tj   = α_Ω*(10.0.+0.0collect(LinRange(5.0,10.0,Ndata))); # LinRange(5.0,10.0,Ndata))                          # transmission factors
+σ_ke = 2.0*dKe*ones(Cdouble,Ndata); # collect(LinRange(1.0,2.0,Ndata)); #                      # kinetic energy bandwidths of the analyzer (one per photon energy)
+
+
 
 # dictionary where to push the data and geometry factor
 dictAllData = Dict() # TODO: get outside the loop
@@ -397,11 +423,16 @@ noise_932  = F_932.U[:,s_th:end]*UF_932
 noise_1216 = F_1216.U[:,s_th:end]*UF_1216
 noise_1500 = F_1500.U[:,s_th:end]*UF_1500
 
-σ_365  = dictAllData[:hν_365][1][:Snoisy]-noise_365
-σ_649  = dictAllData[:hν_649][1][:Snoisy]-noise_649
-σ_932  = dictAllData[:hν_932][1][:Snoisy]-noise_932
-σ_1216 = dictAllData[:hν_1216][1][:Snoisy]-noise_1216
-σ_1500 = dictAllData[:hν_1500][1][:Snoisy]-noise_1500
+σ_365  = dictAllData[:hν_365][1][:Snoisy]-noise_365;
+σ_365[σ_365.<=0.0] .= 0.0
+σ_649  = dictAllData[:hν_649][1][:Snoisy]-noise_649; 
+σ_649[σ_649.<=0.0] .= 0.0
+σ_932  = dictAllData[:hν_932][1][:Snoisy]-noise_932;
+σ_932[σ_932.<=0.0] .= 0.0
+σ_1216 = dictAllData[:hν_1216][1][:Snoisy]-noise_1216; 
+σ_1216[σ_1216.<=0.0] .= 0.0
+σ_1500 = dictAllData[:hν_1500][1][:Snoisy]-noise_1500; 
+σ_1500[σ_1500.<=0.0] .= 0.0
 
 x_symbol = :Ke;
 figure(); 
@@ -452,3 +483,28 @@ noiseAndParameterEstimation(dictAllData[:hν_365][1][:σ_cs_dens],dictAllGeom[Sy
 
 
 
+# figure()
+# plot(σ_365./σ_649)
+# plot(noise_365./noise_649)
+
+# xc_vec = [-100.0; -75.0; -50.0; -20.0; -10.0; -5.0; -2.0; -1.0; 0.0; 1.0; 2.0; 5.0; μ0*sin(θ0); 10.0; 20.0; 50.0; 75.0; 100.0; 125.0; 150.0; 175.0; 200.0; 250.0; 300.0; 400.0; 500.0];
+# α_al_off    = zeros(Cdouble,length(xc_vec));
+# α_al_off_gt = zeros(Cdouble,length(xc_vec));
+# for ic in 1:length(xc_vec)
+#     bp = beamProfile(xc_vec[ic],yc,σx,σy)
+#     H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,α_al_off[ic] =  alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[1]);
+#     α_al_off_gt[ic] = (H_r_ph'*ρA_1)/(H_r'*ρA_1);
+# end
+# figure(); 
+# plot(xc_vec,α_al_off_gt,color="tab:green")
+# scatter(xc_vec,α_al_off,color="tab:blue")
+# scatter(μ0*sin(θ0),α_al_off_gt[13],color="tab:red")
+# xlabel("horizontal deviation [\$\\mu m\$]",fontsize=14)
+# ylabel("alignment [\$\\mu m^{-2}\$]",fontsize=14)
+# xticks(fontsize=12)
+# yticks(fontsize=12)
+# ticklabel_format(axis="y",style="sci",scilimits=(-2,2))
+# legend(["approximation","GT","closest to analyzer"])
+# tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+# savefig("alignment_factor.png")
+# savefig("alignment_factor.pdf")
