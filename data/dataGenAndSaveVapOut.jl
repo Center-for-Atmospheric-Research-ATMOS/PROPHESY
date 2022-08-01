@@ -25,7 +25,7 @@ using ATTIRE  # kinetic energy analyzer
 
 
 # tags
-SHORT_RANGE = false              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
+SHORT_RANGE = true              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 
 MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
@@ -167,7 +167,7 @@ function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble,
     Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1},
     r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λ::Cdouble,
-    ρ::Array{Cdouble,1})
+    ρ::Array{Cdouble,1},σ_bg_vec::Array{Cdouble,1})
 
     ##
     ## analyzer
@@ -189,39 +189,40 @@ function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     ## spread of the ionization cross section: light source and analyzer
     ##
     # number of discretization point in the kinetic energy space and in the photon energy space
-    Nspectrum = length(Ki); # NOTE: the discretization of the kinetic enegy space does not have to coincide with the center of the channel, it can be whatever subdivision of that space
+    Kdisc = [Ki[1].-dKe*collect(1:20);Ki; Ki[end].+dKe*collect(1:20)]; # NOTE: the discretization of the kinetic enegy space does not have to coincide with the center of the channel, it can be whatever subdivision of that space
+    Ndisc = length(Kdisc);
     NdensF = length(hνjl);
     # discretization of the integral: piecewise linear basis function
-    Gm = dKe*ones(Cdouble,Nspectrum); Gm[1] = 0.5dKe; Gm[end] = 0.5dKe;
+    Gm = dKe*ones(Cdouble,Ndisc); # Gm[1] = 0.5dKe; Gm[end] = 0.5dKe;
     Fl = Δhν*ones(Cdouble,NdensF); Fl[1] = 0.5Δhν; Fl[end] = 0.5Δhν;
 
     # define an interpolating tool whose nodes are Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1}
     σ_cs_interp = extrapolate(interpolate((Be0,), σ_cs_0, Gridded(Linear())),Line())
+    σ_bg_interp = extrapolate(interpolate((Ki,), σ_bg_vec, Gridded(Linear())),Flat())
 
     # compute the "convolution" of the corss section by the spread of the light source and the spread of the kinetic energy analyzer
-    Aij = zeros(Cdouble,Nspectrum,NdensF);  # discretization of the spread of the source and analyzer
-    Sj = Array{Cdouble,1}(undef,Nspectrum); 
+    Aij = zeros(Cdouble,Ndisc,NdensF);      # discretization of the spread of the source and analyzer
+    Sj  = Array{Cdouble,1}(undef,Nchannel); 
 
-    Aij0 = zeros(Cdouble,Nspectrum,NdensF,Nchannel); # potentially used for ploting purposes... maybe
-    
-    F_dens = sourceSpread.(hνjl,hνj,Δνj,Fνj)
-    σ_tot = XPSpack.σ_C1s_interp[hνjl] 
-    σ_val = Array{Cdouble,2}(undef,NdensF,Nspectrum)
+    F_dens   = sourceSpread.(hνjl,hνj,Δνj,Fνj)
+    σ_tot    = XPSpack.σ_C1s_interp[hνjl] 
+    σ_val    = Array{Cdouble,2}(undef,NdensF,Ndisc)
+    σ_bg_val = Array{Cdouble,2}(undef,NdensF,Ndisc)
     for l in 1:NdensF
         # interpolator for the current photon energy
-        Be = hνjl[l] .- Ki;
-        σ_val[l,:] = σ_tot[l]*σ_cs_interp[Be] # no need to repeat that computation at each iteration of the i loop, once at first is enough
+        Be = hνjl[l] .- Kdisc;
+        σ_val[l,:]    = σ_tot[l]*σ_cs_interp[Be] # no need to repeat that computation at each iteration of the i loop, once at first is enough
+        σ_bg_val[l,:] = σ_bg_interp[Kdisc]       # background
     end
     σ_val[σ_val.<0.0] .= 0.0 ;
     for i in 1:Nchannel 
-        φi_val = φi[i].(Ki)
-        for m in 1:Nspectrum
+        φi_val = φi[i].(Kdisc)
+        for m in 1:Ndisc
             for l in 1:NdensF
-                Aij[m,l] = φi_val[m]*F_dens[l]*σ_val[l,m] # σ_cs(hνjl[l],Keij[m],μKe);
+                Aij[m,l] = φi_val[m]F_dens[l]*(σ_val[l,m]+σ_bg_val[l,m])
             end
         end
         Sj[i] = Gm'*Aij*Fl;
-        Aij0[:,:,i] = φi_val*F_dens';
     end
 
 
@@ -235,7 +236,7 @@ function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
     ##
     ## compute total signal
     ##
-    (H_geom'*ρ)*Sj,H_geom,Sj,Ki,Aij0,H_deom # Keij
+    (H_geom'*ρ)*Sj,H_geom,Sj,Ki,H_deom
 end
 
 
@@ -255,7 +256,6 @@ Tj   = α_Ω*(10.0.+0.0collect(LinRange(5.0,10.0,Ndata))); # LinRange(5.0,10.0,N
 # dictionary where to push the data and geometry factor
 dictAllData = Dict() # TODO: get outside the loop
 dictAllGeom = Dict()
-dictAllTran = Dict()
 for j in 1:Ndata # can potentially multi-thread this loop: but need to sync before writing files
     # for a given photon energy νj, measure a spectrum
     local Keij = reverse(hν[j] .- Be) ;                                       # centers of the analyzer's channels
@@ -267,11 +267,11 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
 
     local Be0 = hν[j] .- Keij;
     local σ_cs_0 =  σ_cs.(hν[j],Keij,μKe)./XPSpack.σ_C1s_interp[hν[j]] 
-    local SpectrumA_1,H_geom,S_anph,Ki,Aij0,H_deom = simulateSpectrumGeom(Fνj[j],hν[j],dhν[j],
+    local SpectrumA_1,H_geom,S_anph,Ki,H_deom = simulateSpectrumGeom(Fνj[j],hν[j],dhν[j],
         Keij,σ_ke[j],Tj[j],
         reverse(Be0),reverse(σ_cs_0),
         r,θ,y,x0,y0,z0,μ0,λe[j],
-        ρA_1)
+        ρA_1,σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeC1s,ΔBeC1s))
 
     ##
     ## add background and noise
@@ -283,7 +283,7 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     # the model is fairly simple and arbitrary, but it's better than no the background at all
     # local SbgC1s = (0.5Keij)./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s)); # the inelastic collision background
     # local SbgC1s = (α_al[j]*Tj[j]*Fνj[j]*σ_bg[j]*Keij/(2.0μKe^2))./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s));
-    local SbgC1s = α_al[j]*Tj[j]*Fνj[j]*σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeC1s,ΔBeC1s);
+    local SbgC1s = 0.0α_al[j]*Tj[j]*Fνj[j]*σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeC1s,ΔBeC1s);
 
     # add the noise on the signal that hit the sensor, i.e. signal with background
     # SC1snoise = countElectrons(SbgC1s+Ssignal[:,j])
@@ -317,7 +317,6 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
 
     dictAllData[Symbol(string("hν_",Int64(round(hν[j]))))] = (eachcol(dfData),names(dfData))
     dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))]  = (eachcol(dfGeom),names(dfGeom))
-    dictAllTran[Symbol(string("hν_",Int64(round(hν[j]))))] = Aij0
 end
 
 if SAVE_DATA
@@ -329,12 +328,6 @@ include("plotData.jl")
 
 
 if false
-    # transmission matrix (kinetic energy,photon energy)
-    figure()
-    # imshow(dictAllTran[:hν_932][:,:,120])
-    imshow(dictAllTran[:hν_1008][:,:,120])
-    colorbar()
-
 
     #TODO: remove noise estimation from this file
     ##
@@ -429,14 +422,14 @@ end
 ## alignement parameter estimation
 ##
 # α_365,noise_365 = noiseAndParameterEstimation(dictAllData[:hν_365][1][:σ_cs_dens],dictAllGeom[Symbol("λe_0.5")][1][:H],Array{Cdouble,1}(dictAllData[:hν_365][1][:Snoisy]),dictAllData[:hν_365][1][:Sbg],dictAllGeom[Symbol("λe_0.5")][1][:ρ])
-
+if false
 xc_vec = [-100.0; -75.0; -50.0; -20.0; -10.0; -5.0; -2.0; -1.0; 0.0; 1.0; 2.0; 5.0; 10.0; 20.0; 50.0; 75.0; 100.0; 125.0; 150.0; 175.0; 200.0; 250.0; 300.0; 400.0; 500.0];
 xc_vec = unique(sort([xc; μ0*sin(θ0); xc_vec]));
 
 α_al_off    = zeros(Cdouble,length(xc_vec));
 α_al_off_gt = zeros(Cdouble,length(xc_vec));
 for ic in 1:length(xc_vec)
-    bp = beamProfile(xc_vec[ic],yc,σx,σy)
+    local bp = beamProfile(xc_vec[ic],yc,σx,σy)
     H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,α_al_off[ic] =  alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[1]);
     α_al_off_gt[ic] = (H_r_ph'*ρA_1)/(H_r'*ρA_1);
 end
@@ -486,3 +479,4 @@ tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 savefig("alignment_factor.png")
 savefig("alignment_factor.pdf")
 
+end
