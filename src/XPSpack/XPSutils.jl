@@ -252,7 +252,7 @@ end
 function noiseAndParameterEstimation(σ_χ::Array{Cdouble,1},H::Array{Cdouble,1},I_data::Array{Cdouble,1},I_bg::Array{Cdouble,1},ρ::Array{Cdouble,1})
    F  = svd(σ_χ*H')
    noise_data = F.U[:,2:end]*(F.U[:,2:end]'*(I_data-I_bg));
-   σ_data = I_data-(I_bg-noise_data)
+   σ_data = I_data-(I_bg+noise_data)
 
    mean(σ_data[σ_χ.>0.1*maximum(σ_χ)]./(σ_χ[σ_χ.>0.1*maximum(σ_χ)]*(H'*ρ))),noise_data
 end
