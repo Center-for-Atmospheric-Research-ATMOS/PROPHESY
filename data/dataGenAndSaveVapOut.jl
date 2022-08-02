@@ -154,93 +154,6 @@ function σ_cs(hν::Cdouble,Ke::Cdouble,μKe::Cdouble;μKe0::Cdouble=50.0,μKe1:
 end
 
 ##
-## simple analyzer model
-##
-"""
-    (Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble): photon beam's parameters
-    (Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble): analyzer's parameters
-    (r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0,y0,z0,μ0,λe): geometry factor (parameters)
-    (hν::Array{Cdouble,1},Ki::Array{Cdouble,1},Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1}): cross section
-    (ρ::Array{Cdouble,1}): concentration profile
-"""
-function simulateSpectrumGeom(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
-    Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble,
-    Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1},
-    r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λ::Cdouble,
-    ρ::Array{Cdouble,1},σ_bg_vec::Array{Cdouble,1})
-
-    ##
-    ## analyzer
-    ##
-    # efficiency functions of the analyzer
-    Nchannel = length(Ki); # number of readings in a spectrum
-    dKe = Ki[2]-Ki[1];
-    φi = Φi(Ki,ΔKi,T); 
-
-    ##
-    ## photon beam spectrum
-    ##
-    # photon energy discretization space
-    nν = 5 # this should depend on the relative value ΔKi and Δνj
-    Δhν = dKe; # discretization step in the photon energy space, note: not the same as the bandwith of the photon spectrum Δνj
-    hνjl = collect(hνj-nν*Δhν:Δhν:hνj+nν*Δhν); # discretization of the photon energy space
-
-    ##
-    ## spread of the ionization cross section: light source and analyzer
-    ##
-    # number of discretization point in the kinetic energy space and in the photon energy space
-    Kdisc = [Ki[1].-dKe*collect(1:20);Ki; Ki[end].+dKe*collect(1:20)]; # NOTE: the discretization of the kinetic enegy space does not have to coincide with the center of the channel, it can be whatever subdivision of that space
-    Ndisc = length(Kdisc);
-    NdensF = length(hνjl);
-    # discretization of the integral: piecewise linear basis function
-    Gm = dKe*ones(Cdouble,Ndisc); # Gm[1] = 0.5dKe; Gm[end] = 0.5dKe;
-    Fl = Δhν*ones(Cdouble,NdensF); Fl[1] = 0.5Δhν; Fl[end] = 0.5Δhν;
-
-    # define an interpolating tool whose nodes are Be0::Array{Cdouble,1},σ_cs_0::Array{Cdouble,1}
-    σ_cs_interp = extrapolate(interpolate((Be0,), σ_cs_0, Gridded(Linear())),Line())
-    σ_bg_interp = extrapolate(interpolate((Ki,), σ_bg_vec, Gridded(Linear())),Flat())
-
-    # compute the "convolution" of the corss section by the spread of the light source and the spread of the kinetic energy analyzer
-    Aij = zeros(Cdouble,Ndisc,NdensF);      # discretization of the spread of the source and analyzer
-    Sj  = Array{Cdouble,1}(undef,Nchannel); 
-
-    F_dens   = sourceSpread.(hνjl,hνj,Δνj,Fνj)
-    σ_tot    = XPSpack.σ_C1s_interp[hνjl] 
-    σ_val    = Array{Cdouble,2}(undef,NdensF,Ndisc)
-    σ_bg_val = Array{Cdouble,2}(undef,NdensF,Ndisc)
-    for l in 1:NdensF
-        # interpolator for the current photon energy
-        Be = hνjl[l] .- Kdisc;
-        σ_val[l,:]    = σ_tot[l]*σ_cs_interp[Be] # no need to repeat that computation at each iteration of the i loop, once at first is enough
-        σ_bg_val[l,:] = σ_bg_interp[Kdisc]       # background
-    end
-    σ_val[σ_val.<0.0] .= 0.0 ;
-    for i in 1:Nchannel 
-        φi_val = φi[i].(Kdisc)
-        for m in 1:Ndisc
-            for l in 1:NdensF
-                Aij[m,l] = φi_val[m]F_dens[l]*(σ_val[l,m]+σ_bg_val[l,m])
-            end
-        end
-        Sj[i] = Gm'*Aij*Fl;
-    end
-
-
-    ##
-    ## geometry factor
-    ##
-    # H_geom,_,_,_,_ = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λ);
-    H_deom,_,H_geom,_,_,_,_,_ = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λ)
-    println("true alignement factor: ",(H_geom'*ρ)/(H_deom'*ρ))
-    
-    ##
-    ## compute total signal
-    ##
-    (H_geom'*ρ)*Sj,H_geom,Sj,Ki,H_deom
-end
-
-
-##
 ## acqusition parameters
 ##
 # j = Ndata; # 1; # 10;                                               # select the photon energy
@@ -254,11 +167,13 @@ Tj   = α_Ω*(10.0.+0.0collect(LinRange(5.0,10.0,Ndata))); # LinRange(5.0,10.0,N
 
 
 # dictionary where to push the data and geometry factor
-dictAllData = Dict() # TODO: get outside the loop
+dictAllData = Dict()
 dictAllGeom = Dict()
 for j in 1:Ndata # can potentially multi-thread this loop: but need to sync before writing files
     # for a given photon energy νj, measure a spectrum
     local Keij = reverse(hν[j] .- Be) ;                                       # centers of the analyzer's channels
+    local kKe = floor(5σ_ke[j]/dKe);                                             # number of extra discretization point so that the channels at Ki[1] and Ki[end] are not missing to much information
+    local Kdisc = [Keij[1].-dKe*reverse(collect(1:kKe)); Keij; Keij[end].+dKe*collect(1:kKe)]; # discretization point
     local μKe = 0.5*(Keij[1]+Keij[end]);                                      # central kinetic energy (a bit the same role as pass energy)
     # local σ_bg = 0.05*(hν[j]-BeC1s) # μKe;
     ##
@@ -266,43 +181,40 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
 
     local Be0 = hν[j] .- Keij;
-    local σ_cs_0 =  σ_cs.(hν[j],Keij,μKe)./XPSpack.σ_C1s_interp[hν[j]] 
-    local SpectrumA_1,H_geom,S_anph,Ki,H_deom = simulateSpectrumGeom(Fνj[j],hν[j],dhν[j],
-        Keij,σ_ke[j],Tj[j],
-        reverse(Be0),reverse(σ_cs_0),
-        r,θ,y,x0,y0,z0,μ0,λe[j],
-        ρA_1,σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeC1s,ΔBeC1s))
+    local σ_cs_fg =  σ_cs.(hν[j],Keij,μKe); # ./XPSpack.σ_C1s_interp[hν[j]] 
 
     ##
-    ## add background and noise
+    ## electron flux without the geometry factor: signal of interest (Sj) and background signal (Sj_bg)
     ##
+    local Sj,Sj_bg,_,_ = simulateSpectrum(Fνj[j],hν[j],dhν[j],
+        Keij,σ_ke[j],Tj[j],Kdisc,
+        reverse(Be0),reverse(σ_cs_fg),σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeC1s,ΔBeC1s));
 
-    # parameters used for the simulation of the inelastic background 
-    # Here, the background is made up of electrons that undergo inelastic collisions,
-    # at least one so that they don't appear in the sharp peak, but at lower kinetic energy
-    # the model is fairly simple and arbitrary, but it's better than no the background at all
-    # local SbgC1s = (0.5Keij)./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s)); # the inelastic collision background
-    # local SbgC1s = (α_al[j]*Tj[j]*Fνj[j]*σ_bg[j]*Keij/(2.0μKe^2))./(1.0.+exp.((Keij.-(hν[j]-BeC1s))./ΔBeC1s));
-    local SbgC1s = 0.0α_al[j]*Tj[j]*Fνj[j]*σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeC1s,ΔBeC1s);
+    ##
+    ## geometry factors
+    ##
+    H_deom,_,H_geom,_,_,_,_,_ = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[j])
 
-    # add the noise on the signal that hit the sensor, i.e. signal with background
-    # SC1snoise = countElectrons(SbgC1s+Ssignal[:,j])
+    ##
+    ## for the signal without noise
+    ##
+    SbgC1s      = (H_geom'*ρA_1)*Sj_bg
+    SpectrumA_1 = (H_geom'*ρA_1)*Sj
+
+    ##
+    ## add noise
+    ##
     local SC1snoise = countElectrons(SbgC1s+SpectrumA_1)
-
-    # SC1s = SC1snoise - SbgC1s; # noisy signal without background -> negative values appears
 
     # plot signals w.r.t. the kinetic energy
     figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+SpectrumA_1); scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); xlabel("kinetic energy [eV]"); ylabel("spectrum [a.u.]") 
-    # plot the signal w.r.t. the binding energy
-    # figure(); plot(Be,reverse(SpectrumA_1)); scatter(Be,reverse(SC1snoise-SbgC1s)); ax = gca(); ax.invert_xaxis(); xlabel("binding energy [eV]"); ylabel("spectrum (no background) [a.u.]") 
-
 
     ##
     ## push data to dicts
     ##
 
     local dictData = Dict( "Ke" => Keij, "Be" => Be0, "μKe" => μKe,
-        "σ_cs_dens" => σ_cs_0, "σ_tot" => XPSpack.σ_C1s_interp[hν[j]], 
+        "σ_cs_dens" => σ_cs_fg./XPSpack.σ_C1s_interp[hν[j]], "σ_tot" => XPSpack.σ_C1s_interp[hν[j]], 
         "SpectrumA_1" => SpectrumA_1, "Sbg" => SbgC1s, 
         "Stot" => SbgC1s+SpectrumA_1, "Snoisy" => SC1snoise,
         "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
@@ -476,7 +388,7 @@ ticklabel_format(axis="y",style="sci",scilimits=(-2,2))
 legend(["approximation","GT","closest to analyzer","from data with GT","from data"])
 tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
-savefig("alignment_factor.png")
-savefig("alignment_factor.pdf")
+# savefig("alignment_factor.png")
+# savefig("alignment_factor.pdf")
 
 end
