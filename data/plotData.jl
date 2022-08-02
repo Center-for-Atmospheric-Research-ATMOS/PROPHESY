@@ -15,6 +15,6 @@ end
 tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
 if SAVE_FIG
-    savefig("full_measurement_model.png")
-    savefig("full_measurement_model.pdf")
+    savefig(string(save_folder,exp_tag,"/full_measurement_model.png"))
+    savefig(string(save_folder,exp_tag,"/full_measurement_model.pdf"))
 end

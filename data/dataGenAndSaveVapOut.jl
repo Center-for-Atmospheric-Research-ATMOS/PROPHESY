@@ -25,22 +25,22 @@ using ATTIRE  # kinetic energy analyzer
 
 
 # tags
-SHORT_RANGE = true              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
+SHORT_RANGE = false              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 
-MODEL_5   = true               # select the number of attenuation lengths probed
+MODEL_5   = false               # select the number of attenuation lengths probed
 MODEL_10  = false
-MODEL_20  = false
+MODEL_20  = true
 
 N_model_sample = 100;           # 100 should be more than enough for 5 attenuation length, but maybe not for 20
 
-FLAG_0001 = true               # selection of the profile (one must be true and the others false)
+FLAG_0001 = false               # selection of the profile (one must be true and the others false)
 FLAG_0002 = false
 FLAG_0003 = false
-FLAG_0004 = false
+FLAG_0004 = true
 
 save_folder = "./";
-SAVE_DATA = false   # flag for saving data and model
-SAVE_FIG  = false   # save the simulated data or not
+SAVE_DATA = true   # flag for saving data and model
+SAVE_FIG  = true   # save the simulated data or not
 
 # geometry setup
 λe0 = 2.0e-3;        # reference penetration depth in μm
@@ -110,7 +110,7 @@ else
     save_folder = string(save_folder,"eal_",Ndata,"/")
 end
 λe = 1.0e-3collect(range(λe1,λe2,Ndata));              # attenuation length range
-hν = collect(LinRange(hν1, hν2,Ndata));                # photon energy range
+hν = collect(LinRange(hν1, hν2,Ndata));                # central photon energy for each measurement
 
 ##
 ## alignment
@@ -156,14 +156,13 @@ end
 ##
 ## acqusition parameters
 ##
-# j = Ndata; # 1; # 10;                                               # select the photon energy
-θ_aperture = 0.5*π/4
-α_Ω = 4π*sin(θ_aperture/2.0)^2
-# hν = collect(LinRange(hν1, hν2,Ndata));                         # central photon energy for each measurement
-dhν = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
-Fνj = 1.5e11*ones(Cdouble,Ndata); #  1.0e3*ones(Cdouble,Ndata); # 3.0e11*α_al; #                                     # flux densities
-Tj   = α_Ω*(10.0.+0.0collect(LinRange(5.0,10.0,Ndata))); # LinRange(5.0,10.0,Ndata))                          # transmission factors
-σ_ke = 2.0*dKe*ones(Cdouble,Ndata); # collect(LinRange(1.0,2.0,Ndata)); #                      # kinetic energy bandwidths of the analyzer (one per photon energy)
+
+θ_aperture = 0.5*π/4                                                       # aperture's cone angle
+α_Ω        = 4π*sin(θ_aperture/2.0)^2;                                     # aperture's solid angle
+Tj         = α_Ω*(10.0.+0.0collect(LinRange(5.0,10.0,Ndata)));             # transmission factors
+σ_ke       = 2.0*dKe*ones(Cdouble,Ndata);                                  # kinetic energy bandwidths of the analyzer (one per photon energy)
+dhν        = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
+Fνj        = 1.5e11*ones(Cdouble,Ndata);                                   # flux densities
 
 
 # dictionary where to push the data and geometry factor
@@ -171,17 +170,17 @@ dictAllData = Dict()
 dictAllGeom = Dict()
 for j in 1:Ndata # can potentially multi-thread this loop: but need to sync before writing files
     # for a given photon energy νj, measure a spectrum
-    local Keij = reverse(hν[j] .- Be) ;                                       # centers of the analyzer's channels
-    local kKe = floor(5σ_ke[j]/dKe);                                             # number of extra discretization point so that the channels at Ki[1] and Ki[end] are not missing to much information
+    local Keij = reverse(hν[j] .- Be) ;                                                        # centers of the analyzer's channels
+    local kKe = floor(5σ_ke[j]/dKe);                                                           # number of extra discretization point so that the channels at Ki[1] and Ki[end] are not missing to much information
     local Kdisc = [Keij[1].-dKe*reverse(collect(1:kKe)); Keij; Keij[end].+dKe*collect(1:kKe)]; # discretization point
-    local μKe = 0.5*(Keij[1]+Keij[end]);                                      # central kinetic energy (a bit the same role as pass energy)
-    # local σ_bg = 0.05*(hν[j]-BeC1s) # μKe;
+    local μKe = 0.5*(Keij[1]+Keij[end]);                                                       # central kinetic energy (a bit the same role as pass energy)
+    
     ##
     ## compute the cross section of the sample (to be estimated from the data in an estimation setting)
     ##
 
     local Be0 = hν[j] .- Keij;
-    local σ_cs_fg =  σ_cs.(hν[j],Keij,μKe); # ./XPSpack.σ_C1s_interp[hν[j]] 
+    local σ_cs_fg =  σ_cs.(hν[j],Keij,μKe);
 
     ##
     ## electron flux without the geometry factor: signal of interest (Sj) and background signal (Sj_bg)
@@ -193,13 +192,13 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
     ## geometry factors
     ##
-    H_deom,_,H_geom,_,_,_,_,_ = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[j])
+    local H_deom,_,H_geom,_,_,_,_,_ = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[j])
 
     ##
     ## for the signal without noise
     ##
-    SbgC1s      = (H_geom'*ρA_1)*Sj_bg
-    SpectrumA_1 = (H_geom'*ρA_1)*Sj
+    local SbgC1s      = (H_geom'*ρA_1)*Sj_bg
+    local SpectrumA_1 = (H_geom'*ρA_1)*Sj
 
     ##
     ## add noise
@@ -207,7 +206,7 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     local SC1snoise = countElectrons(SbgC1s+SpectrumA_1)
 
     # plot signals w.r.t. the kinetic energy
-    figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+SpectrumA_1); scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); xlabel("kinetic energy [eV]"); ylabel("spectrum [a.u.]") 
+    # figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+SpectrumA_1); scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); xlabel("kinetic energy [eV]"); ylabel("spectrum [a.u.]") 
 
     ##
     ## push data to dicts
@@ -335,60 +334,49 @@ end
 ##
 # α_365,noise_365 = noiseAndParameterEstimation(dictAllData[:hν_365][1][:σ_cs_dens],dictAllGeom[Symbol("λe_0.5")][1][:H],Array{Cdouble,1}(dictAllData[:hν_365][1][:Snoisy]),dictAllData[:hν_365][1][:Sbg],dictAllGeom[Symbol("λe_0.5")][1][:ρ])
 if false
-xc_vec = [-100.0; -75.0; -50.0; -20.0; -10.0; -5.0; -2.0; -1.0; 0.0; 1.0; 2.0; 5.0; 10.0; 20.0; 50.0; 75.0; 100.0; 125.0; 150.0; 175.0; 200.0; 250.0; 300.0; 400.0; 500.0];
-xc_vec = unique(sort([xc; μ0*sin(θ0); xc_vec]));
+    xc_vec = [-100.0; -75.0; -50.0; -20.0; -10.0; -5.0; -2.0; -1.0; 0.0; 1.0; 2.0; 5.0; 10.0; 20.0; 50.0; 75.0; 100.0; 125.0; 150.0; 175.0; 200.0; 250.0; 300.0; 400.0; 500.0];
+    xc_vec = unique(sort([xc; μ0*sin(θ0); xc_vec]));
 
-α_al_off    = zeros(Cdouble,length(xc_vec));
-α_al_off_gt = zeros(Cdouble,length(xc_vec));
-for ic in 1:length(xc_vec)
-    local bp = beamProfile(xc_vec[ic],yc,σx,σy)
-    H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,α_al_off[ic] =  alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[1]);
-    α_al_off_gt[ic] = (H_r_ph'*ρA_1)/(H_r'*ρA_1);
-end
+    α_al_off    = zeros(Cdouble,length(xc_vec));
+    α_al_off_gt = zeros(Cdouble,length(xc_vec));
+    for ic in 1:length(xc_vec)
+        local bp = beamProfile(xc_vec[ic],yc,σx,σy)
+        H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,α_al_off[ic] =  alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[1]);
+        α_al_off_gt[ic] = (H_r_ph'*ρA_1)/(H_r'*ρA_1);
+    end
 
-# # TODO: check again methodology here... it does not seem to be working properly or at least not as intended
-# function parameterEstimation(σ_χ::Array{Cdouble,1},H::Array{Cdouble,1},I_data::Array{Cdouble,1},I_bg::Array{Cdouble,1},ρ::Array{Cdouble,1})
-#     F  = svd(σ_χ*H')
-#     noise_data = F.U[:,2:end]*(F.U[:,2:end]'*(I_data-I_bg));
-#     σ_data = I_data-(I_bg+noise_data)
+    τ_al_noise    = zeros(Cdouble,Ndata);
+    τ_al_noise_gt = zeros(Cdouble,Ndata);
+    α_al_noise    = zeros(Cdouble,Ndata);
+    α_al_noise_gt = zeros(Cdouble,Ndata);
+    for i in 1:Ndata
+        local symbol_h = Symbol(string("hν_",Int64(round(hν[i]))))
+        local simbol_λ = Symbol(string("λe_",1.0e3λe[i]))
+        τ_al_noise[i],_    = noiseAndParameterEstimation(dictAllData[symbol_h][1][:σ_cs_dens],dictAllGeom[simbol_λ][1][:H],Array{Cdouble,1}(dictAllData[symbol_h][1][:Snoisy]),dictAllData[symbol_h][1][:Sbg],ones(Cdouble,Nr))
+        τ_al_noise_gt[i],_ = noiseAndParameterEstimation(dictAllData[symbol_h][1][:σ_cs_dens],dictAllGeom[simbol_λ][1][:H],Array{Cdouble,1}(dictAllData[symbol_h][1][:Snoisy]),dictAllData[symbol_h][1][:Sbg],ρA_1)
+        α_al_noise[i] = τ_al_noise[i]/(Tj[i]*Fνj[i]*XPSpack.σ_C1s_interp[hν[i]])
+        α_al_noise_gt[i] = τ_al_noise_gt[i]/(Tj[i]*Fνj[i]*XPSpack.σ_C1s_interp[hν[i]])
+    end
 
-#     # figure(); plot(I_data); plot(I_data-noise_data); plot(σ_data)
- 
-#     mean(σ_data[σ_χ.>0.1*maximum(σ_χ)]./(σ_χ[σ_χ.>0.1*maximum(σ_χ)]*(H'*ρ))),noise_data
-#  end
+    # τ_al_noise includes α_al_noise
 
-τ_al_noise    = zeros(Cdouble,Ndata);
-τ_al_noise_gt = zeros(Cdouble,Ndata);
-α_al_noise    = zeros(Cdouble,Ndata);
-α_al_noise_gt = zeros(Cdouble,Ndata);
-for i in 1:Ndata
-    local symbol_h = Symbol(string("hν_",Int64(round(hν[i]))))
-    local simbol_λ = Symbol(string("λe_",1.0e3λe[i]))
-    τ_al_noise[i],_    = noiseAndParameterEstimation(dictAllData[symbol_h][1][:σ_cs_dens],dictAllGeom[simbol_λ][1][:H],Array{Cdouble,1}(dictAllData[symbol_h][1][:Snoisy]),dictAllData[symbol_h][1][:Sbg],ones(Cdouble,Nr))
-    τ_al_noise_gt[i],_ = noiseAndParameterEstimation(dictAllData[symbol_h][1][:σ_cs_dens],dictAllGeom[simbol_λ][1][:H],Array{Cdouble,1}(dictAllData[symbol_h][1][:Snoisy]),dictAllData[symbol_h][1][:Sbg],ρA_1)
-    α_al_noise[i] = τ_al_noise[i]/(Tj[i]*Fνj[i]*XPSpack.σ_C1s_interp[hν[i]])
-    α_al_noise_gt[i] = τ_al_noise_gt[i]/(Tj[i]*Fνj[i]*XPSpack.σ_C1s_interp[hν[i]])
-end
+    figure(); 
+    plot(xc_vec,α_al_off_gt,color="tab:green")
+    scatter(xc_vec,α_al_off,color="tab:blue")
+    idx_sim = findfirst(xc_vec.==xc)
+    idx_best = findfirst(xc_vec.==μ0*sin(θ0))
+    scatter(μ0*sin(θ0),α_al_off_gt[idx_best],color="tab:red")
+    scatter(xc*ones(Cdouble,Ndata),α_al_noise_gt,color="tab:olive")
+    scatter(xc*ones(Cdouble,Ndata),α_al_noise,color="tab:orange")
+    xlabel("horizontal deviation [\$\\mu m\$]",fontsize=14)
+    ylabel("alignment [\$\\mu m^{-2}\$]",fontsize=14)
+    xticks(fontsize=12)
+    yticks(fontsize=12)
+    ticklabel_format(axis="y",style="sci",scilimits=(-2,2))
+    legend(["approximation","GT","closest to analyzer","from data with GT","from data"])
+    tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
-# τ_al_noise includes α_al_noise
-
-figure(); 
-plot(xc_vec,α_al_off_gt,color="tab:green")
-scatter(xc_vec,α_al_off,color="tab:blue")
-idx_sim = findfirst(xc_vec.==xc)
-idx_best = findfirst(xc_vec.==μ0*sin(θ0))
-scatter(μ0*sin(θ0),α_al_off_gt[idx_best],color="tab:red")
-scatter(xc*ones(Cdouble,Ndata),α_al_noise_gt,color="tab:olive")
-scatter(xc*ones(Cdouble,Ndata),α_al_noise,color="tab:orange")
-xlabel("horizontal deviation [\$\\mu m\$]",fontsize=14)
-ylabel("alignment [\$\\mu m^{-2}\$]",fontsize=14)
-xticks(fontsize=12)
-yticks(fontsize=12)
-ticklabel_format(axis="y",style="sci",scilimits=(-2,2))
-legend(["approximation","GT","closest to analyzer","from data with GT","from data"])
-tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
-
-# savefig("alignment_factor.png")
-# savefig("alignment_factor.pdf")
+    # savefig("alignment_factor.png")
+    # savefig("alignment_factor.pdf")
 
 end
