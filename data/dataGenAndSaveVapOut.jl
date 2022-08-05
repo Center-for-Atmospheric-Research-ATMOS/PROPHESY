@@ -276,8 +276,6 @@ for j in  1:Ndata # 1:5:Ndata
 end
 
 σm = sqrt(2.0)*[0.45; 0.25; 0.6]; # [290.3; 291.9; 293.5]/500.0;
-
-
 τt = zeros(Cdouble,Ndata,3);
 μt = zeros(Cdouble,Ndata,3);
 σt = zeros(Cdouble,Ndata,3);
