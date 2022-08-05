@@ -25,22 +25,22 @@ using ATTIRE  # kinetic energy analyzer
 
 
 # tags
-SHORT_RANGE = false              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
+SHORT_RANGE = true              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 
-MODEL_5   = false               # select the number of attenuation lengths probed
+MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
-MODEL_20  = true
+MODEL_20  = false
 
 N_model_sample = 100;           # 100 should be more than enough for 5 attenuation length, but maybe not for 20
 
 FLAG_0001 = false               # selection of the profile (one must be true and the others false)
-FLAG_0002 = false
+FLAG_0002 = true
 FLAG_0003 = false
-FLAG_0004 = true
+FLAG_0004 = false
 
 save_folder = "./";
-SAVE_DATA = true   # flag for saving data and model
-SAVE_FIG  = true   # save the simulated data or not
+SAVE_DATA = false   # flag for saving data and model
+SAVE_FIG  = false   # save the simulated data or not
 
 # geometry setup
 λe0 = 2.0e-3;        # reference penetration depth in μm
@@ -238,6 +238,103 @@ end
 include("plotData.jl")
 
 
+# TODO: simulate data for several photon energy and fit the peaks in order to check how they shift, SpectrumA_1 w.r.t. reverse(Be)
+
+# [a] E. Kukk, J.D. Bozek, G. Snell, W.-T. Cheng and N. Berrah, Phys. Rev. A v.63, 062702 (2001).
+# [b] E. Kukk, K. Ueda, U. Hergenhahn, J. Liu X, G. Prumper, H. Yoshida, Y. Tamenori, C. Makochekanwa, T. Tanaka, M. Kitajima and H. Tanaka, Phys.Rev.Lett. v. 95, p. 133001 (2005).
+
+τm = [0.85; 0.125; 1.0-0.85-0.125];  # [1.0/3.0; 1.0/3.0; 1.0/3.0];
+μm = [290.2; 292.0; 293.0]; # [290.3; 291.9; 293.5];
+figure()
+for j in  1:Ndata # 1:5:Ndata
+    local μKe0=50.0
+    local μKe1=1200.0
+    local symbol_h = Symbol(string("hν_",Int64(round(hν[j]))));
+    local be = dictAllData[symbol_h][1][:Be];
+    local μKe = dictAllData[symbol_h][1][:μKe];
+    # partial cross section (one for each chemical state)
+    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(be.-μBe[1]).^2/(2.0σ_be[1]^2));
+    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(be.-μBe[2]).^2/(2.0σ_be[2]^2));
+    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(be.-μBe[3]).^2/(2.0σ_be[3]^2));
+    # quantity of chemical states
+    p1 = 0.85 .+ (0.77-0.85)*(μKe[1].-μKe0)./(μKe1-μKe0);
+    p2 = 0.125 .+ (0.12-0.125)*(μKe[1].-μKe0)./(μKe1-μKe0);
+    p3 = 1.0-(p1+p2);
+
+    # estimation
+    σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
+    σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
+    σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
+
+    println(dKe*sum(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3))
+    println(dKe*sum(σ_est_1+σ_est_2+σ_est_3),"\n")
+
+    plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3)
+    scatter(be,σ_est_1+σ_est_2+σ_est_3)
+
+    plot(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])))
+end
+
+σm = sqrt(2.0)*[0.45; 0.25; 0.6]; # [290.3; 291.9; 293.5]/500.0;
+
+
+τt = zeros(Cdouble,Ndata,3);
+μt = zeros(Cdouble,Ndata,3);
+σt = zeros(Cdouble,Ndata,3);
+for j in 1:Ndata
+    local symbol_h = Symbol(string("hν_",Int64(round(hν[j]))));
+    local be = dictAllData[symbol_h][1][:Be]; # reverse();
+    # local spectrum = dictAllData[symbol_h][1][:SpectrumA_1];
+    local spectrum = dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg];
+   # estimate the peaks centers and spreads
+   τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be,spectrum,τm,μm,σm,200)
+end
+
+figure(); 
+scatter(collect(1:Ndata),abs.(μt[:,1].-μBe[1]))
+scatter(collect(1:Ndata),abs.(μt[:,2].-μBe[2]))
+scatter(collect(1:Ndata),abs.(μt[:,3].-μBe[3]))
+
+figure(); 
+scatter(collect(1:Ndata),σt[:,1])
+scatter(collect(1:Ndata),σt[:,2])
+scatter(collect(1:Ndata),σt[:,3])
+
+figure(); 
+scatter(collect(1:Ndata),τt[:,1])
+scatter(collect(1:Ndata),τt[:,2])
+scatter(collect(1:Ndata),τt[:,3])
+
+figure()
+for j in  1:Ndata # 1:5:Ndata
+    local μKe0=50.0
+    local μKe1=1200.0
+    local symbol_h = Symbol(string("hν_",Int64(round(hν[j]))));
+    local be = dictAllData[symbol_h][1][:Be];
+    local μKe = dictAllData[symbol_h][1][:μKe];
+    # partial cross section (one for each chemical state)
+    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(be.-μBe[1]).^2/(2.0σ_be[1]^2));
+    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(be.-μBe[2]).^2/(2.0σ_be[2]^2));
+    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(be.-μBe[3]).^2/(2.0σ_be[3]^2));
+    # quantity of chemical states
+    p1 = 0.85 .+ (0.77-0.85)*(μKe[1].-μKe0)./(μKe1-μKe0);
+    p2 = 0.125 .+ (0.12-0.125)*(μKe[1].-μKe0)./(μKe1-μKe0);
+    p3 = 1.0-(p1+p2);
+
+    # estimation
+    σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
+    σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
+    σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
+
+    println(dKe*sum(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3))
+    println(dKe*sum(σ_est_1+σ_est_2+σ_est_3),"\n")
+
+    plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3)
+    scatter(be,σ_est_1+σ_est_2+σ_est_3)
+
+    plot(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])))
+end
+
 if false
 
     #TODO: remove noise estimation from this file
@@ -245,86 +342,39 @@ if false
     ## svd noise estimation
     ##
 
-
-    F_365  = svd(dictAllData[:hν_365][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_0.5")][1][:H]')
-    F_649  = svd(dictAllData[:hν_649][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_1.75")][1][:H]')
-    F_932  = svd(dictAllData[:hν_932][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_3.0")][1][:H]')
-    F_1216 = svd(dictAllData[:hν_1216][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_4.25")][1][:H]')
-    F_1500 = svd(dictAllData[:hν_1500][1][:σ_cs_dens]*dictAllGeom[Symbol("λe_5.5")][1][:H]')
-
-
-    F_365.U'*(dictAllData[:hν_365][1][:Snoisy]-dictAllData[:hν_365][1][:Sbg])
-
+    j_slect = 1
+    λ_sym = Symbol(string("λe_",string(1.0e3λe[j_slect])));
+    ν_sym = Symbol(string("hν_",Int64(round(hν[j_slect]))));
+    F_λ  = svd(dictAllData[ν_sym][1][:σ_cs_dens]*dictAllGeom[λ_sym][1][:H]');
 
     bg_rm = 1.0
     s_th = 2
 
-    UF_365  = F_365.U[:,s_th:end]'*(dictAllData[:hν_365][1][:Snoisy]-bg_rm*dictAllData[:hν_365][1][:Sbg]);
-    UF_649  = F_649.U[:,s_th:end]'*(dictAllData[:hν_649][1][:Snoisy]-bg_rm*dictAllData[:hν_649][1][:Sbg]);
-    UF_932  = F_932.U[:,s_th:end]'*(dictAllData[:hν_932][1][:Snoisy]-bg_rm*dictAllData[:hν_932][1][:Sbg]);
-    UF_1216 = F_1216.U[:,s_th:end]'*(dictAllData[:hν_1216][1][:Snoisy]-bg_rm*dictAllData[:hν_1216][1][:Sbg]);
-    UF_1500 = F_1500.U[:,s_th:end]'*(dictAllData[:hν_1500][1][:Snoisy]-bg_rm*dictAllData[:hν_1500][1][:Sbg]);
+    UF_ν  = F_λ.U[:,s_th:end]'*(dictAllData[ν_sym][1][:Snoisy]-bg_rm*dictAllData[ν_sym][1][:Sbg]);
 
-    noise_365  = F_365.U[:,s_th:end]*UF_365
-    noise_649  = F_649.U[:,s_th:end]*UF_649
-    noise_932  = F_932.U[:,s_th:end]*UF_932
-    noise_1216 = F_1216.U[:,s_th:end]*UF_1216
-    noise_1500 = F_1500.U[:,s_th:end]*UF_1500
+    noise_ν = F_λ.U[:,s_th:end]*UF_ν;
 
-    σ_365  = dictAllData[:hν_365][1][:Snoisy]-noise_365;
-    σ_365[σ_365.<=0.0] .= 0.0
-    σ_649  = dictAllData[:hν_649][1][:Snoisy]-noise_649; 
-    σ_649[σ_649.<=0.0] .= 0.0
-    σ_932  = dictAllData[:hν_932][1][:Snoisy]-noise_932;
-    σ_932[σ_932.<=0.0] .= 0.0
-    σ_1216 = dictAllData[:hν_1216][1][:Snoisy]-noise_1216; 
-    σ_1216[σ_1216.<=0.0] .= 0.0
-    σ_1500 = dictAllData[:hν_1500][1][:Snoisy]-noise_1500; 
-    σ_1500[σ_1500.<=0.0] .= 0.0
+    σ_ν  = dictAllData[ν_sym][1][:Snoisy]-noise_ν;
+    σ_ν[σ_ν.<=0.0] .= 0.0
 
     x_symbol = :Ke;
     figure(); 
-    plot(dictAllData[:hν_365][1][x_symbol],dictAllData[:hν_365][1][:Stot]) # collect(1:241)
-    scatter(dictAllData[:hν_365][1][x_symbol],σ_365)
-
-    plot(dictAllData[:hν_649][1][x_symbol],dictAllData[:hν_649][1][:Stot])
-    scatter(dictAllData[:hν_649][1][x_symbol],σ_649)
-
-    plot(dictAllData[:hν_932][1][x_symbol],dictAllData[:hν_932][1][:Stot])
-    scatter(dictAllData[:hν_932][1][x_symbol],σ_932)
-
-    plot(dictAllData[:hν_1216][1][x_symbol],dictAllData[:hν_1216][1][:Stot])
-    scatter(dictAllData[:hν_1216][1][x_symbol],σ_1216)
-
-    plot(dictAllData[:hν_1500][1][x_symbol],dictAllData[:hν_1500][1][:Stot])
-    scatter(dictAllData[:hν_1500][1][x_symbol],σ_1500)
-
+    plot(dictAllData[ν_sym][1][x_symbol],dictAllData[ν_sym][1][:Stot]) 
+    scatter(dictAllData[ν_sym][1][x_symbol],σ_ν)
 
 
     figure()
-    scatter(collect(1:241),noise_365,color="tab:blue")
-    fill_between(collect(1:241),-sqrt.(σ_365),sqrt.(σ_365),alpha=0.5,color="tab:blue")
+    scatter(collect(1:241),noise_ν,color="tab:blue")
+    fill_between(collect(1:241),-sqrt.(σ_ν),sqrt.(σ_ν),alpha=0.5,color="tab:blue")
 
-    scatter(collect(1:241),noise_649,color="tab:orange")
-    fill_between(collect(1:241),-sqrt.(σ_649),sqrt.(σ_649),alpha=0.5,color="tab:orange")
 
-    scatter(collect(1:241),noise_932,color="tab:green")
-    fill_between(collect(1:241),-sqrt.(σ_932),sqrt.(σ_932),alpha=0.5,color="tab:green")
+    # τ_ν = (σ_ν-dictAllData[ν_sym][1][:Sbg])./(dictAllData[ν_sym][1][:σ_cs_dens]*(dictAllGeom[λ_sym][1][:H]'*ρA_1))
 
-    scatter(collect(1:241),noise_1216,color="tab:red")
-    fill_between(collect(1:241),-sqrt.(σ_1216),sqrt.(σ_1216),alpha=0.5,color="tab:red")
+    # figure()
+    # plot(τ_ν[σ_ν.>0.1*maximum(σ_ν)])
+    # ylim(0.0)
 
-    scatter(collect(1:241),noise_1500,color="tab:purple")
-    fill_between(collect(1:241),-sqrt.(σ_1500),sqrt.(σ_1500),alpha=0.5,color="tab:purple")
-
-    # τ_365 = (σ_365-dictAllData[:hν_365][1][:Sbg])./(dictAllData[:hν_365][1][:σ_cs_dens]*sum(dictAllGeom[Symbol("λe_0.5")][1][:H][1:183]))
-    τ_365 = (σ_365-dictAllData[:hν_365][1][:Sbg])./(dictAllData[:hν_365][1][:σ_cs_dens]*(dictAllGeom[Symbol("λe_0.5")][1][:H]'*ρA_1))
-
-    figure()
-    plot(τ_365[σ_365.>0.1*maximum(σ_365)])
-    ylim(0.0)
-
-    dictAllData[:hν_365][1][:σ_tot].*dictAllData[:hν_365][1][:F].*dictAllData[:hν_365][1][:T]/mean(τ_365[σ_365.>0.1*maximum(σ_365)])
+    # dictAllData[ν_sym][1][:σ_tot].*dictAllData[ν_sym][1][:F].*dictAllData[ν_sym][1][:T]/mean(τ_ν[σ_ν.>0.1*maximum(σ_ν)])
 
 end
 
@@ -332,7 +382,7 @@ end
 ##
 ## alignement parameter estimation
 ##
-# α_365,noise_365 = noiseAndParameterEstimation(dictAllData[:hν_365][1][:σ_cs_dens],dictAllGeom[Symbol("λe_0.5")][1][:H],Array{Cdouble,1}(dictAllData[:hν_365][1][:Snoisy]),dictAllData[:hν_365][1][:Sbg],dictAllGeom[Symbol("λe_0.5")][1][:ρ])
+# α_365,noise_ν = noiseAndParameterEstimation(dictAllData[:hν_365][1][:σ_cs_dens],dictAllGeom[Symbol("λe_0.5")][1][:H],Array{Cdouble,1}(dictAllData[:hν_365][1][:Snoisy]),dictAllData[:hν_365][1][:Sbg],dictAllGeom[Symbol("λe_0.5")][1][:ρ])
 if false
     xc_vec = [-100.0; -75.0; -50.0; -20.0; -10.0; -5.0; -2.0; -1.0; 0.0; 1.0; 2.0; 5.0; 10.0; 20.0; 50.0; 75.0; 100.0; 125.0; 150.0; 175.0; 200.0; 250.0; 300.0; 400.0; 500.0];
     xc_vec = unique(sort([xc; μ0*sin(θ0); xc_vec]));
