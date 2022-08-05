@@ -1,5 +1,6 @@
 # data.xlsx
 
+Each sheet in a data file corresponds to a photon energy.
 The content of the data.xlsx file is labeled as follow:
 
   - Be: the binding energies
@@ -20,7 +21,8 @@ The content of the data.xlsx file is labeled as follow:
 
 # model.xlsx
 
-the content of the model file is labeled
+Each sheet in a data file corresponds to a prenetration depth.
+The content of the model file is labeled
 
   - H:	       geometry factor assuming a uniform beam profile
   - H_true:	   geometry factor including the beam profile
