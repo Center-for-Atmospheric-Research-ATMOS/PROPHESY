@@ -81,3 +81,4 @@ for j in 1:Ndata
    τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be,spectrum,τm,μm,σm,200)
 end
 
+# TODO: noise estimation, alignment factor and cross section spectral density estimation, the sensitivity matrix computation as well and SA log cost function 
