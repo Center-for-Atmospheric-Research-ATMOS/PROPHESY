@@ -88,6 +88,8 @@ key_symbol_geom = Symbol.(keys(dictAllGeom));
 key_symbol_geom = key_symbol_geom[idx_perm_model]
 
 #TODO: plot the different stages (select 4 spectra) 
+#TODO: write project for simultaneously compute the peak fitting and the background removal from the model:
+#       I_i = Poisson(aσ(p,K_i)+Sbg_i) ≃ aσ(p,K_i)+Sbg_i +ε_i, ε_i ∼ N(0,I_i) and optimize for p (parameter of the function to be fitted)
 
 ##
 ## background removal
@@ -118,13 +120,106 @@ end
 
 
 ##
+## cross section density estimation
+##
+
+
+τm = [0.85; 0.125; 1.0-0.85-0.125];  # [1.0/3.0; 1.0/3.0; 1.0/3.0];
+μm = [290.2; 292.0; 293.0]; # [290.3; 291.9; 293.5];
+σm = sqrt(2.0)*[0.45; 0.25; 0.6]; # [290.3; 291.9; 293.5]/500.0;
+τt = zeros(Cdouble,Ndata,3);
+μt = zeros(Cdouble,Ndata,3);
+σt = zeros(Cdouble,Ndata,3);
+
+dKe = dictAllData[key_symbol[Ndata]][1][:Ke][2]-dictAllData[key_symbol[Ndata]][1][:Ke][1];
+for j in 1:Ndata
+    local be = dictAllData[key_symbol[j]][1][:Be];
+    # local spectrum = dictAllData[key_symbol[j]][1][:Snoisy]-dictAllData[key_symbol[j]][1][:Sbg]; 
+    # local spectrum = S_oi[key_symbol[j]][1];
+    local spectrum = dictAllData[key_symbol[j]][1][:Snoisy]-Sbg_est[key_symbol[j]]
+    spectrum[spectrum.<0.0] .= 0.0
+    # estimate the peaks centers and spreads
+    # 
+    if j<=3
+        # τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be,spectrum,τm,μm,σm,200)
+        τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be[(be.>287.5).*(be.<295.5)],spectrum[(be.>287.5).*(be.<295.5)],τm,μm,σm,200) # crop spectrum and be, but it's not much better
+    else
+        # τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be,spectrum,τm,μm,σm,500)
+        τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be[(be.>287.5).*(be.<295.5)],spectrum[(be.>287.5).*(be.<295.5)],τm,μm,σm,500) # crop spectrum and be, but it's not much better
+    end
+end
+
+
+μBe = [290.2; 292.0; 293.0]
+σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
+
+
+figure(); 
+scatter(collect(1:Ndata),abs.(μt[:,1].-μBe[1]))
+scatter(collect(1:Ndata),abs.(μt[:,2].-μBe[2]))
+scatter(collect(1:Ndata),abs.(μt[:,3].-μBe[3]))
+
+figure(); 
+scatter(collect(1:Ndata),σt[:,1])
+scatter(collect(1:Ndata),σt[:,2])
+scatter(collect(1:Ndata),σt[:,3])
+
+figure(); 
+scatter(collect(1:Ndata),τt[:,1])
+scatter(collect(1:Ndata),τt[:,2])
+scatter(collect(1:Ndata),τt[:,3])
+
+
+color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "tab:brown"; "tab:pink"; "tab:gray"; "tab:olive"; "tab:cyan"; "magenta"; "yellow"; "hotpink"; "darkmagenta"; "chartreuse"; "deepskyblue"; "navy"; "darkcyan"; "crimson"; "firebrick"]; 
+S_cs_dens = Dict();
+for j in  1:Ndata # 1:5:Ndata
+    local μKe0=50.0
+    local μKe1=1200.0
+    local symbol_h = key_symbol[j]; # Symbol(string("hν_",Int64(round(hν[j]))));
+    local be = dictAllData[symbol_h][1][:Be];
+    local μKe = dictAllData[symbol_h][1][:μKe];
+    # partial cross section (one for each chemical state)
+    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(be.-μBe[1]).^2/(2.0σ_be[1]^2));
+    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(be.-μBe[2]).^2/(2.0σ_be[2]^2));
+    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(be.-μBe[3]).^2/(2.0σ_be[3]^2));
+    # quantity of chemical states
+    p1 = 0.85 .+ (0.77-0.85)*(μKe[1].-μKe0)./(μKe1-μKe0);
+    p2 = 0.125 .+ (0.12-0.125)*(μKe[1].-μKe0)./(μKe1-μKe0);
+    p3 = 1.0-(p1+p2);
+
+    # estimation
+    σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
+    σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
+    σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
+
+    # push the density to dictionary
+    S_cs_dens[symbol_h] = σ_est_1+σ_est_2+σ_est_3
+    println(dKe*sum(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3))
+    println(dKe*sum(σ_est_1+σ_est_2+σ_est_3),"\n")
+
+    figure()
+    plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3,color=color_array[j])
+    scatter(be,σ_est_1+σ_est_2+σ_est_3,color=color_array[j])
+
+    plot(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])),color=color_array[j])
+end
+
+
+
+##
 ## noise removal
 ##
 
 S_oi = Dict();
 for (ν_sym,λ_sym) in zip(key_symbol,key_symbol_geom)
     # SVD of the measurement model (geometry factor and cross section density)
-    F_λ  = svd(dictAllData[ν_sym][1][:σ_cs_dens]*dictAllGeom[λ_sym][1][:H]');
+    # F_λ  = svd(dictAllData[ν_sym][1][:σ_cs_dens]*dictAllGeom[λ_sym][1][:H]'); #WARNING: corss section density is not known at that stage
+    # figure(); imshow(F_λ.U); colorbar()
+    # F_λ  = svd((dictAllData[ν_sym][1][:Snoisy]-Sbg_est[ν_sym])*dictAllGeom[λ_sym][1][:H]');
+    F_λ  = svd(S_cs_dens[ν_sym]*dictAllGeom[λ_sym][1][:H]');
+    
+    figure(); imshow(F_λ.U); colorbar()
+    figure(); plot(F_λ.U[:,1])
     s_th = 2
 
     # noise projection
@@ -157,81 +252,48 @@ for (ν_sym,λ_sym) in zip(key_symbol,key_symbol_geom)
 end
 
 
-##
-## cross section density estimation
-##
 
-
-τm = [0.85; 0.125; 1.0-0.85-0.125];  # [1.0/3.0; 1.0/3.0; 1.0/3.0];
-μm = [290.2; 292.0; 293.0]; # [290.3; 291.9; 293.5];
-σm = sqrt(2.0)*[0.45; 0.25; 0.6]; # [290.3; 291.9; 293.5]/500.0;
-τt = zeros(Cdouble,Ndata,3);
-μt = zeros(Cdouble,Ndata,3);
-σt = zeros(Cdouble,Ndata,3);
-
-dKe = dictAllData[key_symbol[Ndata]][1][:Ke][2]-dictAllData[key_symbol[Ndata]][1][:Ke][1];
-for j in 1:Ndata
-    local be = dictAllData[key_symbol[j]][1][:Be];
-    # local spectrum = dictAllData[key_symbol[j]][1][:Snoisy]-dictAllData[key_symbol[j]][1][:Sbg]; 
-    local spectrum = S_oi[key_symbol[j]][1];
-    # estimate the peaks centers and spreads
-    # τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be[(be.>287.5).*(be.<295.5)],spectrum[(be.>287.5).*(be.<295.5)],τm,μm,σm,200) # crop spectrum and be, but it's not much better
-    τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be,spectrum,τm,μm,σm,200)
-end
-
-
-μBe = [290.2; 292.0; 293.0]
-σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
-
-
-figure(); 
-scatter(collect(1:Ndata),abs.(μt[:,1].-μBe[1]))
-scatter(collect(1:Ndata),abs.(μt[:,2].-μBe[2]))
-scatter(collect(1:Ndata),abs.(μt[:,3].-μBe[3]))
-
-figure(); 
-scatter(collect(1:Ndata),σt[:,1])
-scatter(collect(1:Ndata),σt[:,2])
-scatter(collect(1:Ndata),σt[:,3])
-
-figure(); 
-scatter(collect(1:Ndata),τt[:,1])
-scatter(collect(1:Ndata),τt[:,2])
-scatter(collect(1:Ndata),τt[:,3])
-
-
-color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "tab:brown"; "tab:pink"; "tab:gray"; "tab:olive"; "tab:cyan"; "magenta"; "yellow"; "hotpink"; "darkmagenta"; "chartreuse"; "deepskyblue"; "navy"; "darkcyan"; "crimson"; "firebrick"]; 
-for j in  1:Ndata # 1:5:Ndata
-    local μKe0=50.0
-    local μKe1=1200.0
-    local symbol_h = key_symbol[j] ; # Symbol(string("hν_",Int64(round(hν[j]))));
-    local be = dictAllData[symbol_h][1][:Be];
-    local μKe = dictAllData[symbol_h][1][:μKe];
-    # partial cross section (one for each chemical state)
-    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(be.-μBe[1]).^2/(2.0σ_be[1]^2));
-    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(be.-μBe[2]).^2/(2.0σ_be[2]^2));
-    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(be.-μBe[3]).^2/(2.0σ_be[3]^2));
-    # quantity of chemical states
-    p1 = 0.85 .+ (0.77-0.85)*(μKe[1].-μKe0)./(μKe1-μKe0);
-    p2 = 0.125 .+ (0.12-0.125)*(μKe[1].-μKe0)./(μKe1-μKe0);
-    p3 = 1.0-(p1+p2);
-
-    # estimation
-    σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
-    σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
-    σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
-
-    println(dKe*sum(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3))
-    println(dKe*sum(σ_est_1+σ_est_2+σ_est_3),"\n")
-
-    figure()
-    plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3,color=color_array[j])
-    scatter(be,σ_est_1+σ_est_2+σ_est_3,color=color_array[j])
-
-    plot(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])),color=color_array[j])
+τ_al_noise    = zeros(Cdouble,Ndata);
+α_al_noise    = zeros(Cdouble,Ndata);
+for i in 1:Ndata
+    local symbol_h = key_symbol[i]; 
+    local simbol_λ = key_symbol_geom[i];
+    local Nr = length(dictAllGeom[simbol_λ][1][:H])
+    τ_al_noise[i],_    = noiseAndParameterEstimation(S_cs_dens[symbol_h],Array{Cdouble,1}(dictAllGeom[simbol_λ][1][:H]),Array{Cdouble,1}(dictAllData[symbol_h][1][:Snoisy]),Sbg_est[symbol_h],ones(Cdouble,Nr))
+    α_al_noise[i] = τ_al_noise[i]/(dictAllData[symbol_h][1][:T][1]*dictAllData[symbol_h][1][:F][1]*XPSpack.σ_C1s_interp[dictAllData[symbol_h][1][:hν][1]])
 end
 
 
 
+# TODO: SA log cost function 
 
-# TODO: alignment factor and  sensitivity matrix computation as well and SA log cost function 
+function modelSensitivity_j(τ1::Cdouble,τj::Cdouble,H1::Array{Cdouble,1},Hj::Array{Cdouble,1},ρ::Array{Cdouble,1})
+    ((τj/(τ1*H1'*ρ))^2)*(Hj - (Hj'*ρ/(H1'*ρ))*H1)*((Hj - (Hj'*ρ/(H1'*ρ))*H1)')
+end
+
+
+
+H1 = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[1]][1][:H])
+Nr = length(H1);
+J_all = zeros(Cdouble,Nr,Nr);
+for j in 2:Ndata
+    Hj = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[j]][1][:H])
+    J_j = modelSensitivity_j(τ_al_noise[1],τ_al_noise[j],H1,Hj,ones(Cdouble,Nr))
+    global J_all = J_all + J_j;
+end
+
+F_j_all  = svd(J_all);
+
+figure();
+imshow(J_all)
+colorbar()
+
+
+figure();
+imshow(F_j_all.U)
+colorbar()
+
+figure()
+semilogy(abs.(F_j_all.U[:,1:Ndata-1].*F_j_all.S[1:Ndata-1]'))
+
+figure(); semilogy(F_j_all.S)
