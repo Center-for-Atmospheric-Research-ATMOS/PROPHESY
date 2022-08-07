@@ -117,7 +117,7 @@ for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
     plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Sbg,label="background gt"); 
     plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].SpectrumA_1,label="SOI gt"); 
     scatter(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Snoisy-Sbg_est[symbol_h],label="estimated SOI"); 
-    xlabel("kinetic energy [eV]",fontsize=14); ylabel("spectrum [a.u.]",fontsize=14) 
+    xlabel("kinetic energy [eV]",fontsize=14); ylabel("spectrum [count]",fontsize=14) 
     xticks(fontsize=14); yticks(fontsize=14); 
     legend(fontsize=14)
     if (plot_sym==:Be)
@@ -174,21 +174,6 @@ end
 σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
 
 
-# figure(); 
-# scatter(collect(1:Ndata),abs.(μt[:,1].-μBe[1]))
-# scatter(collect(1:Ndata),abs.(μt[:,2].-μBe[2]))
-# scatter(collect(1:Ndata),abs.(μt[:,3].-μBe[3]))
-
-# figure(); 
-# scatter(collect(1:Ndata),σt[:,1])
-# scatter(collect(1:Ndata),σt[:,2])
-# scatter(collect(1:Ndata),σt[:,3])
-
-# figure(); 
-# scatter(collect(1:Ndata),τt[:,1])
-# scatter(collect(1:Ndata),τt[:,2])
-# scatter(collect(1:Ndata),τt[:,3])
-
 
 color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "tab:brown"; "tab:pink"; "tab:gray"; "tab:olive"; "tab:cyan"; "magenta"; "yellow"; "hotpink"; "darkmagenta"; "chartreuse"; "deepskyblue"; "navy"; "darkcyan"; "crimson"; "firebrick"]; 
 plot_sym = :Be #  :Ke # 
@@ -218,7 +203,7 @@ for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
     scatter(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])),color=color_array[2],label="data") # i_plot
 
     xlabel("kinetic energy [eV]",fontsize=14); 
-    ylabel("spectrum [a.u.]",fontsize=14) 
+    ylabel("spectrum [count]",fontsize=14) 
     xticks(fontsize=14); yticks(fontsize=14); 
     legend(fontsize=14)
 
@@ -230,6 +215,7 @@ end
 tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
 
+
 ##
 ## noise removal
 ##
@@ -237,13 +223,10 @@ tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 S_oi = Dict();
 for (ν_sym,λ_sym) in zip(key_symbol,key_symbol_geom)
     # SVD of the measurement model (geometry factor and cross section density)
-    # F_λ  = svd(dictAllData[ν_sym][1][:σ_cs_dens]*dictAllGeom[λ_sym][1][:H]'); #WARNING: corss section density is not known at that stage
-    # figure(); imshow(F_λ.U); colorbar()
-    # F_λ  = svd((dictAllData[ν_sym][1][:Snoisy]-Sbg_est[ν_sym])*dictAllGeom[λ_sym][1][:H]');
     F_λ  = svd(S_cs_dens[ν_sym]*dictAllGeom[λ_sym][1][:H]');
     
-    figure(); imshow(F_λ.U); colorbar()
-    figure(); plot(F_λ.U[:,1])
+    # figure(); imshow(F_λ.U); colorbar()
+    # figure(); plot(F_λ.U[:,1])
     s_th = 2
 
     # noise projection
@@ -260,22 +243,45 @@ for (ν_sym,λ_sym) in zip(key_symbol,key_symbol_geom)
     S_oi[ν_sym] = (σ_ν-Sbg_est[ν_sym],σ_ν,noise_ν)
 
     x_symbol = :Ke;
-    figure(); 
-    plot(dictAllData[ν_sym][1][x_symbol],dictAllData[ν_sym][1][:Stot]) 
-    scatter(dictAllData[ν_sym][1][x_symbol],σ_ν)
-
-    figure(); 
-    plot(dictAllData[ν_sym][1][x_symbol],dictAllData[ν_sym][1][:SpectrumA_1]) 
-    scatter(dictAllData[ν_sym][1][x_symbol],σ_ν-Sbg_est[ν_sym])
-    scatter(dictAllData[ν_sym][1][x_symbol],σ_ν-dictAllData[ν_sym][1][:Sbg])
-
 
     figure()
-    scatter(collect(1:241),noise_ν,color="tab:blue")
-    fill_between(collect(1:241),-sqrt.(σ_ν),sqrt.(σ_ν),alpha=0.5,color="tab:blue")
+    
 end
 
 
+plot_sym = :Ke #   :Be #   
+figure(figsize=[12, 10]); 
+# for j in  1:Ndata # 1:5:Ndata
+for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
+    local symbol_h = key_symbol[i_data]; 
+    local be = dictAllData[symbol_h][1][plot_sym] 
+    local noise_ν = S_oi[symbol_h][3]
+
+    # plotting
+    ax1 = subplot(2,2,i_plot)
+    title(string("Eph =", Int64(round(dictAllData[symbol_h][1][:hν][1]))," [eV]"),fontsize=14)
+    scatter(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1][:Snoisy]-Sbg_est[symbol_h],color=color_array[2],label="spectrum-background")
+    plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1][:Snoisy]-Sbg_est[symbol_h]-noise_ν,color=color_array[1],label="spectrum-background-noise")
+    plot(dictAllData[symbol_h][1][plot_sym],noise_ν,color=color_array[4],label="estimated noise")
+    plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1][:SpectrumA_1],color=color_array[3],label="GT")
+    xlabel("kinetic energy [eV]",fontsize=14); 
+    ylabel("spectrum [count]",fontsize=14) 
+    xticks(fontsize=14); yticks(fontsize=14); 
+    legend(fontsize=14)
+
+    if (plot_sym==:Be)
+        xlabel("binding energy [eV]",fontsize=14); 
+        ax1.invert_xaxis();
+    end
+end
+tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+
+
+
+
+##
+## alignement factor estimation
+##
 
 τ_al_noise    = zeros(Cdouble,Ndata);
 α_al_noise    = zeros(Cdouble,Ndata);
