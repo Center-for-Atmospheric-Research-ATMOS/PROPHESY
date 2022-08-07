@@ -5,6 +5,7 @@ using PyPlot
 rc("text", usetex=true)
 rc("figure",max_open_warning=50)
 using myPlot
+color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "tab:brown"; "tab:pink"; "tab:gray"; "tab:olive"; "tab:cyan"; "magenta"; "yellow"; "hotpink"; "darkmagenta"; "chartreuse"; "deepskyblue"; "navy"; "darkcyan"; "crimson"; "firebrick"]; 
 
 # data manipulation (loading, writing, etc)
 using Printf
@@ -87,7 +88,6 @@ end
 key_symbol_geom = Symbol.(keys(dictAllGeom));
 key_symbol_geom = key_symbol_geom[idx_perm_model]
 
-# TODO: plot the different stages (select 4 spectra) 
 # TODO: write project for simultaneously compute the peak fitting and the background removal from the model:
 #       I_i = Poisson(aσ(p,K_i)+Sbg_i) ≃ aσ(p,K_i)+Sbg_i +ε_i, ε_i ∼ N(0,I_i) and optimize for p (parameter of the function to be fitted)
 
@@ -105,28 +105,9 @@ for j_slect in 1:Ndata
     λb = 1.0e6;
     z_baseline_1 = baseline_removal(dictAllData[key_symbol[j_slect]][1][:Snoisy],λb,κb,D_2nd);
     Sbg_est[key_symbol[j_slect]] = z_baseline_1
-end
-
-figure(figsize=[12, 10]); 
+end 
 plot_sym = :Ke # :Be # 
-for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
-    ax1 = subplot(2,2,i_plot)
-    symbol_h = key_symbol[i_data]
-    title(string("Eph =", Int64(round(dictAllData[symbol_h][1][:hν][1]))," [eV]"),fontsize=14)
-    plot(dictAllData[symbol_h][1][plot_sym],Sbg_est[symbol_h],label="estimated background"); 
-    plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Sbg,label="background gt"); 
-    plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].SpectrumA_1,label="SOI gt"); 
-    scatter(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Snoisy-Sbg_est[symbol_h],label="estimated SOI"); 
-    xlabel("kinetic energy [eV]",fontsize=14); ylabel("spectrum [count]",fontsize=14) 
-    xticks(fontsize=14); yticks(fontsize=14); 
-    legend(fontsize=14)
-    if (plot_sym==:Be)
-        xlabel("binding energy [eV]",fontsize=14); 
-        ax = gca()
-        ax.invert_xaxis();
-    end
-end
-tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+include("plotBckRemoval.jl")
 
 
 ##
@@ -174,46 +155,8 @@ end
 σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
 
 
-
-color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "tab:brown"; "tab:pink"; "tab:gray"; "tab:olive"; "tab:cyan"; "magenta"; "yellow"; "hotpink"; "darkmagenta"; "chartreuse"; "deepskyblue"; "navy"; "darkcyan"; "crimson"; "firebrick"]; 
 plot_sym = :Be #  :Ke # 
-figure(figsize=[12, 10]); 
-# for j in  1:Ndata # 1:5:Ndata
-for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
-    local μKe0=50.0
-    local μKe1=1200.0
-    local symbol_h = key_symbol[i_data]; 
-    local be = dictAllData[symbol_h][1][plot_sym] #dictAllData[symbol_h][1][:Be];
-    
-    local μKe = dictAllData[symbol_h][1][:μKe];
-    # partial cross section (one for each chemical state)
-    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(be.-μBe[1]).^2/(2.0σ_be[1]^2));
-    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(be.-μBe[2]).^2/(2.0σ_be[2]^2));
-    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(be.-μBe[3]).^2/(2.0σ_be[3]^2));
-    # quantity of chemical states
-    p1 = 0.85 .+ (0.77-0.85)*(μKe[1].-μKe0)./(μKe1-μKe0);
-    p2 = 0.125 .+ (0.12-0.125)*(μKe[1].-μKe0)./(μKe1-μKe0);
-    p3 = 1.0-(p1+p2);
-
-    # plotting
-    ax1 = subplot(2,2,i_plot)
-    title(string("Eph =", Int64(round(dictAllData[symbol_h][1][:hν][1]))," [eV]"),fontsize=14)
-    plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3,color=color_array[3],label="GT") # i_plot
-    plot(be,S_cs_dens[symbol_h],color=color_array[1],label="estimation") # i_plot
-    scatter(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])),color=color_array[2],label="data") # i_plot
-
-    xlabel("kinetic energy [eV]",fontsize=14); 
-    ylabel("spectrum [count]",fontsize=14) 
-    xticks(fontsize=14); yticks(fontsize=14); 
-    legend(fontsize=14)
-
-    if (plot_sym==:Be)
-        xlabel("binding energy [eV]",fontsize=14); 
-        ax1.invert_xaxis();
-    end
-end
-tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
-
+include("plotCrossSection.jl")
 
 
 ##
@@ -224,59 +167,21 @@ S_oi = Dict();
 for (ν_sym,λ_sym) in zip(key_symbol,key_symbol_geom)
     # SVD of the measurement model (geometry factor and cross section density)
     F_λ  = svd(S_cs_dens[ν_sym]*dictAllGeom[λ_sym][1][:H]');
-    
-    # figure(); imshow(F_λ.U); colorbar()
-    # figure(); plot(F_λ.U[:,1])
     s_th = 2
-
     # noise projection
-    # UF_ν  = F_λ.U[:,s_th:end]'*(dictAllData[ν_sym][1][:Snoisy]-dictAllData[ν_sym][1][:Sbg]); # with the true background
     UF_ν  = F_λ.U[:,s_th:end]'*(dictAllData[ν_sym][1][:Snoisy]-Sbg_est[ν_sym]);
     # noise estimation
     noise_ν = F_λ.U[:,s_th:end]*UF_ν;
-
     # substract the noise from the signal
     σ_ν  = dictAllData[ν_sym][1][:Snoisy]-noise_ν;
     σ_ν[σ_ν.<=0.0] .= 0.0 # just make sure the signal is positive
-
     # keep track of the operation (spectrum of interest, non-noisy spectrum, noise)
     S_oi[ν_sym] = (σ_ν-Sbg_est[ν_sym],σ_ν,noise_ν)
-
-    x_symbol = :Ke;
-
-    figure()
-    
 end
 
 
-plot_sym = :Ke #   :Be #   
-figure(figsize=[12, 10]); 
-# for j in  1:Ndata # 1:5:Ndata
-for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
-    local symbol_h = key_symbol[i_data]; 
-    local be = dictAllData[symbol_h][1][plot_sym] 
-    local noise_ν = S_oi[symbol_h][3]
-
-    # plotting
-    ax1 = subplot(2,2,i_plot)
-    title(string("Eph =", Int64(round(dictAllData[symbol_h][1][:hν][1]))," [eV]"),fontsize=14)
-    scatter(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1][:Snoisy]-Sbg_est[symbol_h],color=color_array[2],label="spectrum-background")
-    plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1][:Snoisy]-Sbg_est[symbol_h]-noise_ν,color=color_array[1],label="spectrum-background-noise")
-    plot(dictAllData[symbol_h][1][plot_sym],noise_ν,color=color_array[4],label="estimated noise")
-    plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1][:SpectrumA_1],color=color_array[3],label="GT")
-    xlabel("kinetic energy [eV]",fontsize=14); 
-    ylabel("spectrum [count]",fontsize=14) 
-    xticks(fontsize=14); yticks(fontsize=14); 
-    legend(fontsize=14)
-
-    if (plot_sym==:Be)
-        xlabel("binding energy [eV]",fontsize=14); 
-        ax1.invert_xaxis();
-    end
-end
-tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
-
-
+plot_sym = :Ke #   :Be #  
+include("plotNoiseRemoval.jl") 
 
 
 ##
