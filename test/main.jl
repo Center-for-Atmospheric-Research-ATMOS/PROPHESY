@@ -183,6 +183,19 @@ end
 plot_sym = :Ke #   :Be #  
 include("plotNoiseRemoval.jl") 
 
+##
+## compute the peak area form 
+##
+
+A_peak = zeros(Cdouble,Ndata)
+Aj_bg = zeros(Cdouble,Ndata)
+for i in 1:Ndata
+    A_peak[i] = dKe*sum(S_oi[key_symbol[i]][1])
+    Aj_bg[i]  = dKe*sum(S_oi[key_symbol[i]][2])
+end
+
+R_1j = A_peak[2:end]/A_peak[1];
+σR_ij = Aj_bg[2:end]./(A_peak[1]^2) # needa check again the definition of the variance... it requires splitting the different peak, i.e. A_peak_1 = A_peak.*τt[:,1], A_peak_2 = A_peak.*τt[:,2] and A_peak_3 = A_peak.*τt[:,3]
 
 ##
 ## alignement factor estimation
@@ -216,6 +229,8 @@ function modelSensitivity(τ::Array{Cdouble},H::Array{Cdouble,2},ρ::Array{Cdoub
     J_all
 end
 
+ρ_gt = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[1]][1][:ρ]);
+Nr = length(ρ_gt);
 H = zeros(Cdouble,Ndata,Nr);
 for i in 1:Ndata
     H[i,:] = dictAllGeom[key_symbol_geom[i]][1][:H]
@@ -245,3 +260,49 @@ colorbar()
 
 
 # TODO: SA log cost function 
+
+
+function acceptSampleRatio(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
+    y::Array{Cdouble,1},ΓI::Array{Cdouble,1},τH::Array{Cdouble,2},
+    Dprior::Array{Cdouble,2})
+    # if the posterior probability is larger for the proposed state ρ_prop than the current state ρ_cur, then accept the state, otherwise, reject it with probability p
+
+    r_cp = 0.0
+    # likelihood
+    [global r_cp = r_cp + 0.5*((y[j]-((τH[j+1,:]*ρ_cur) /(τH[1,:]*ρ_cur)))^2) /ΓI[j] for j in 1:Ndata-1]
+    [global r_cp = r_cp - 0.5*((y[j]-((τH[j+1,:]*ρ_prop)/(τH[1,:]*ρ_prop)))^2)/ΓI[j] for j in 1:Ndata-1]
+    # smoothness
+    r_cp = r_cp + 0.5ρ_cur'Dprior*ρ_cur - 0.5ρ_prop'Dprior*ρ_prop;
+
+    ρ_new = ρ_cur;
+    if (r_cp>=0.0)
+        # unconditionally accept the new state
+        ρ_new = ρ_prop
+    else
+        # accept the state with probability e^{r_cp}
+        if (log(rand())<=r_cp)
+            ρ_new = ρ_prop
+        else
+            r_cp = 0.0
+        end
+    end
+    ρ_new,r_cp # maybe it could return the computed values
+end
+
+function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},ΓI::Array{Cdouble,1},τH::Array{Cdouble,2},Dprior::Array{Cdouble,2};Ns::Int64=10000)
+    # all samples
+    ρ_all = zeros(Cdouble,Ns+1,length(ρ_start))
+    ρ_all[1,:] = ρ_start;
+    for i in 1:Ns
+        # draw a new sample from a distribution not to far from the actual one
+        ρ_all[i+1,:] = transmissionMechanismSmooth(ρ_all[i,:],Γsqrt)
+        
+        # accept or reject the sample
+        ρ_all[i+1,:],_ = acceptSample(ρ_all[i,:],ρ_all[i+1,:],y,ΓI,τH,Dprior)
+    end
+    ρ_all
+end
+
+
+# TODO: use R_1j as input for sampling the posterior
+# 
