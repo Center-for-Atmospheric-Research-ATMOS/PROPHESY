@@ -87,8 +87,8 @@ end
 key_symbol_geom = Symbol.(keys(dictAllGeom));
 key_symbol_geom = key_symbol_geom[idx_perm_model]
 
-#TODO: plot the different stages (select 4 spectra) 
-#TODO: write project for simultaneously compute the peak fitting and the background removal from the model:
+# TODO: plot the different stages (select 4 spectra) 
+# TODO: write project for simultaneously compute the peak fitting and the background removal from the model:
 #       I_i = Poisson(aσ(p,K_i)+Sbg_i) ≃ aσ(p,K_i)+Sbg_i +ε_i, ε_i ∼ N(0,I_i) and optimize for p (parameter of the function to be fitted)
 
 ##
@@ -102,21 +102,31 @@ for j_slect in 1:Ndata
     D_2nd = diagm(Ny-2,Ny,1 => 2ones(Cdouble,Ny-2), 0 => -ones(Cdouble,Ny-2) ,2 => -ones(Cdouble,Ny-2)); # D2nd(Ny);
     # D_2nd = D_2nd./(dictAllData[key_symbol[j_slect]][1][:Stot][2:end-1]/maximum(dictAllData[key_symbol[j_slect]][1][:Stot]))
     κb = 0.0; #0.01;
-    λb = 1.0e8 # 1.0e10; #1.0e5;
+    λb = 1.0e6;
     z_baseline_1 = baseline_removal(dictAllData[key_symbol[j_slect]][1][:Snoisy],λb,κb,D_2nd);
     Sbg_est[key_symbol[j_slect]] = z_baseline_1
-    figure();
-    scatter(dictAllData[key_symbol[j_slect]][1][plot_sym], dictAllData[key_symbol[j_slect]][1][:Snoisy])
-    plot(dictAllData[key_symbol[j_slect]][1][plot_sym], dictAllData[key_symbol[j_slect]][1][:Snoisy]-z_baseline_1)
-    plot(dictAllData[key_symbol[j_slect]][1][plot_sym], z_baseline_1)
-    plot(dictAllData[key_symbol[j_slect]][1][plot_sym], dictAllData[key_symbol[j_slect]][1][:Sbg])
-    plot(dictAllData[key_symbol[j_slect]][1][plot_sym], dictAllData[key_symbol[j_slect]][1][:SpectrumA_1])
-    plot(dictAllData[key_symbol[j_slect]][1][plot_sym], dictAllData[key_symbol[j_slect]][1][:Stot])
+end
+
+figure(figsize=[12, 10]); 
+plot_sym = :Ke # :Be # 
+for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
+    ax1 = subplot(2,2,i_plot)
+    symbol_h = key_symbol[i_data]
+    title(string("Eph =", Int64(round(dictAllData[symbol_h][1][:hν][1]))," [eV]"),fontsize=14)
+    plot(dictAllData[symbol_h][1][plot_sym],Sbg_est[symbol_h],label="estimated background"); 
+    plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Sbg,label="background gt"); 
+    plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].SpectrumA_1,label="SOI gt"); 
+    scatter(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Snoisy-Sbg_est[symbol_h],label="estimated SOI"); 
+    xlabel("kinetic energy [eV]",fontsize=14); ylabel("spectrum [a.u.]",fontsize=14) 
+    xticks(fontsize=14); yticks(fontsize=14); 
+    legend(fontsize=14)
     if (plot_sym==:Be)
+        xlabel("binding energy [eV]",fontsize=14); 
         ax = gca()
         ax.invert_xaxis();
     end
 end
+tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
 
 ##
@@ -124,7 +134,7 @@ end
 ##
 
 
-τm = [0.85; 0.125; 1.0-0.85-0.125];  # [1.0/3.0; 1.0/3.0; 1.0/3.0];
+τm = [1.0/3.0; 1.0/3.0; 1.0/3.0]; #[0.85; 0.125; 1.0-0.85-0.125];  # 
 μm = [290.2; 292.0; 293.0]; # [290.3; 291.9; 293.5];
 σm = sqrt(2.0)*[0.45; 0.25; 0.6]; # [290.3; 291.9; 293.5]/500.0;
 τt = zeros(Cdouble,Ndata,3);
@@ -132,11 +142,13 @@ end
 σt = zeros(Cdouble,Ndata,3);
 
 dKe = dictAllData[key_symbol[Ndata]][1][:Ke][2]-dictAllData[key_symbol[Ndata]][1][:Ke][1];
+S_cs_dens = Dict();
 for j in 1:Ndata
-    local be = dictAllData[key_symbol[j]][1][:Be];
-    # local spectrum = dictAllData[key_symbol[j]][1][:Snoisy]-dictAllData[key_symbol[j]][1][:Sbg]; 
-    # local spectrum = S_oi[key_symbol[j]][1];
-    local spectrum = dictAllData[key_symbol[j]][1][:Snoisy]-Sbg_est[key_symbol[j]]
+    local symbol_h = key_symbol[j];
+    local be = dictAllData[symbol_h][1][:Be];
+    # local spectrum = dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg]; 
+    # local spectrum = S_oi[symbol_h][1];
+    local spectrum = dictAllData[symbol_h][1][:Snoisy]-Sbg_est[symbol_h]
     spectrum[spectrum.<0.0] .= 0.0
     # estimate the peaks centers and spreads
     # 
@@ -147,6 +159,14 @@ for j in 1:Ndata
         # τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be,spectrum,τm,μm,σm,500)
         τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be[(be.>287.5).*(be.<295.5)],spectrum[(be.>287.5).*(be.<295.5)],τm,μm,σm,500) # crop spectrum and be, but it's not much better
     end
+
+    # estimation
+    σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
+    σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
+    σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
+
+    # push the density to dictionary
+    S_cs_dens[symbol_h] = σ_est_1+σ_est_2+σ_est_3
 end
 
 
@@ -154,29 +174,32 @@ end
 σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
 
 
-figure(); 
-scatter(collect(1:Ndata),abs.(μt[:,1].-μBe[1]))
-scatter(collect(1:Ndata),abs.(μt[:,2].-μBe[2]))
-scatter(collect(1:Ndata),abs.(μt[:,3].-μBe[3]))
+# figure(); 
+# scatter(collect(1:Ndata),abs.(μt[:,1].-μBe[1]))
+# scatter(collect(1:Ndata),abs.(μt[:,2].-μBe[2]))
+# scatter(collect(1:Ndata),abs.(μt[:,3].-μBe[3]))
 
-figure(); 
-scatter(collect(1:Ndata),σt[:,1])
-scatter(collect(1:Ndata),σt[:,2])
-scatter(collect(1:Ndata),σt[:,3])
+# figure(); 
+# scatter(collect(1:Ndata),σt[:,1])
+# scatter(collect(1:Ndata),σt[:,2])
+# scatter(collect(1:Ndata),σt[:,3])
 
-figure(); 
-scatter(collect(1:Ndata),τt[:,1])
-scatter(collect(1:Ndata),τt[:,2])
-scatter(collect(1:Ndata),τt[:,3])
+# figure(); 
+# scatter(collect(1:Ndata),τt[:,1])
+# scatter(collect(1:Ndata),τt[:,2])
+# scatter(collect(1:Ndata),τt[:,3])
 
 
 color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "tab:brown"; "tab:pink"; "tab:gray"; "tab:olive"; "tab:cyan"; "magenta"; "yellow"; "hotpink"; "darkmagenta"; "chartreuse"; "deepskyblue"; "navy"; "darkcyan"; "crimson"; "firebrick"]; 
-S_cs_dens = Dict();
-for j in  1:Ndata # 1:5:Ndata
+plot_sym = :Be #  :Ke # 
+figure(figsize=[12, 10]); 
+# for j in  1:Ndata # 1:5:Ndata
+for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
     local μKe0=50.0
     local μKe1=1200.0
-    local symbol_h = key_symbol[j]; # Symbol(string("hν_",Int64(round(hν[j]))));
-    local be = dictAllData[symbol_h][1][:Be];
+    local symbol_h = key_symbol[i_data]; 
+    local be = dictAllData[symbol_h][1][plot_sym] #dictAllData[symbol_h][1][:Be];
+    
     local μKe = dictAllData[symbol_h][1][:μKe];
     # partial cross section (one for each chemical state)
     σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(be.-μBe[1]).^2/(2.0σ_be[1]^2));
@@ -187,23 +210,24 @@ for j in  1:Ndata # 1:5:Ndata
     p2 = 0.125 .+ (0.12-0.125)*(μKe[1].-μKe0)./(μKe1-μKe0);
     p3 = 1.0-(p1+p2);
 
-    # estimation
-    σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
-    σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
-    σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
+    # plotting
+    ax1 = subplot(2,2,i_plot)
+    title(string("Eph =", Int64(round(dictAllData[symbol_h][1][:hν][1]))," [eV]"),fontsize=14)
+    plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3,color=color_array[3],label="GT") # i_plot
+    plot(be,S_cs_dens[symbol_h],color=color_array[1],label="estimation") # i_plot
+    scatter(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])),color=color_array[2],label="data") # i_plot
 
-    # push the density to dictionary
-    S_cs_dens[symbol_h] = σ_est_1+σ_est_2+σ_est_3
-    println(dKe*sum(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3))
-    println(dKe*sum(σ_est_1+σ_est_2+σ_est_3),"\n")
+    xlabel("kinetic energy [eV]",fontsize=14); 
+    ylabel("spectrum [a.u.]",fontsize=14) 
+    xticks(fontsize=14); yticks(fontsize=14); 
+    legend(fontsize=14)
 
-    figure()
-    plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3,color=color_array[j])
-    scatter(be,σ_est_1+σ_est_2+σ_est_3,color=color_array[j])
-
-    plot(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])),color=color_array[j])
+    if (plot_sym==:Be)
+        xlabel("binding energy [eV]",fontsize=14); 
+        ax1.invert_xaxis();
+    end
 end
-
+tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
 
 ##
@@ -274,11 +298,12 @@ end
 
 
 H1 = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[1]][1][:H])
+ρ_gt = H1 = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[1]][1][:ρ]); # ones(Cdouble,Nr)
 Nr = length(H1);
 J_all = zeros(Cdouble,Nr,Nr);
 for j in 2:Ndata
     Hj = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[j]][1][:H])
-    J_j = modelSensitivity_j(τ_al_noise[1],τ_al_noise[j],H1,Hj,ones(Cdouble,Nr))
+    J_j = modelSensitivity_j(τ_al_noise[1],τ_al_noise[j],H1,Hj,ρ_gt)
     global J_all = J_all + J_j;
 end
 
@@ -293,7 +318,27 @@ figure();
 imshow(F_j_all.U)
 colorbar()
 
+# left and right singular vectors
 figure()
 semilogy(abs.(F_j_all.U[:,1:Ndata-1].*F_j_all.S[1:Ndata-1]'))
+figure()
+semilogy(abs.(F_j_all.Vt[1:Ndata-1,:].*F_j_all.S[1:Ndata-1])')
+
 
 figure(); semilogy(F_j_all.S)
+
+S_approx = zeros(Cdouble,Nr,Nr);
+S_approx[1,1] = F_j_all.S[1];
+J_approx = F_j_all.U*S_approx*F_j_all.Vt
+
+figure();
+imshow(abs.(J_approx-J_all))
+colorbar()
+
+figure();
+imshow(abs.(F_j_all.U[:,1:Ndata-1]*F_j_all.Vt[1:Ndata-1,:]))
+colorbar()
+
+
+
+F_j_all.U[:,1]
