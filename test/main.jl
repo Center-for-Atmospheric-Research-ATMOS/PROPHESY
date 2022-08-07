@@ -199,48 +199,41 @@ for i in 1:Ndata
 end
 
 
-
-# TODO: SA log cost function 
+##
+## sensitivity matrix
+##
 
 function modelSensitivity_j(τ1::Cdouble,τj::Cdouble,H1::Array{Cdouble,1},Hj::Array{Cdouble,1},ρ::Array{Cdouble,1})
     ((τj/(τ1*H1'*ρ))^2)*(Hj - (Hj'*ρ/(H1'*ρ))*H1)*((Hj - (Hj'*ρ/(H1'*ρ))*H1)')
 end
 
-
-
-H1 = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[1]][1][:H])
-ρ_gt = H1 = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[1]][1][:ρ]); # ones(Cdouble,Nr)
-Nr = length(H1);
-J_all = zeros(Cdouble,Nr,Nr);
-for j in 2:Ndata
-    Hj = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[j]][1][:H])
-    J_j = modelSensitivity_j(τ_al_noise[1],τ_al_noise[j],H1,Hj,ρ_gt)
-    global J_all = J_all + J_j;
+function modelSensitivity(τ::Array{Cdouble},H::Array{Cdouble,2},ρ::Array{Cdouble,1})
+    Nr = length(ρ);
+    J_all = zeros(Cdouble,Nr,Nr);
+    for j in 2:Ndata
+        J_all[:,:] = J_all[:,:] + modelSensitivity_j(τ[1],τ[j],H[1,:],H[j,:],ρ);
+    end
+    J_all
 end
 
+H = zeros(Cdouble,Ndata,Nr);
+for i in 1:Ndata
+    H[i,:] = dictAllGeom[key_symbol_geom[i]][1][:H]
+end
+J_all = modelSensitivity(τ_al_noise,H,ρ_gt);
 F_j_all  = svd(J_all);
+S_approx = zeros(Cdouble,Nr,Nr);
+S_approx[1,1] = F_j_all.S[1];
+J_approx = F_j_all.U*S_approx*F_j_all.Vt
 
 figure();
 imshow(J_all)
 colorbar()
 
-
 figure();
-imshow(F_j_all.U)
+imshow(J_approx)
 colorbar()
 
-# left and right singular vectors
-figure()
-semilogy(abs.(F_j_all.U[:,1:Ndata-1].*F_j_all.S[1:Ndata-1]'))
-figure()
-semilogy(abs.(F_j_all.Vt[1:Ndata-1,:].*F_j_all.S[1:Ndata-1])')
-
-
-figure(); semilogy(F_j_all.S)
-
-S_approx = zeros(Cdouble,Nr,Nr);
-S_approx[1,1] = F_j_all.S[1];
-J_approx = F_j_all.U*S_approx*F_j_all.Vt
 
 figure();
 imshow(abs.(J_approx-J_all))
@@ -251,5 +244,4 @@ imshow(abs.(F_j_all.U[:,1:Ndata-1]*F_j_all.Vt[1:Ndata-1,:]))
 colorbar()
 
 
-
-F_j_all.U[:,1]
+# TODO: SA log cost function 
