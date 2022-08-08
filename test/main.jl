@@ -22,6 +22,7 @@ using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack # experiment model (geometry factor and cross section estimation)
+using XPSsampling
 
 
 data_folder = "../data/cylinder_radius_10.0/eal_5_restricted_range/"
@@ -194,8 +195,22 @@ for i in 1:Ndata
     Aj_bg[i]  = dKe*sum(S_oi[key_symbol[i]][2])
 end
 
-R_1j = A_peak[2:end]/A_peak[1];
-σR_ij = Aj_bg[2:end]./(A_peak[1]^2) # needa check again the definition of the variance... it requires splitting the different peak, i.e. A_peak_1 = A_peak.*τt[:,1], A_peak_2 = A_peak.*τt[:,2] and A_peak_3 = A_peak.*τt[:,3]
+A_peak_1 = A_peak.*τt[:,1];
+A_peak_2 = A_peak.*τt[:,2];
+A_peak_3 = A_peak.*τt[:,3];
+
+R_1j_1  = A_peak_1[2:end]/A_peak_1[1];
+σR_ij_1 = (Aj_bg[2:end]+A_peak[2:end])./(A_peak_1[1]^2) 
+
+R_1j_2  = A_peak_2[2:end]/A_peak_2[1];
+σR_ij_2 = (Aj_bg[2:end]+A_peak[2:end])./(A_peak_2[1]^2) 
+
+R_1j_3  = A_peak_3[2:end]/A_peak_3[1];
+σR_ij_3 = (Aj_bg[2:end]+A_peak[2:end])./(A_peak_3[1]^2) 
+
+SNR1 = R_1j_1./sqrt.(σR_ij_1);
+SNR2 = R_1j_2./sqrt.(σR_ij_2);
+SNR3 = R_1j_3./sqrt.(σR_ij_3);
 
 ##
 ## alignement factor estimation
@@ -230,34 +245,16 @@ function modelSensitivity(τ::Array{Cdouble},H::Array{Cdouble,2},ρ::Array{Cdoub
 end
 
 ρ_gt = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[1]][1][:ρ]);
+r = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[1]][1][:r]);
+μ0 = Array{Cdouble,1}(dictAllGeom[key_symbol_geom[1]][1][:radius])[1];
 Nr = length(ρ_gt);
 H = zeros(Cdouble,Ndata,Nr);
 for i in 1:Ndata
     H[i,:] = dictAllGeom[key_symbol_geom[i]][1][:H]
 end
 J_all = modelSensitivity(τ_al_noise,H,ρ_gt);
-F_j_all  = svd(J_all);
-S_approx = zeros(Cdouble,Nr,Nr);
-S_approx[1,1] = F_j_all.S[1];
-J_approx = F_j_all.U*S_approx*F_j_all.Vt
 
-figure();
-imshow(J_all)
-colorbar()
-
-figure();
-imshow(J_approx)
-colorbar()
-
-
-figure();
-imshow(abs.(J_approx-J_all))
-colorbar()
-
-figure();
-imshow(abs.(F_j_all.U[:,1:Ndata-1]*F_j_all.Vt[1:Ndata-1,:]))
-colorbar()
-
+include("plotSensitivityMatrix.jl")
 
 # TODO: SA log cost function 
 
@@ -269,8 +266,8 @@ function acceptSampleRatio(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
 
     r_cp = 0.0
     # likelihood
-    [global r_cp = r_cp + 0.5*((y[j]-((τH[j+1,:]*ρ_cur) /(τH[1,:]*ρ_cur)))^2) /ΓI[j] for j in 1:Ndata-1]
-    [global r_cp = r_cp - 0.5*((y[j]-((τH[j+1,:]*ρ_prop)/(τH[1,:]*ρ_prop)))^2)/ΓI[j] for j in 1:Ndata-1]
+    [r_cp = r_cp + 0.5*((y[j]-((τH[j+1,:]'*ρ_cur) /(τH[1,:]'*ρ_cur)))^2) /ΓI[j] for j in 1:Ndata-1]
+    [r_cp = r_cp - 0.5*((y[j]-((τH[j+1,:]'*ρ_prop)/(τH[1,:]'*ρ_prop)))^2)/ΓI[j] for j in 1:Ndata-1]
     # smoothness
     r_cp = r_cp + 0.5ρ_cur'Dprior*ρ_cur - 0.5ρ_prop'Dprior*ρ_prop;
 
@@ -295,14 +292,24 @@ function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::
     ρ_all[1,:] = ρ_start;
     for i in 1:Ns
         # draw a new sample from a distribution not to far from the actual one
-        ρ_all[i+1,:] = transmissionMechanismSmooth(ρ_all[i,:],Γsqrt)
+        ρ_all[i+1,:] = XPSsampling.transmissionMechanismSmooth(ρ_all[i,:],Γsqrt)
         
         # accept or reject the sample
-        ρ_all[i+1,:],_ = acceptSample(ρ_all[i,:],ρ_all[i+1,:],y,ΓI,τH,Dprior)
+        ρ_all[i+1,:],_ = acceptSampleRatio(ρ_all[i,:],ρ_all[i+1,:],y,ΓI,τH,Dprior)
     end
     ρ_all
 end
 
 
 # TODO: use R_1j as input for sampling the posterior
-# 
+# data: R_1j_1, varaince: σR_ij_1
+
+σw = 5.0e-4 # small compared with the amplitude of the state 
+w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
+Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
+p0 = 0.099 # shameful artifact
+Ns      = 1000000;
+Ns_burn = 100000;
+Dprior = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
+ρ_all = samplePosterior(ρ_gt,Γsqrt,R_1j_1,σR_ij_1,τ_al_noise.*H,Dprior;Ns=10000)
+
