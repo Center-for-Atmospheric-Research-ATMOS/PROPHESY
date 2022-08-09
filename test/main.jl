@@ -29,8 +29,8 @@ data_folder = "../data/cylinder_radius_10.0/eal_5_restricted_range/"
 
 FLAG_0001 = false;
 FLAG_0002 = false;
-FLAG_0003 = false;
-FLAG_0004 = true;
+FLAG_0003 = true;
+FLAG_0004 = false;
 
 if FLAG_0001
     PROFILE_TAG = "0001/"
@@ -266,8 +266,10 @@ function acceptSampleRatio(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
 
     r_cp = 0.0
     # likelihood
-    [r_cp = r_cp + 0.5*((y[j]-((τH[j+1,:]'*ρ_cur) /(τH[1,:]'*ρ_cur)))^2) /ΓI[j] for j in 1:Ndata-1]
-    [r_cp = r_cp - 0.5*((y[j]-((τH[j+1,:]'*ρ_prop)/(τH[1,:]'*ρ_prop)))^2)/ΓI[j] for j in 1:Ndata-1]
+    for j in 1:length(y)
+        r_cp = r_cp + 0.5*((y[j]-((τH[j+1,:]'*ρ_cur) /(τH[1,:]'*ρ_cur)))^2) /ΓI[j]
+        r_cp = r_cp - 0.5*((y[j]-((τH[j+1,:]'*ρ_prop)/(τH[1,:]'*ρ_prop)))^2)/ΓI[j]
+    end
     # smoothness
     r_cp = r_cp + 0.5ρ_cur'Dprior*ρ_cur - 0.5ρ_prop'Dprior*ρ_prop;
 
@@ -286,30 +288,118 @@ function acceptSampleRatio(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
     ρ_new,r_cp # maybe it could return the computed values
 end
 
+function kernelSingle(ρ_curr::Array{Cdouble,1},σ::Cdouble;ρ_max::Cdouble=2.0)
+    # draw index
+    Nl = length(ρ_curr);
+    idx_elt = rand(1:Nl)
+    # draw new value
+    ρ_next = ρ_curr;
+    ρ_next[idx_elt] = ρ_curr[idx_elt] + σ*randn()
+    # apply the constraint
+    ρ_next[idx_elt] = max(ρ_next[idx_elt],-ρ_next[idx_elt])
+    ρ_next[idx_elt] = min(ρ_next[idx_elt],ρ_max)
+    ρ_next
+end
+
+function kernelTriple(ρ_curr::Array{Cdouble,1},σ::Cdouble;ρ_max::Cdouble=2.0)
+    # draw index (the central index of the trhee)
+    Nl = length(ρ_curr);
+    idx_elt = rand(1:Nl)
+    # modify the state
+    ρ_next = ρ_curr;
+    if ((idx_elt>1) && (idx_elt<Nl))
+        # draw new values
+        ρ_next[idx_elt] = ρ_curr[idx_elt] + σ*randn()
+        ρ_next[idx_elt+1] = ρ_next[idx_elt+1] + 0.5σ*randn()
+        ρ_next[idx_elt-1] = ρ_next[idx_elt-1] + 0.5σ*randn()
+        # apply constraint
+        ρ_next[idx_elt] = max(ρ_next[idx_elt],-ρ_next[idx_elt])
+        ρ_next[idx_elt] = min(ρ_next[idx_elt],ρ_max)
+        ρ_next[idx_elt+1] = max(ρ_next[idx_elt+1],-ρ_next[idx_elt+1])
+        ρ_next[idx_elt+1] = min(ρ_next[idx_elt+1],ρ_max)
+        ρ_next[idx_elt-1] = max(ρ_next[idx_elt-1],-ρ_next[idx_elt-1])
+        ρ_next[idx_elt-1] = min(ρ_next[idx_elt-1],ρ_max)
+    elseif (idx_elt==1)
+        # draw new values
+        ρ_next[idx_elt] = ρ_curr[idx_elt] + σ*randn()
+        ρ_next[idx_elt+1] = ρ_next[idx_elt+1] + 0.5σ*randn()
+        # apply constraint
+        ρ_next[idx_elt] = max(ρ_next[idx_elt],-ρ_next[idx_elt])
+        ρ_next[idx_elt] = min(ρ_next[idx_elt],ρ_max)
+        ρ_next[idx_elt+1] = max(ρ_next[idx_elt+1],-ρ_next[idx_elt+1])
+        ρ_next[idx_elt+1] = min(ρ_next[idx_elt+1],ρ_max)
+    else
+        # draw new values
+        ρ_next[idx_elt] = ρ_curr[idx_elt] + σ*randn()
+        ρ_next[idx_elt-1] = ρ_next[idx_elt-1] + 0.5σ*randn()
+        # apply constraint
+        ρ_next[idx_elt] = max(ρ_next[idx_elt],-ρ_next[idx_elt])
+        ρ_next[idx_elt] = min(ρ_next[idx_elt],ρ_max)
+        ρ_next[idx_elt-1] = max(ρ_next[idx_elt-1],-ρ_next[idx_elt-1])
+        ρ_next[idx_elt-1] = min(ρ_next[idx_elt-1],ρ_max)
+    end
+    
+    # return new state
+    ρ_next
+end
+
+KERNEL_SMOOTH  = true
+KERNEL_SINGLE  = false
+KERNEL_TRIGLE  = false
 function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},ΓI::Array{Cdouble,1},τH::Array{Cdouble,2},Dprior::Array{Cdouble,2};Ns::Int64=10000)
     # all samples
-    ρ_all = zeros(Cdouble,Ns+1,length(ρ_start))
+    ρ_all = zeros(Cdouble,Ns+1,length(ρ_start));
+    r_cp = zeros(Cdouble,Ns);
     ρ_all[1,:] = ρ_start;
     for i in 1:Ns
         # draw a new sample from a distribution not to far from the actual one
-        ρ_all[i+1,:] = XPSsampling.transmissionMechanismSmooth(ρ_all[i,:],Γsqrt)
-        
+        if KERNEL_SMOOTH
+            ρ_all[i+1,:] = XPSsampling.transmissionMechanismSmooth(ρ_all[i,:],Γsqrt)
+            ρ_all[i+1,1:137] .= 1.0
+            ρ_all[i+1,end] = 0.0
+            ρ_all[ρ_all.<0.0] .= 0.0
+            ρ_all[ρ_all.>3.0] .= 3.0
+        end
+        if KERNEL_SINGLE
+            ρ_all[i+1,:] = [ρ_all[i,1:137]; kernelSingle(ρ_all[i,138:end-1],0.2); 0.0]
+        end
+        if KERNEL_TRIPLE
+            ρ_all[i+1,:] = [ρ_all[i,1:137]; kernelTriple(ρ_all[i,138:end-1],0.2); 0.0]
+        end
+
         # accept or reject the sample
-        ρ_all[i+1,:],_ = acceptSampleRatio(ρ_all[i,:],ρ_all[i+1,:],y,ΓI,τH,Dprior)
+        ρ_all[i+1,:],r_cp[i] = acceptSampleRatio(ρ_all[i,:],ρ_all[i+1,:],y,ΓI,τH,Dprior)
     end
-    ρ_all
+    ρ_all,r_cp
 end
 
 
 # TODO: use R_1j as input for sampling the posterior
 # data: R_1j_1, varaince: σR_ij_1
 
-σw = 5.0e-4 # small compared with the amplitude of the state 
+σw = 0.1*5.0e-4 # small compared with the amplitude of the state 
 w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
 p0 = 0.099 # shameful artifact
 Ns      = 1000000;
 Ns_burn = 100000;
-Dprior = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
-ρ_all = samplePosterior(ρ_gt,Γsqrt,R_1j_1,σR_ij_1,τ_al_noise.*H,Dprior;Ns=10000)
+D2nd = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
+Dprior = D2nd'*D2nd;
+ρ_start = ones(Cdouble,Nr); #  1.0ρ_gt
+ρ_start[138:end] = collect(LinRange(1,0,Nr-138+1));
+# ρ_start = ρ_gt
+ρ_all,r_cp = samplePosterior(ρ_start,Γsqrt,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e3Dprior;Ns=Ns); # 10000
+
+figure(); plot(cumsum(r_cp));
+minVal,idx_min = findmin(cumsum(r_cp))
+
+
+μρ = dropdims(mean(ρ_all,dims=1),dims=1)
+
+Γρ = cov(ρ_all)
+figure(); ## plot(ρ_all[1:1000:end,:]')
+plot(r,μρ,color=color_array[1],label = "mean")
+plot(r,ρ_gt,color=color_array[3],label = "GT")
+plot(r,ρ_all[idx_min+1,:],color=color_array[5],label = "last")
+fill_between(r,μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color=color_array[1])
 
