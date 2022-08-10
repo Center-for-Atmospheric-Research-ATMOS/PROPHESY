@@ -275,18 +275,22 @@ function acceptSampleRatio(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
     r_cp = r_cp + 0.5ρ_cur'Dprior*ρ_cur - 0.5ρ_prop'Dprior*ρ_prop;
 
     ρ_new = ρ_cur;
+    keepSample = false;
     if (r_cp>=0.0)
         # unconditionally accept the new state
         ρ_new = ρ_prop
+        keepSample = true;
     else
         # accept the state with probability e^{r_cp}
         if (log(rand())<=r_cp)
             ρ_new = ρ_prop
+            keepSample = true;
         else
             r_cp = 0.0
+            keepSample = false;
         end
     end
-    ρ_new,r_cp # maybe it could return the computed values
+    ρ_new,r_cp,keepSample # maybe it could return the computed values
 end
 
 Nρ = 20;
@@ -326,11 +330,10 @@ function newValue(p_jk::Array{Cdouble,1})
     ρ_val[newIdxValue(p_jk,Nρ)]
 end
 
-newValue(cumsumP_j[:,end-1])
 
-function kernelSingle(idx_curr::Array{Cdouble,1},cum_prod_j::Array{Cdouble,2})
+function kernelSingle(idx_curr::Array{Int64,1},cum_prod_j::Array{Cdouble,2})
     # draw index
-    Nl = length(ρ_curr);
+    Nl = length(idx_curr);
     idx_elt = rand(1:Nl);
     # draw new value
     idx_next = idx_curr;
@@ -340,7 +343,12 @@ function kernelSingle(idx_curr::Array{Cdouble,1},cum_prod_j::Array{Cdouble,2})
 end
 
 # TODO: test kernel
-kernelSingle(idx_curr::Array{Cdouble,1},cum_prod_j::Array{Cdouble,2})
+testKer = ones(Int64,25,100);
+for i in 2:100
+    testKer[:,i] = kernelSingle(testKer[:,i-1],cumsumP_j)
+end
+figure(); imshow(testKer); colorbar()
+
 
 function kernelSingle(ρ_curr::Array{Cdouble,1},σ::Cdouble;ρ_max::Cdouble=2.0)
     # draw index
@@ -398,7 +406,8 @@ function kernelTriple(ρ_curr::Array{Cdouble,1},σ::Cdouble;ρ_max::Cdouble=2.0)
 end
 
 KERNEL_SMOOTH  = false
-KERNEL_SINGLE  = true
+KERNEL_SINGLE  = false
+KERNEL_SINGLE_IDX = true
 KERNEL_TRIPLE  = false
 function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},ΓI::Array{Cdouble,1},τH::Array{Cdouble,2},Dprior::Array{Cdouble,2};Ns::Int64=10000)
     # all samples
@@ -428,6 +437,39 @@ function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::
 end
 
 
+function samplePosteriorIdx(idx_start::Array{Int64,1},ρ_val::Array{Cdouble,1},y::Array{Cdouble,1},ΓI::Array{Cdouble,1},τH::Array{Cdouble,2},Dprior::Array{Cdouble,2};Ns::Int64=10000,δidx::Cdouble=2.0)
+    # init transistion probability 
+    Nρ = length(ρ_val);
+    P_j = zeros(Cdouble,Nρ,Nρ);
+    for k in 1:Nρ
+        P_j[:,k] = exp.(-abs.(collect(1:Nρ).-k)/δidx)
+        P_j[k,k] = 0.0 # stating that the kernel makes sure the new value is different from the current one
+        P_j[:,k] = P_j[:,k]./sum(P_j[:,k]);
+    end
+    cumsumP_j = cumsum(P_j,dims=1)
+    cumsumP_j[end,:] .= 1.0
+
+    # all samples
+    ρ_all        = zeros(Cdouble,Ns+1,length(idx_start));
+    idx_all      = zeros(Int64,Ns+1,length(idx_start));
+    r_cp         = zeros(Cdouble,Ns);
+    ρ_all[1,:]   = ρ_val[idx_start];
+    idx_all[1,:] = idx_start;
+    for i in 1:Ns
+        # draw a new sample from a distribution not to far from the actual one
+        idx_all[i+1,:] = [idx_start[1:idx_surf-1]; kernelSingle(idx_all[i,idx_surf:end-1],cumsumP_j); 1];
+        ρ_all[i+1,:] = ρ_val[idx_all[i+1,:]];
+
+        # accept or reject the sample
+        ρ_all[i+1,:],r_cp[i],keepSample = acceptSampleRatio(ρ_all[i,:],ρ_all[i+1,:],y,ΓI,τH,Dprior)
+        if (!keepSample)
+            idx_all[i+1,:] = idx_all[i,:];
+        end
+    end
+    ρ_all,r_cp
+end
+
+
 # TODO: use R_1j as input for sampling the posterior
 # data: R_1j_1, varaince: σR_ij_1
 
@@ -439,10 +481,16 @@ Ns      = 100000#0;
 Ns_burn = 10000#0;
 D2nd = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
 Dprior = D2nd'*D2nd;
-ρ_start = ones(Cdouble,Nr); #  1.0ρ_gt
-ρ_start[138:end] = collect(LinRange(1,0,Nr-138+1));
-# ρ_start = ρ_gt
-ρ_all,r_cp = samplePosterior(ρ_start,Γsqrt,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e3Dprior;Ns=Ns); # 10000
+
+if KERNEL_SINGLE_IDX
+    idx_start = [10*ones(Int64,137); round.(Int64,collect(LinRange(10,1,Nr-138+1)))]
+    ρ_all,r_cp = samplePosteriorIdx(idx_start,ρ_val,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e3Dprior;Ns=Ns,δidx=2.0)
+else
+    ρ_start = ones(Cdouble,Nr); #  1.0ρ_gt
+    ρ_start[138:end] = collect(LinRange(1,0,Nr-138+1));
+    # ρ_start = ρ_gt
+    ρ_all,r_cp = samplePosterior(ρ_start,Γsqrt,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e3Dprior;Ns=Ns); # 10000
+end
 
 figure(); plot(cumsum(r_cp));
 minVal,idx_min = findmin(cumsum(r_cp))
