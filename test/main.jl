@@ -258,6 +258,7 @@ include("plotSensitivityMatrix.jl")
 
 # TODO: SA log cost function 
 
+idx_surf = findfirst(r.-10.0 .>-0.005);
 
 function acceptSampleRatio(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
     y::Array{Cdouble,1},ΓI::Array{Cdouble,1},τH::Array{Cdouble,2},
@@ -287,6 +288,59 @@ function acceptSampleRatio(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
     end
     ρ_new,r_cp # maybe it could return the computed values
 end
+
+Nρ = 20;
+ρ_max = 2.0;
+ρ_val = collect(LinRange(0.0,ρ_max,Nρ));
+P_j = zeros(Cdouble,Nρ,Nρ);
+δidx = 2.0;
+for k in 1:Nρ
+    P_j[:,k] = exp.(-abs.(collect(1:Nρ).-k)/δidx)
+    P_j[k,k] = 0.0 # stating that the kernel makes sure the new value is different from the current one
+    P_j[:,k] = P_j[:,k]./sum(P_j[:,k]);
+end
+figure(); imshow(P_j); colorbar()
+cumsumP_j = cumsum(P_j,dims=1)
+cumsumP_j[end,:] .= 1.0 
+
+
+function newIdxValue(p_jk::Array{Cdouble,1})
+    # normally, length(p_jk) = Nl+1
+    Nρ = length(p_jk);
+    v = rand();
+    idx_new = -1;
+    if (v<=p_jk[1])
+        idx_new = 1;
+    end
+    if (idx_new==-1)
+        for j in 1:Nρ-1
+            if ((v>p_jk[j]) & (v<=p_jk[j+1]))
+                idx_new = j+1;
+            end
+        end
+    end
+    idx_new
+end
+
+function newValue(p_jk::Array{Cdouble,1})
+    ρ_val[newIdxValue(p_jk,Nρ)]
+end
+
+newValue(cumsumP_j[:,end-1])
+
+function kernelSingle(idx_curr::Array{Cdouble,1},cum_prod_j::Array{Cdouble,2})
+    # draw index
+    Nl = length(ρ_curr);
+    idx_elt = rand(1:Nl);
+    # draw new value
+    idx_next = idx_curr;
+    idx_next[idx_elt] = newIdxValue(cum_prod_j[:,idx_curr[idx_elt]])
+    # return 
+    idx_next
+end
+
+# TODO: test kernel
+kernelSingle(idx_curr::Array{Cdouble,1},cum_prod_j::Array{Cdouble,2})
 
 function kernelSingle(ρ_curr::Array{Cdouble,1},σ::Cdouble;ρ_max::Cdouble=2.0)
     # draw index
@@ -343,9 +397,9 @@ function kernelTriple(ρ_curr::Array{Cdouble,1},σ::Cdouble;ρ_max::Cdouble=2.0)
     ρ_next
 end
 
-KERNEL_SMOOTH  = true
-KERNEL_SINGLE  = false
-KERNEL_TRIGLE  = false
+KERNEL_SMOOTH  = false
+KERNEL_SINGLE  = true
+KERNEL_TRIPLE  = false
 function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},ΓI::Array{Cdouble,1},τH::Array{Cdouble,2},Dprior::Array{Cdouble,2};Ns::Int64=10000)
     # all samples
     ρ_all = zeros(Cdouble,Ns+1,length(ρ_start));
@@ -355,16 +409,16 @@ function samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::
         # draw a new sample from a distribution not to far from the actual one
         if KERNEL_SMOOTH
             ρ_all[i+1,:] = XPSsampling.transmissionMechanismSmooth(ρ_all[i,:],Γsqrt)
-            ρ_all[i+1,1:137] .= 1.0
+            ρ_all[i+1,1:idx_surf-1] .= 1.0
             ρ_all[i+1,end] = 0.0
             ρ_all[ρ_all.<0.0] .= 0.0
             ρ_all[ρ_all.>3.0] .= 3.0
         end
         if KERNEL_SINGLE
-            ρ_all[i+1,:] = [ρ_all[i,1:137]; kernelSingle(ρ_all[i,138:end-1],0.2); 0.0]
+            ρ_all[i+1,:] = [ρ_all[i,1:137]; kernelSingle(ρ_all[i,idx_surf:end-1],0.2); 0.0]
         end
         if KERNEL_TRIPLE
-            ρ_all[i+1,:] = [ρ_all[i,1:137]; kernelTriple(ρ_all[i,138:end-1],0.2); 0.0]
+            ρ_all[i+1,:] = [ρ_all[i,1:137]; kernelTriple(ρ_all[i,idx_surf:end-1],0.2); 0.0]
         end
 
         # accept or reject the sample
@@ -381,8 +435,8 @@ end
 w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
 p0 = 0.099 # shameful artifact
-Ns      = 1000000;
-Ns_burn = 100000;
+Ns      = 100000#0;
+Ns_burn = 10000#0;
 D2nd = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
 Dprior = D2nd'*D2nd;
 ρ_start = ones(Cdouble,Nr); #  1.0ρ_gt
