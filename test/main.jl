@@ -241,11 +241,11 @@ function modelSensitivity_j(τ1::Cdouble,τj::Cdouble,H1::Array{Cdouble,1},Hj::A
     ((τj/(τ1*H1'*ρ))^2)*(Hj - (Hj'*ρ/(H1'*ρ))*H1)*((Hj - (Hj'*ρ/(H1'*ρ))*H1)')
 end
 
-function modelSensitivity(τ::Array{Cdouble},H::Array{Cdouble,2},ρ::Array{Cdouble,1})
+function modelSensitivity(τ::Array{Cdouble},H::Array{Cdouble,2},ρ::Array{Cdouble,1},σR_ij::Array{Cdouble,1})
     Nr = length(ρ);
     J_all = zeros(Cdouble,Nr,Nr);
     for j in 2:Ndata
-        J_all[:,:] = J_all[:,:] + modelSensitivity_j(τ[1],τ[j],H[1,:],H[j,:],ρ);
+        J_all[:,:] = J_all[:,:] + σR_ij[j-1]*modelSensitivity_j(τ[1],τ[j],H[1,:],H[j,:],ρ);
     end
     J_all
 end
@@ -258,7 +258,7 @@ H = zeros(Cdouble,Ndata,Nr);
 for i in 1:Ndata
     H[i,:] = dictAllGeom[key_symbol_geom[i]][1][:H]
 end
-J_all = modelSensitivity(τ_al_noise,H,ρ_gt);
+J_all = modelSensitivity(τ_al_noise,H,ρ_gt,σR_ij_1);
 
 include("plotSensitivityMatrix.jl")
 

@@ -7,11 +7,11 @@ xticks(fontsize=14);
 yticks(fontsize=14);
 
 rc("ytick",color="white")
-cax   = fig.add_axes([0.84, .5, 0.03, 0.4])
+cax   = fig.add_axes([0.8, .5, 0.03, 0.4])
 cbar  = fig.colorbar(pcm, orientation="vertical", cax=cax, shrink=0.6)
 cbar.formatter.set_powerlimits((-1,2))
 cbar.update_ticks()
-cbar.set_label("concentration [(m\$^{-3}\$)\$^{-2}\$]",fontsize=14, color="white")
+cbar.set_label("sensitivity [(m\$^{-3}\$)\$^{-2}\$]",fontsize=14, color="white")
 cbar.ax.tick_params(labelsize=14)
 cbar.formatter.set_powerlimits((-1,2))
 cbar.ax.yaxis.offsetText.set_size(14)
