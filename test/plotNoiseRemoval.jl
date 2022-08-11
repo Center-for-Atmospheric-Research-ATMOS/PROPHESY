@@ -22,3 +22,6 @@ for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
     end
 end
 tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+# savefig(string(data_tag,"_noise_removal.pdf"))
+# savefig(string(data_tag,"_noise_removal.png"))
+

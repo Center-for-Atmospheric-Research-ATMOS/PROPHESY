@@ -26,6 +26,11 @@ using XPSsampling
 
 
 data_folder = "../data/cylinder_radius_10.0/eal_5_restricted_range/"
+data_tag    = "cylinder_radius_10_eal_5_restricted_range"
+# data_folder = "../data/cylinder_radius_10.0/eal_5/"
+# data_tag    = "cylinder_radius_10_eal_5"
+# data_folder = "../data/cylinder_radius_10.0/eal_20/"
+# data_tag    = "cylinder_radius_10_eal_20"
 
 FLAG_0001 = false;
 FLAG_0002 = false;
@@ -46,6 +51,7 @@ if FLAG_0004
 end
 
 data_folder = string(data_folder,PROFILE_TAG);
+data_tag = string(data_tag,"_",PROFILE_TAG[1:end-1]);
 
 
 xf_data = XLSX.readxlsx(string(data_folder,"data.xlsx"));
@@ -268,8 +274,8 @@ function acceptSampleRatio(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
     r_cp = 0.0
     # likelihood
     for j in 1:length(y)
-        r_cp = r_cp + 0.5*((y[j]-((τH[j+1,:]'*ρ_cur) /(τH[1,:]'*ρ_cur)))^2) /ΓI[j]
-        r_cp = r_cp - 0.5*((y[j]-((τH[j+1,:]'*ρ_prop)/(τH[1,:]'*ρ_prop)))^2)/ΓI[j]
+        r_cp = r_cp + (0.5*((y[j]-((τH[j+1,:]'*ρ_cur) /(τH[1,:]'*ρ_cur)))^2) /ΓI[j])^0.1
+        r_cp = r_cp - (0.5*((y[j]-((τH[j+1,:]'*ρ_prop)/(τH[1,:]'*ρ_prop)))^2)/ΓI[j])^0.1
     end
     # smoothness
     r_cp = r_cp + 0.5ρ_cur'Dprior*ρ_cur - 0.5ρ_prop'Dprior*ρ_prop;
@@ -293,7 +299,7 @@ function acceptSampleRatio(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},
     ρ_new,r_cp,keepSample # maybe it could return the computed values
 end
 
-Nρ = 20;
+Nρ = 51; #21;
 ρ_max = 2.0;
 ρ_val = collect(LinRange(0.0,ρ_max,Nρ));
 P_j = zeros(Cdouble,Nρ,Nρ);
@@ -482,9 +488,10 @@ Ns_burn = 10000#0;
 D2nd = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
 Dprior = D2nd'*D2nd;
 
-if KERNEL_SINGLE_IDX
-    idx_start = [10*ones(Int64,137); round.(Int64,collect(LinRange(10,1,Nr-138+1)))]
-    ρ_all,r_cp = samplePosteriorIdx(idx_start,ρ_val,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e3Dprior;Ns=Ns,δidx=2.0)
+if KERNEL_SINGLE_IDX # NOTE: this kernel is not enough to explore the energy landscape, need to make longer moves, e.g. a chain a 3 indices in a row and also change the resolution of the model!
+    idx_start = [26*ones(Int64,137); round.(Int64,collect(LinRange(26,1,Nr-138+1)))]
+    # idx_start = round.(Int64,ρ_gt/(ρ_max/(Nρ-1))) .+ 1;
+    ρ_all,r_cp = samplePosteriorIdx(idx_start,ρ_val,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e2*1.0e3Dprior;Ns=Ns,δidx=2.0)
 else
     ρ_start = ones(Cdouble,Nr); #  1.0ρ_gt
     ρ_start[138:end] = collect(LinRange(1,0,Nr-138+1));
