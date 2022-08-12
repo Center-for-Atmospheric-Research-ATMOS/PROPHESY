@@ -476,39 +476,41 @@ function samplePosteriorIdx(idx_start::Array{Int64,1},ρ_val::Array{Cdouble,1},y
 end
 
 
-# TODO: use R_1j as input for sampling the posterior
-# data: R_1j_1, varaince: σR_ij_1
 
-σw = 0.1*5.0e-4 # small compared with the amplitude of the state 
-w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
-Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
-p0 = 0.099 # shameful artifact
-Ns      = 100000#0;
-Ns_burn = 10000#0;
-D2nd = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
-Dprior = D2nd'*D2nd;
+if false
+    # TODO: use R_1j as input for sampling the posterior
+    # data: R_1j_1, varaince: σR_ij_1
 
-if KERNEL_SINGLE_IDX # NOTE: this kernel is not enough to explore the energy landscape, need to make longer moves, e.g. a chain a 3 indices in a row and also change the resolution of the model!
-    idx_start = [26*ones(Int64,137); round.(Int64,collect(LinRange(26,1,Nr-138+1)))]
-    # idx_start = round.(Int64,ρ_gt/(ρ_max/(Nρ-1))) .+ 1;
-    ρ_all,r_cp = samplePosteriorIdx(idx_start,ρ_val,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e2*1.0e3Dprior;Ns=Ns,δidx=2.0)
-else
-    ρ_start = ones(Cdouble,Nr); #  1.0ρ_gt
-    ρ_start[138:end] = collect(LinRange(1,0,Nr-138+1));
-    # ρ_start = ρ_gt
-    ρ_all,r_cp = samplePosterior(ρ_start,Γsqrt,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e3Dprior;Ns=Ns); # 10000
+    σw = 0.1*5.0e-4 # small compared with the amplitude of the state 
+    w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration varies more in the region near the surface rather than deep in the sample
+    Γsqrt = real(sqrt(corrCovariance(w;cor_len=10.0)));
+    p0 = 0.099 # shameful artifact
+    Ns      = 100000#0;
+    Ns_burn = 10000#0;
+    D2nd = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
+    Dprior = D2nd'*D2nd;
+
+    if KERNEL_SINGLE_IDX # NOTE: this kernel is not enough to explore the energy landscape, need to make longer moves, e.g. a chain a 3 indices in a row and also change the resolution of the model!
+        idx_start = [26*ones(Int64,137); round.(Int64,collect(LinRange(26,1,Nr-138+1)))]
+        # idx_start = round.(Int64,ρ_gt/(ρ_max/(Nρ-1))) .+ 1;
+        ρ_all,r_cp = samplePosteriorIdx(idx_start,ρ_val,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e2*1.0e3Dprior;Ns=Ns,δidx=2.0)
+    else
+        ρ_start = ones(Cdouble,Nr); #  1.0ρ_gt
+        ρ_start[138:end] = collect(LinRange(1,0,Nr-138+1));
+        # ρ_start = ρ_gt
+        ρ_all,r_cp = samplePosterior(ρ_start,Γsqrt,R_1j_1,σR_ij_1,τ_al_noise.*H,1.0e3Dprior;Ns=Ns); # 10000
+    end
+
+    figure(); plot(cumsum(r_cp));
+    minVal,idx_min = findmin(cumsum(r_cp))
+
+
+    μρ = dropdims(mean(ρ_all,dims=1),dims=1)
+
+    Γρ = cov(ρ_all)
+    figure(); ## plot(ρ_all[1:1000:end,:]')
+    plot(r,μρ,color=color_array[1],label = "mean")
+    plot(r,ρ_gt,color=color_array[3],label = "GT")
+    plot(r,ρ_all[idx_min+1,:],color=color_array[5],label = "last")
+    fill_between(r,μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color=color_array[1])
 end
-
-figure(); plot(cumsum(r_cp));
-minVal,idx_min = findmin(cumsum(r_cp))
-
-
-μρ = dropdims(mean(ρ_all,dims=1),dims=1)
-
-Γρ = cov(ρ_all)
-figure(); ## plot(ρ_all[1:1000:end,:]')
-plot(r,μρ,color=color_array[1],label = "mean")
-plot(r,ρ_gt,color=color_array[3],label = "GT")
-plot(r,ρ_all[idx_min+1,:],color=color_array[5],label = "last")
-fill_between(r,μρ-sqrt.(diag(Γρ)),μρ+sqrt.(diag(Γρ)),alpha=0.5,color=color_array[1])
-
