@@ -1,7 +1,7 @@
 figure(figsize=[12, 10]); 
 
 for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
-    ax1 = subplot(2,2,i_plot)
+    local ax1 = subplot(2,2,i_plot)
     title(string("Eph =", Int64(round(hν[i_data]))," [eV]"),fontsize=14)
     symbol_h = Symbol(string("hν_",Int64(round(hν[i_data])))) # mySym[i] # :hν_365
     plot(dictAllData[symbol_h][1].Ke,dictAllData[symbol_h][1].Sbg,label="background"); 
