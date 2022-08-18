@@ -31,16 +31,19 @@ MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = false
 
-N_model_sample = 100;           # 100 should be more than enough for 5 attenuation length, but maybe not for 20
+FLAG_OFF_CENTER_0 = true;
+FLAG_OFF_CENTER_1 = false;
+FLAG_OFF_CENTER_2 = false;
+FLAG_OFF_CENTER_3 = false;
 
 FLAG_0001 = false               # selection of the profile (one must be true and the others false)
-FLAG_0002 = true
+FLAG_0002 = false
 FLAG_0003 = false
-FLAG_0004 = false
+FLAG_0004 = true
 
 save_folder = "./";
-SAVE_DATA = false   # flag for saving data and model
-SAVE_FIG  = false   # save the simulated data or not
+SAVE_DATA = true   # flag for saving data and model
+SAVE_FIG  = true   # save the simulated data or not
 
 # geometry setup
 λe0 = 2.0e-3;        # reference penetration depth in μm
@@ -57,7 +60,7 @@ y0 = 0.0;
 z0 = 500.0;
 
 # soon add the option of sphere or plane geometry?
-save_folder = string(save_folder,"cylinder_radius_",μ0,"/")
+save_folder = string(save_folder,"cylinder_radius_",μ0,"/peak_shift/")
 
 
 # spacial discretization 
@@ -71,21 +74,24 @@ y = collect(range(-L/2.0,L/2.0,length=Ny));
 ρ0 = 1.0
 ρ_vac = 0.0
 
+ρ_bulk =  5.0e-3; #  5mM
+ρ_bulk = 10.0e-3; # 10mM
+
 
 if FLAG_0001
-    ρA_1 = logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0);
+    ρA_1 = ρ_bulk*logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0);
     exp_tag     = "0001"
 end
 if FLAG_0002
-    ρA_1 = logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0) .+ 2.0exp.(-(1000.0*(μ0.-r).-0.0).^2. /(2.0*0.25^2));
+    ρA_1 = ρ_bulk*(logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0) .+ 2.0exp.(-(1000.0*(μ0.-r).-0.0).^2. /(2.0*0.25^2)));
     exp_tag     = "0002"
 end
 if FLAG_0003
-    ρA_1 = logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0) .+ exp.(-(1000.0*(μ0.-r).-0.5).^2. /(2.0*0.5^2));
+    ρA_1 = ρ_bulk*(logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0) .+ exp.(-(1000.0*(μ0.-r).-0.5).^2. /(2.0*0.5^2)));
     exp_tag     = "0003"
 end
 if FLAG_0004
-    ρA_1 = exp.(-(1000.0((μ0.-r))).^2. /(2.0*0.5^2));
+    ρA_1 = ρ_bulk*exp.(-(1000.0((μ0.-r))).^2. /(2.0*0.5^2));
     exp_tag     = "0004"
 end
 
@@ -100,9 +106,12 @@ if MODEL_20
     Ndata = 20;
 end
 
+# not sure it's that short anymore
 if SHORT_RANGE                                          # bounds of the attenuation lengths
-    λe1 = 1.3; hν1 = 365.0;
-    λe2 = 2.5; hν2 = 1500.0;
+    # λe1 = 1.3; hν1 = 365.0;
+    # λe2 = 2.5; hν2 = 1500.0;
+    λe1 = 1.3; hν1 =  650.0;
+    λe2 = 3.8; hν2 = 1884.0;
     save_folder = string(save_folder,"eal_",Ndata,"_restricted_range/")
 else
     λe1 = 0.5; hν1 = 310.0;
@@ -115,14 +124,30 @@ hν = collect(LinRange(hν1, hν2,Ndata));                # central photon energ
 ##
 ## alignment
 ##
-xc = 100.0 # 200.0 # 400.0;
-yc = 99.0 # 75.0; # 0.0;
-σx = 100.0;
+σx = 100.0; # spread of the beam
 σy = 25.0;
+xc = 100.0; # center of the beam
+yc = 99.0;
+if FLAG_OFF_CENTER_0
+    kc=0
+end
+if FLAG_OFF_CENTER_1
+    kc=1
+end
+if FLAG_OFF_CENTER_2
+    kc=2
+end
+if FLAG_OFF_CENTER_3
+    kc=3
+end
+xc = kc*σx;
+yc = 99.0;
+save_folder = string(save_folder,"offcenter_",kc,"/")
+# beam profile
 bp = beamProfile(xc,yc,σx,σy);
 α_al = zeros(Cdouble,Ndata);
 for i in 1:Ndata
-    H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,α_al[i] =  alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[i]);
+    local H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,α_al[i] =  alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[i]);
 end
 
 ## 
@@ -130,27 +155,46 @@ end
 ## 
 
 dKe = 0.05;
-Be = collect(286.0:dKe:298.0);
+# Be = collect(286.0:dKe:298.0);
+Be = collect(275.0:dKe:293.0); #
 Nspectrum = length(Be);
-μBe = [290.2; 292.0; 293.0]
-σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
+# μBe = [290.2; 292.0; 293.0]
+μBe = [280.436245; 281.051876; 283.813405]
+
+# σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
+σ_be = 0.5e-3*[935.238187; 935.238187; 854.723209];
+
 BeC1s = mean(Be);
-ΔBeC1s = (Be[end]-Be[1])/5;
+ΔBeC1s = 12.0/5.0#(Be[end]-Be[1])/5;
 
+# The width may change, let's say, from 1000 to 1300 a.u on depth range 1,5...3,7 nm, for example. Peak positions may vary up to 4-5 nm, in my case it's from 284 to 280 eV for a SDS head group on depth range mentioned above. 
 
-function σ_cs(hν::Cdouble,Ke::Cdouble,μKe::Cdouble;μKe0::Cdouble=50.0,μKe1::Cdouble=1200.0)
-    Be = hν-Ke;
+Ahν  = [650.0^2  650.0 1.0; 
+1315.0^2 1315.0 1.0;
+1884.0^2 1884.0 1.0];
+Bhν = [1.0; (286.0+1.0)/286.0; (286.0-3.0)/286.0];
+μBe_var = inv(Ahν)*Bhν;
+# figure();
+# plot(collect(650.0:10.0:1884.0),dropdims(μBe_var'*[collect(650.0:10.0:1884.0).^2 collect(650.0:10.0:1884.0) ones(Cdouble,length(collect(650.0:10.0:1884.0)))]',dims=1))
+
+function σ_cs(hν::Cdouble,Ke::Array{Cdouble,1},μKe::Cdouble;μKe0::Cdouble=50.0,μKe1::Cdouble=1200.0)
+    Be = hν.-Ke;
+    # make the peaks vary in location and width
+    peak_dev = μBe_var'*[hν^2; hν; 1.0];
+    μBe_dev = peak_dev*μBe
+    # σ_be_var = (1.0+0.3*((μKe-μKe0)/(μKe1-μKe0)))*σ_be;
+    σ_be_var = (1.0+0.3*((hν-650.0)/(1884.0-650.0)))*σ_be;
     # partial cross section (one for each chemical state)
-    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(Be-μBe[1])^2/(2.0σ_be[1]^2));
-    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(Be-μBe[2])^2/(2.0σ_be[2]^2));
-    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(Be-μBe[3])^2/(2.0σ_be[3]^2));
+    σ_peak_1 = (1.0/sqrt(2.0π*σ_be_var[1]^2))*exp.(-(Be.-μBe_dev[1]).^2/(2.0σ_be_var[1]^2));
+    σ_peak_2 = (1.0/sqrt(2.0π*σ_be_var[2]^2))*exp.(-(Be.-μBe_dev[2]).^2/(2.0σ_be_var[2]^2));
+    σ_peak_3 = (1.0/sqrt(2.0π*σ_be_var[3]^2))*exp.(-(Be.-μBe_dev[3]).^2/(2.0σ_be_var[3]^2));
     # quantity of chemical states
-    p1 = 0.85 .+ (0.77-0.85)*(μKe.-μKe0)./(μKe1-μKe0);
-    p2 = 0.125 .+ (0.12-0.125)*(μKe.-μKe0)./(μKe1-μKe0);
+    p1 = 0.8 # 0.85 .+ (0.77-0.85)*(μKe.-μKe0)./(μKe1-μKe0);
+    p2 = 0.12 # 0.125 .+ (0.12-0.125)*(μKe.-μKe0)./(μKe1-μKe0);
     p3 = 1.0-(p1+p2);
 
     # cross section value (only for hν ∈ [295,1500.0])
-    XPSpack.σ_C1s_interp[hν]*(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3)
+    XPSpack.σ_C1s_interp[hν]*(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3),μBe_dev,σ_be_var,[p1;p2;p3]
 end
 
 ##
@@ -159,15 +203,28 @@ end
 
 θ_aperture = 0.5*π/4                                                       # aperture's cone angle
 α_Ω        = 4π*sin(θ_aperture/2.0)^2;                                     # aperture's solid angle
-Tj         = α_Ω*(10.0.+0.0collect(LinRange(5.0,10.0,Ndata)));             # transmission factors
+# Tj         = α_Ω*(10.0.+0.0collect(LinRange(5.0,10.0,Ndata)));             # transmission factors
+Tj         = α_Ω*ones(Cdouble,Ndata);                                      # transmission factors
 σ_ke       = 2.0*dKe*ones(Cdouble,Ndata);                                  # kinetic energy bandwidths of the analyzer (one per photon energy)
 dhν        = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
-Fνj        = 1.5e11*ones(Cdouble,Ndata);                                   # flux densities
+# Fνj        = 1.5e11*ones(Cdouble,Ndata);                                   # flux densities
+# Fνj        = 1.5e12*ones(Cdouble,Ndata);                                   # flux densities
+
+hknot = [650.0; 1884.0; 1315.0; 907.0]
+Fknot = [3.943312e+13; 1.419204e+14; 3.853618e+14; 1.651883e+14]
+
+μF_var =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*Fknot)';
+Fνj    = dropdims(μF_var*[hν.^3 hν.^2 hν.^1 hν.^0]',dims=1);
+# figure()
+# scatter(hν,Fνj)
+# scatter(hknot,Fknot)
+# scatter(collect(300.0:10.0:2000.0),dropdims(μF_var*[collect(300.0:10.0:2000.0).^3 collect(300.0:10.0:2000.0).^2 collect(300.0:10.0:2000.0).^1 collect(300.0:10.0:2000.0).^0]',dims=1))
+
 
 
 # dictionary where to push the data and geometry factor
-dictAllData = Dict()
-dictAllGeom = Dict()
+dictAllData  = Dict()
+dictAllGeom  = Dict()
 for j in 1:Ndata # can potentially multi-thread this loop: but need to sync before writing files
     # for a given photon energy νj, measure a spectrum
     local Keij = reverse(hν[j] .- Be) ;                                                        # centers of the analyzer's channels
@@ -180,7 +237,8 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
 
     local Be0 = hν[j] .- Keij;
-    local σ_cs_fg =  σ_cs.(hν[j],Keij,μKe);
+    # local σ_cs_fg,μBe_dev,σ_be_var,τ_be =  σ_cs.(hν[j],Keij,μKe);
+    local σ_cs_fg,μBe_dev,σ_be_var,τ_be =  σ_cs(hν[j],Keij,μKe);
 
     ##
     ## electron flux without the geometry factor: signal of interest (Sj) and background signal (Sj_bg)
@@ -213,9 +271,12 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
 
     local dictData = Dict( "Ke" => Keij, "Be" => Be0, "μKe" => μKe,
-        "σ_cs_dens" => σ_cs_fg./XPSpack.σ_C1s_interp[hν[j]], "σ_tot" => XPSpack.σ_C1s_interp[hν[j]], 
+        "σ_cs_dens" => σ_cs_fg./XPSpack.σ_C1s_interp[hν[j]], "σ_tot" => XPSpack.σ_C1s_interp[hν[j]],
         "SpectrumA_1" => SpectrumA_1, "Sbg" => SbgC1s, 
         "Stot" => SbgC1s+SpectrumA_1, "Snoisy" => SC1snoise,
+        "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
+    local dictMetaData = Dict("μKe" => μKe,
+        "σ_tot" => XPSpack.σ_C1s_interp[hν[j]], "peak_mode" => μBe_dev, "peak_width"=>σ_be_var, "peak_probability"=>τ_be,
         "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
 
     local dictGeom = Dict("model" => "sharp edge cylinder + outside vapor", 
@@ -223,11 +284,13 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
                     "x0" => x0, "y0" => y0, "z0" => z0, "δr" => δr,
                     "r" => r, "H" => H_deom, "H_true" => H_geom, "ρ" => ρA_1)
 
-    local dfGeom = DataFrame(dictGeom);
-    local dfData = DataFrame(dictData);
+    local dfGeom     = DataFrame(dictGeom);
+    local dfData     = DataFrame(dictData);
+    local dfMetaData = DataFrame(dictMetaData);
 
-    dictAllData[Symbol(string("hν_",Int64(round(hν[j]))))] = (eachcol(dfData),names(dfData))
-    dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))]  = (eachcol(dfGeom),names(dfGeom))
+    dictAllData[Symbol(string("hν_",Int64(round(hν[j]))))]      = (eachcol(dfData),names(dfData))
+    dictAllData[Symbol(string("meta_hν_",Int64(round(hν[j]))))] = (eachcol(dfMetaData),names(dfMetaData))
+    dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))]       = (eachcol(dfGeom),names(dfGeom))
 end
 
 if SAVE_DATA
@@ -238,99 +301,102 @@ end
 include("plotData.jl")
 
 
-# TODO: simulate data for several photon energy and fit the peaks in order to check how they shift, SpectrumA_1 w.r.t. reverse(Be)
+if false
 
-# [a] E. Kukk, J.D. Bozek, G. Snell, W.-T. Cheng and N. Berrah, Phys. Rev. A v.63, 062702 (2001).
-# [b] E. Kukk, K. Ueda, U. Hergenhahn, J. Liu X, G. Prumper, H. Yoshida, Y. Tamenori, C. Makochekanwa, T. Tanaka, M. Kitajima and H. Tanaka, Phys.Rev.Lett. v. 95, p. 133001 (2005).
+    # [a] E. Kukk, J.D. Bozek, G. Snell, W.-T. Cheng and N. Berrah, Phys. Rev. A v.63, 062702 (2001).
+    # [b] E. Kukk, K. Ueda, U. Hergenhahn, J. Liu X, G. Prumper, H. Yoshida, Y. Tamenori, C. Makochekanwa, T. Tanaka, M. Kitajima and H. Tanaka, Phys.Rev.Lett. v. 95, p. 133001 (2005).
 
-τm = [0.85; 0.125; 1.0-0.85-0.125];  # [1.0/3.0; 1.0/3.0; 1.0/3.0];
-μm = [290.2; 292.0; 293.0]; # [290.3; 291.9; 293.5];
-figure()
-for j in  1:Ndata # 1:5:Ndata
-    local μKe0=50.0
-    local μKe1=1200.0
-    local symbol_h = Symbol(string("hν_",Int64(round(hν[j]))));
-    local be = dictAllData[symbol_h][1][:Be];
-    local μKe = dictAllData[symbol_h][1][:μKe];
-    # partial cross section (one for each chemical state)
-    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(be.-μBe[1]).^2/(2.0σ_be[1]^2));
-    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(be.-μBe[2]).^2/(2.0σ_be[2]^2));
-    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(be.-μBe[3]).^2/(2.0σ_be[3]^2));
-    # quantity of chemical states
-    p1 = 0.85 .+ (0.77-0.85)*(μKe[1].-μKe0)./(μKe1-μKe0);
-    p2 = 0.125 .+ (0.12-0.125)*(μKe[1].-μKe0)./(μKe1-μKe0);
-    p3 = 1.0-(p1+p2);
+    τm = [0.85; 0.125; 1.0-0.85-0.125];  # [1.0/3.0; 1.0/3.0; 1.0/3.0];
+    μm = [290.2; 292.0; 293.0]; # [290.3; 291.9; 293.5];
+    μm = [280.0; 281.0; 284.0]
+    σm = sqrt(2.0)*[0.45; 0.25; 0.6]; # [290.3; 291.9; 293.5]/500.0;
+    τt = zeros(Cdouble,Ndata,3);
+    μt = zeros(Cdouble,Ndata,3);
+    σt = zeros(Cdouble,Ndata,3);
+    for j in 1:Ndata
+        local symbol_h = Symbol(string("hν_",Int64(round(hν[j]))));
+        local be = dictAllData[symbol_h][1][:Be]; # reverse();
+        # local spectrum = dictAllData[symbol_h][1][:SpectrumA_1];
+        local peak_dev = μBe_var'*[hν[j]^2; hν[j]; 1.0];
+        local spectrum = dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg];
+    # estimate the peaks centers and spreads
+    τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be,spectrum,τm,peak_dev*μm,σm,200)
+    end
 
-    # estimation
-    σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
-    σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
-    σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
+    figure()
+    for j in  1:Ndata # 1:5:Ndata
+        # local μKe0=50.0
+        # local μKe1=1200.0
+        local symbol_h = Symbol(string("hν_",Int64(round(hν[j]))));
+        local be = dictAllData[symbol_h][1][:Be];
+        local μKe = dictAllData[symbol_h][1][:μKe];
+        local Keij = reverse(hν[j] .- Be) ; 
+    
+        local σ_peak,_,_,_ =  σ_cs(hν[j],Keij,μKe[1])
+        σ_peak = σ_peak/XPSpack.σ_C1s_interp[hν[j]]
 
-    println(dKe*sum(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3))
-    println(dKe*sum(σ_est_1+σ_est_2+σ_est_3),"\n")
+        # estimation
+        σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
+        σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
+        σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
 
-    plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3)
-    scatter(be,σ_est_1+σ_est_2+σ_est_3)
+        # println(dKe*sum(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3))
+        println(dKe*sum(σ_peak))
+        println(dKe*sum(σ_est_1+σ_est_2+σ_est_3),"\n")
 
-    plot(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])))
+        # plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3)
+        plot(be,σ_peak)
+        scatter(be,σ_est_1+σ_est_2+σ_est_3)
+
+        # plot(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])))
+    end
 end
 
-σm = sqrt(2.0)*[0.45; 0.25; 0.6]; # [290.3; 291.9; 293.5]/500.0;
-τt = zeros(Cdouble,Ndata,3);
-μt = zeros(Cdouble,Ndata,3);
-σt = zeros(Cdouble,Ndata,3);
-for j in 1:Ndata
-    local symbol_h = Symbol(string("hν_",Int64(round(hν[j]))));
-    local be = dictAllData[symbol_h][1][:Be]; # reverse();
-    # local spectrum = dictAllData[symbol_h][1][:SpectrumA_1];
-    local spectrum = dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg];
-   # estimate the peaks centers and spreads
-   τt[j,:],μt[j,:],σt[j,:] = EM_peaks(be,spectrum,τm,μm,σm,200)
-end
+if false
+    figure(); 
+    scatter(collect(1:Ndata),abs.(μt[:,1].-μBe[1]))
+    scatter(collect(1:Ndata),abs.(μt[:,2].-μBe[2]))
+    scatter(collect(1:Ndata),abs.(μt[:,3].-μBe[3]))
 
-figure(); 
-scatter(collect(1:Ndata),abs.(μt[:,1].-μBe[1]))
-scatter(collect(1:Ndata),abs.(μt[:,2].-μBe[2]))
-scatter(collect(1:Ndata),abs.(μt[:,3].-μBe[3]))
+    figure(); 
+    scatter(collect(1:Ndata),σt[:,1])
+    scatter(collect(1:Ndata),σt[:,2])
+    scatter(collect(1:Ndata),σt[:,3])
 
-figure(); 
-scatter(collect(1:Ndata),σt[:,1])
-scatter(collect(1:Ndata),σt[:,2])
-scatter(collect(1:Ndata),σt[:,3])
+    figure(); 
+    scatter(collect(1:Ndata),τt[:,1])
+    scatter(collect(1:Ndata),τt[:,2])
+    scatter(collect(1:Ndata),τt[:,3])
 
-figure(); 
-scatter(collect(1:Ndata),τt[:,1])
-scatter(collect(1:Ndata),τt[:,2])
-scatter(collect(1:Ndata),τt[:,3])
+    figure()
+    for j in  1:Ndata # 1:5:Ndata
+        local μKe0=50.0
+        local μKe1=1200.0
+        local symbol_h = Symbol(string("hν_",Int64(round(hν[j]))));
+        local be = dictAllData[symbol_h][1][:Be];
+        local μKe = dictAllData[symbol_h][1][:μKe];
+        # partial cross section (one for each chemical state)
+        σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(be.-μBe[1]).^2/(2.0σ_be[1]^2));
+        σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(be.-μBe[2]).^2/(2.0σ_be[2]^2));
+        σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(be.-μBe[3]).^2/(2.0σ_be[3]^2));
+        # quantity of chemical states
+        p1 = 0.85 .+ (0.77-0.85)*(μKe[1].-μKe0)./(μKe1-μKe0);
+        p2 = 0.125 .+ (0.12-0.125)*(μKe[1].-μKe0)./(μKe1-μKe0);
+        p3 = 1.0-(p1+p2);
 
-figure()
-for j in  1:Ndata # 1:5:Ndata
-    local μKe0=50.0
-    local μKe1=1200.0
-    local symbol_h = Symbol(string("hν_",Int64(round(hν[j]))));
-    local be = dictAllData[symbol_h][1][:Be];
-    local μKe = dictAllData[symbol_h][1][:μKe];
-    # partial cross section (one for each chemical state)
-    σ_peak_1 = (1.0/sqrt(2.0π*σ_be[1]^2))*exp.(-(be.-μBe[1]).^2/(2.0σ_be[1]^2));
-    σ_peak_2 = (1.0/sqrt(2.0π*σ_be[2]^2))*exp.(-(be.-μBe[2]).^2/(2.0σ_be[2]^2));
-    σ_peak_3 = (1.0/sqrt(2.0π*σ_be[3]^2))*exp.(-(be.-μBe[3]).^2/(2.0σ_be[3]^2));
-    # quantity of chemical states
-    p1 = 0.85 .+ (0.77-0.85)*(μKe[1].-μKe0)./(μKe1-μKe0);
-    p2 = 0.125 .+ (0.12-0.125)*(μKe[1].-μKe0)./(μKe1-μKe0);
-    p3 = 1.0-(p1+p2);
+        # estimation
+        σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
+        σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
+        σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
 
-    # estimation
-    σ_est_1 = τt[j,1]*(1.0/sqrt(2.0π*σt[j,1]^2))*exp.(-(be.-μt[j,1]).^2/(2.0σt[j,1]^2));
-    σ_est_2 = τt[j,2]*(1.0/sqrt(2.0π*σt[j,2]^2))*exp.(-(be.-μt[j,2]).^2/(2.0σt[j,2]^2));
-    σ_est_3 = τt[j,3]*(1.0/sqrt(2.0π*σt[j,3]^2))*exp.(-(be.-μt[j,3]).^2/(2.0σt[j,3]^2));
+        println(dKe*sum(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3))
+        println(dKe*sum(σ_est_1+σ_est_2+σ_est_3),"\n")
 
-    println(dKe*sum(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3))
-    println(dKe*sum(σ_est_1+σ_est_2+σ_est_3),"\n")
+        plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3)
+        scatter(be,σ_est_1+σ_est_2+σ_est_3)
 
-    plot(be,p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3)
-    scatter(be,σ_est_1+σ_est_2+σ_est_3)
-
-    plot(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])))
+        plot(be,(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])/(dKe*sum(dictAllData[symbol_h][1][:Snoisy]-dictAllData[symbol_h][1][:Sbg])))
+    end
 end
 
 if false
@@ -389,7 +455,7 @@ if false
     α_al_off_gt = zeros(Cdouble,length(xc_vec));
     for ic in 1:length(xc_vec)
         local bp = beamProfile(xc_vec[ic],yc,σx,σy)
-        H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,α_al_off[ic] =  alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[1]);
+        local H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,α_al_off[ic] =  alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[1]);
         α_al_off_gt[ic] = (H_r_ph'*ρA_1)/(H_r'*ρA_1);
     end
 
