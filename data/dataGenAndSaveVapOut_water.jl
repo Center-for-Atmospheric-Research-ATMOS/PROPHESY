@@ -27,14 +27,14 @@ using ATTIRE  # kinetic energy analyzer
 # tags
 SHORT_RANGE = true # WARNING: not ready for wide range (i.e. SHORT_RANGE=false)
 
-MODEL_5   = false               # select the number of attenuation lengths probed
+MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
-MODEL_20  = true
+MODEL_20  = false
 
-FLAG_OFF_CENTER_0 = true;
+FLAG_OFF_CENTER_0 = false;
 FLAG_OFF_CENTER_1 = false;
 FLAG_OFF_CENTER_2 = false;
-FLAG_OFF_CENTER_3 = false;
+FLAG_OFF_CENTER_3 = true; # true;
 FLAG_OFF_CENTER_4 = false;
 FLAG_OFF_CENTER_5 = false;
 
@@ -51,7 +51,7 @@ Nr_lowres = 101 ;    # for the low resolution model
 Nθ = 256;            # number of discretization points in the polar angle dimension
 Ny = 256;            # number of discretization points in the cylinder axis dimension
 μ0 = 10.0; # 20.0;   # radius of the cylinder
-L = 25; # 100.0;     # height of the irradiated sample (the vertical extent of the beam is more like 20μm instead of 100μm)
+L = 20.0 # 25; # 100.0;     # height of the irradiated sample (the vertical extent of the beam is more like 20μm instead of 100μm)
 x0 = sqrt(2.0)*5000.0 # (x0,y0,z0) are the coordinates of the analyzer's apperture
 y0 = 0.0;
 z0 = 5000.0;
@@ -79,8 +79,9 @@ y_gas = y;
 M_water = 18.02e-3 # kg/mol
 R_gas = 8.314   # J/(K*mol)
 T_gas = 280.0   # K
-P_gas = (0.5/760.0)*1.0e5   # Pa (0.5 Torr?)
-ρ_gas = (P_gas*M_water/(R_gas*T_gas))*(μ0./r_gas); # assume that the gas concentration profile is decreasing inversly proportional to the distance to the sample (the amount of mater crossing the surface of the cylinder is the same that crossing a bigger virtual cylinder)
+P_gas = 1.0e-2*1.0e5   # Pa (0.5/760.0 =>0.5 Torr?)
+P_H2O = 0.025;
+ρ_gas = (P_H2O*P_gas*M_water/(R_gas*T_gas))*(μ0./r_gas); # assume that the gas concentration profile is decreasing inversly proportional to the distance to the sample (the amount of mater crossing the surface of the cylinder is the same that crossing a bigger virtual cylinder)
 
 
 ρA_1 = ρ_bulk*logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0);
@@ -113,8 +114,8 @@ hν = collect(LinRange(hν1, hν2,Ndata));                # central photon energ
 ##
 ## alignment
 ##
-σx = 100.0; # spread of the beam
-σy = 25.0;
+σx = 0.5*100.0; # spread of the beam
+σy = 0.5*25.0;
 xc = 100.0; # center of the beam
 yc = 99.0;
 if FLAG_OFF_CENTER_0
@@ -136,7 +137,7 @@ if FLAG_OFF_CENTER_5
     kc=5
 end
 xc = kc*σx;
-yc = 99.0;
+yc = 70.0 # 75.0; # 5.0*σy; # 6.0*σy
 save_folder = string(save_folder,"offcenter_",kc,"/")
 # beam profile
 bp = beamProfile(xc,yc,σx,σy);
@@ -146,17 +147,17 @@ bp = beamProfile(xc,yc,σx,σy);
 ## cross section density model: just a dummy model looking like O1s
 ## 
 dKe = 0.05;
-Be = collect(528.0:dKe:542.0);
+Be = collect(526.0:dKe:542.0);
 Nspectrum = length(Be);
-BeO1s = mean(Be);
-ΔBeO1s = 3.0;
+BeO1s = 547.0 # 549.0 # Be[end] # mean(Be);
+ΔBeO1s = 3.0 # 2.0;
 
-hknot_peak = [650.0;  651.0;  789.0;      897.0; 907.0;      1154.0;   1197.0; 1565.0];
-Eb_knot_liq = [533.84;  533.882; 534.392; 534.456; 534.581; 534.869; 534.667; 533.989];
-Eb_knot_gas = [535.818; 535.756; 536.273; 536.324; 536.438; 536.680; 536.479; 535.765];
+hknot_peak = [650.0;  651.0;  789.0;      897.0; 907.0;      1154.0;   1197.0; 1565.0; 1900.0];
+Eb_knot_liq = [533.84;  533.882; 534.392; 534.456; 534.581; 534.869; 534.667; 533.989; 0.998*533.989];
+Eb_knot_gas = [535.818; 535.756; 536.273; 536.324; 536.438; 536.680; 536.479; 535.765; 0.998*535.765];
 
-σEb_knot_liq = 0.5*[1.091; 1.008 ; 1.498; 1.608; 1.618; 1.624; 1.659; 1.641];
-σEb_knot_gas = 0.5*[0.629; 0.631; 0.804; 0.853;  0.863; 0.949; 0.995; 1.016];
+σEb_knot_liq = 0.5*[1.091; 1.008 ; 1.498; 1.608; 1.618; 1.624; 1.659; 1.641; 0.7*1.641];
+σEb_knot_gas = 0.5*[0.629; 0.631; 0.804; 0.853;  0.863; 0.949; 0.995; 1.016; 0.7*1.016];
 
 Ahν = [hknot_peak.^3 hknot_peak.^2 hknot_peak.^1 hknot_peak.^0];
 
@@ -247,7 +248,7 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
     local Sj,Sj_bg,_,_ = simulateSpectrum(Fνj[j],hν[j],dhν[j],
         Keij,σ_ke[j],Tj[j],Kdisc,
-        reverse(Be0),reverse(σ_cs_liq),σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeO1s,ΔBeO1s));
+        reverse(Be0),reverse(σ_cs_liq),σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeO1s,ΔBeO1s).+0.001);
 
     ##
     ## geometry factors
@@ -283,7 +284,7 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
     ## add noise
     ##
-    local SO1snoise = countElectrons(SbgO1s+SpectrumA_1+SpectrumA_1_gas)
+    local SO1snoise = countElectrons(SbgO1s+SpectrumA_1+SpectrumA_1_gas,0.0)
 
 
     ##
@@ -319,5 +320,6 @@ if SAVE_DATA
     XLSX.writetable(string(save_folder,exp_tag,"/data.xlsx"); dictAllData...) 
     XLSX.writetable(string(save_folder,exp_tag,"/model.xlsx"); dictAllGeom...)
 end
+plot_sym=:Be
 include("plotData.jl")
 
