@@ -31,19 +31,21 @@ MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = false
 
-FLAG_OFF_CENTER_0 = true;
-FLAG_OFF_CENTER_1 = false;
+FLAG_OFF_CENTER_0 = false;
+FLAG_OFF_CENTER_1 = true;
 FLAG_OFF_CENTER_2 = false;
 FLAG_OFF_CENTER_3 = false;
 
 FLAG_0001 = false               # selection of the profile (one must be true and the others false)
 FLAG_0002 = false
-FLAG_0003 = false
-FLAG_0004 = true
+FLAG_0003 = true
+FLAG_0004 = false
 
 save_folder = "./";
-SAVE_DATA = true   # flag for saving data and model
-SAVE_FIG  = true   # save the simulated data or not
+SAVE_DATA = false   # flag for saving data and model
+SAVE_FIG  = false   # save the simulated data or not
+SWEEPS_ON = true
+nb_sweeps = 50;
 
 # geometry setup
 λe0 = 2.0e-3;        # reference penetration depth in μm
@@ -54,10 +56,10 @@ Nr_lowres = 101 ;    # for the low resolution model
 Nθ = 256;            # number of discretization points in the polar angle dimension
 Ny = 256;            # number of discretization points in the cylinder axis dimension
 μ0 = 10.0; # 20.0;   # radius of the cylinder
-L = 25; # 100.0;     # height of the irradiated sample (the vertical extent of the beam is more like 20μm instead of 100μm)
-x0 = sqrt(2.0)*500.0 # (x0,y0,z0) are the coordinates of the analyzer's apperture
+L = 50.0 # 60.0 # 20; # 100.0;     # height of the irradiated sample (the vertical extent of the beam is more like 20μm instead of 100μm)
+x0 = sqrt(2.0)*5000.0 # (x0,y0,z0) are the coordinates of the analyzer's apperture
 y0 = 0.0;
-z0 = 500.0;
+z0 = 5000.0;
 
 # soon add the option of sphere or plane geometry?
 save_folder = string(save_folder,"cylinder_radius_",μ0,"/peak_shift/")
@@ -74,7 +76,7 @@ y = collect(range(-L/2.0,L/2.0,length=Ny));
 ρ0 = 1.0
 ρ_vac = 0.0
 
-ρ_bulk =  5.0e-3; #  5mM
+# ρ_bulk =  5.0e-3; #  5mM
 ρ_bulk = 10.0e-3; # 10mM
 
 
@@ -124,8 +126,8 @@ hν = collect(LinRange(hν1, hν2,Ndata));                # central photon energ
 ##
 ## alignment
 ##
-σx = 100.0; # spread of the beam
-σy = 25.0;
+σx = 0.5*100.0; # spread of the beam
+σy = 0.5*25.0;
 xc = 100.0; # center of the beam
 yc = 99.0;
 if FLAG_OFF_CENTER_0
@@ -142,6 +144,10 @@ if FLAG_OFF_CENTER_3
 end
 xc = kc*σx;
 yc = 99.0;
+
+xc = kc*σx;
+yc = 70.0 # 75.0; # 5.0*σy; # 6.0*σy #WARNING: this value accounts for the 
+
 save_folder = string(save_folder,"offcenter_",kc,"/")
 # beam profile
 bp = beamProfile(xc,yc,σx,σy);
@@ -159,7 +165,8 @@ dKe = 0.05;
 Be = collect(275.0:dKe:293.0); #
 Nspectrum = length(Be);
 # μBe = [290.2; 292.0; 293.0]
-μBe = [280.436245; 281.051876; 283.813405]
+# μBe = [280.436245; 281.051876; 283.813405]
+μBe = [280.3; 281.8; 283.8]
 
 # σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
 σ_be = 0.5e-3*[935.238187; 935.238187; 854.723209];
@@ -174,6 +181,13 @@ Ahν  = [650.0^2  650.0 1.0;
 1884.0^2 1884.0 1.0];
 Bhν = [1.0; (286.0+1.0)/286.0; (286.0-3.0)/286.0];
 μBe_var = inv(Ahν)*Bhν;
+
+hhν = collect(310.0:20.0:1900.0);
+figure()
+scatter([650.0; 1315.0; 1884.0],Bhν)
+plot(hhν,dropdims(μBe_var'*[hhν.^2 hhν.^1 hhν.^0]',dims=1))
+
+
 # figure();
 # plot(collect(650.0:10.0:1884.0),dropdims(μBe_var'*[collect(650.0:10.0:1884.0).^2 collect(650.0:10.0:1884.0) ones(Cdouble,length(collect(650.0:10.0:1884.0)))]',dims=1))
 
@@ -189,8 +203,8 @@ function σ_cs(hν::Cdouble,Ke::Array{Cdouble,1},μKe::Cdouble;μKe0::Cdouble=50
     σ_peak_2 = (1.0/sqrt(2.0π*σ_be_var[2]^2))*exp.(-(Be.-μBe_dev[2]).^2/(2.0σ_be_var[2]^2));
     σ_peak_3 = (1.0/sqrt(2.0π*σ_be_var[3]^2))*exp.(-(Be.-μBe_dev[3]).^2/(2.0σ_be_var[3]^2));
     # quantity of chemical states
-    p1 = 0.8 # 0.85 .+ (0.77-0.85)*(μKe.-μKe0)./(μKe1-μKe0);
-    p2 = 0.12 # 0.125 .+ (0.12-0.125)*(μKe.-μKe0)./(μKe1-μKe0);
+    p1 = 0.7 # 0.85 .+ (0.77-0.85)*(μKe.-μKe0)./(μKe1-μKe0); # 0.8 # 
+    p2 = 0.25 # 0.125 .+ (0.12-0.125)*(μKe.-μKe0)./(μKe1-μKe0); # 0.12 # 
     p3 = 1.0-(p1+p2);
 
     # cross section value (only for hν ∈ [295,1500.0])
@@ -250,7 +264,7 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
     ## geometry factors
     ##
-    local H_deom,_,H_geom,_,_,_,_,_ = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[j])
+    local H_deom,_,H_geom,_,_,_,_,al_C1s = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[j])
 
     ##
     ## for the signal without noise
@@ -261,7 +275,14 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
     ## add noise
     ##
-    local SC1snoise = countElectrons(SbgC1s+SpectrumA_1)
+    local SC1snoise = countElectrons(SbgC1s+SpectrumA_1,0.0)
+
+    if SWEEPS_ON # just repeat the acquisition
+        local SC1snoise_sweeps = zeros(Cdouble,length(SC1snoise),nb_sweeps)
+        for i in 1:nb_sweeps
+            SC1snoise_sweeps[:,i] = countElectrons(SbgC1s+SpectrumA_1,0.0);
+        end
+    end
 
     # plot signals w.r.t. the kinetic energy
     # figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+SpectrumA_1); scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); xlabel("kinetic energy [eV]"); ylabel("spectrum [a.u.]") 
@@ -275,13 +296,16 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
         "SpectrumA_1" => SpectrumA_1, "Sbg" => SbgC1s, 
         "Stot" => SbgC1s+SpectrumA_1, "Snoisy" => SC1snoise,
         "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
+    if SWEEPS_ON
+        [dictData[string("Snoisy_",i)] = SC1snoise_sweeps[:,i] for i in 1:nb_sweeps]
+    end
     local dictMetaData = Dict("μKe" => μKe,
         "σ_tot" => XPSpack.σ_C1s_interp[hν[j]], "peak_mode" => μBe_dev, "peak_width"=>σ_be_var, "peak_probability"=>τ_be,
         "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
 
     local dictGeom = Dict("model" => "sharp edge cylinder + outside vapor", 
                 "hν" => hν[j], "λ" => 1.0e3λe[j], "radius" => μ0, "max_depth" => k0*λe0,
-                    "x0" => x0, "y0" => y0, "z0" => z0, "δr" => δr,
+                    "x0" => x0, "y0" => y0, "z0" => z0, "δr" => δr,"xc" => xc, "yc" => yc, "σx" => σx, "σy" => σy, "α" => al_C1s,
                     "r" => r, "H" => H_deom, "H_true" => H_geom, "ρ" => ρA_1)
 
     local dfGeom     = DataFrame(dictGeom);

@@ -6,8 +6,8 @@ for (i_plot,i_data) in zip(1:4,Int64.(round.(collect(LinRange(1,Ndata,4)))))
     symbol_h = Symbol(string("hν_",Int64(round(hν[i_data])))) # mySym[i] # :hν_365
     plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Sbg,label="background"); 
     plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Sbg+dictAllData[symbol_h][1].SpectrumA_1,label="noise free spectrum"); 
-    # scatter(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Snoisy,label="noisy spectrum"); 
-    plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Snoisy,label="noisy spectrum"); 
+    scatter(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Snoisy,label="noisy spectrum"); 
+    # plot(dictAllData[symbol_h][1][plot_sym],dictAllData[symbol_h][1].Snoisy,label="noisy spectrum"); 
     xlabel("kinetic energy [eV]",fontsize=14); ylabel("spectrum [a.u.]",fontsize=14) 
     xticks(fontsize=14); yticks(fontsize=14); 
     legend(fontsize=14) # ,bbox_to_anchor=[0.6,0.95],loc=2,borderaxespad=0

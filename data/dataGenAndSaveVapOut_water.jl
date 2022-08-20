@@ -32,11 +32,11 @@ MODEL_10  = false
 MODEL_20  = false
 
 FLAG_OFF_CENTER_0 = false;
-FLAG_OFF_CENTER_1 = false;
+FLAG_OFF_CENTER_1 = true;
 FLAG_OFF_CENTER_2 = false;
-FLAG_OFF_CENTER_3 = true; # true;
-FLAG_OFF_CENTER_4 = false;
-FLAG_OFF_CENTER_5 = false;
+FLAG_OFF_CENTER_3 = false; # true;
+# FLAG_OFF_CENTER_4 = false;
+# FLAG_OFF_CENTER_5 = false;
 
 save_folder = "./";
 SAVE_DATA = false   # flag for saving data and model
@@ -108,6 +108,7 @@ else
     λe2 = 5.5; hν2 = 1900.0;
     save_folder = string(save_folder,"eal_",Ndata,"/")
 end
+# XPSpack.λe_thurmer[collect(range(hν1,hν2,Ndata)).-534.0] # does not seem realistic for energies above 900 eV
 λe = 1.0e-3collect(range(λe1,λe2,Ndata));              # attenuation length range
 hν = collect(LinRange(hν1, hν2,Ndata));                # central photon energy for each measurement
 
@@ -130,14 +131,8 @@ end
 if FLAG_OFF_CENTER_3
     kc=3
 end
-if FLAG_OFF_CENTER_4
-    kc=4
-end
-if FLAG_OFF_CENTER_5
-    kc=5
-end
 xc = kc*σx;
-yc = 70.0 # 75.0; # 5.0*σy; # 6.0*σy
+yc = 70.0 # 75.0; # 5.0*σy; # 6.0*σy #WARNING: this value accounts for the 
 save_folder = string(save_folder,"offcenter_",kc,"/")
 # beam profile
 bp = beamProfile(xc,yc,σx,σy);
