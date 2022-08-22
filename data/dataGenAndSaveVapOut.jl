@@ -162,7 +162,7 @@ end
 
 dKe = 0.05;
 # Be = collect(286.0:dKe:298.0);
-Be = collect(275.0:dKe:293.0); #
+Be = collect(271.0:dKe:291.0); #
 Nspectrum = length(Be);
 # μBe = [290.2; 292.0; 293.0]
 # μBe = [280.436245; 281.051876; 283.813405]
@@ -171,7 +171,7 @@ Nspectrum = length(Be);
 # σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
 σ_be = 0.5e-3*[935.238187; 935.238187; 854.723209];
 
-BeC1s = mean(Be);
+BeC1s = 284.0 # mean(Be);
 ΔBeC1s = 12.0/5.0#(Be[end]-Be[1])/5;
 
 # The width may change, let's say, from 1000 to 1300 a.u on depth range 1,5...3,7 nm, for example. Peak positions may vary up to 4-5 nm, in my case it's from 284 to 280 eV for a SDS head group on depth range mentioned above. 
@@ -322,6 +322,7 @@ if SAVE_DATA
     XLSX.writetable(string(save_folder,exp_tag,"/data.xlsx"); dictAllData...) # TODO: get outside the loop
     XLSX.writetable(string(save_folder,exp_tag,"/model.xlsx"); dictAllGeom...)
 end
+plot_sym=:Be
 include("plotData.jl")
 
 
