@@ -229,7 +229,7 @@ end
 
 figure(figsize=[10, 5]); # scatter(1.0e9α_gt,α_ratio)
 ax = subplot(122)
-scatter(1.0e10α_gt_mean,α_ratio_mean,color="tab:orange",label="liquid/vapor ratio") # .^2.5
+scatter(1.0e10α_gt_mean,α_ratio_mean,color="tab:orange",label="liquid/vapor ratio") # α_ratio_mean.^2.5
 scatter(1.0e10α_gt_mean,1.0e10α_al_mean,color="tab:green",label="noise estimation [x\$10^{10}\$]") 
 xlabel("GT [x\$10^{9}\$]",fontsize=14); 
 ylabel("estimation",fontsize=14) 
