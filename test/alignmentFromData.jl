@@ -28,11 +28,12 @@ include("loadFunctionXLSX2DataFrame.jl")
 data_folder = "../data/TK/";
 data_folderC1s = string(data_folder,"C1s/")
 data_folderO1s = string(data_folder,"O1s/")
+data_folderO1sS2p = string(data_folder,"O1sforS2p/")
 data_folderS2p = string(data_folder,"S2p/")
 
 # flags
 FLAG_PLOT = true;
-FLAG_SAVE_PLOT = true;
+FLAG_SAVE_PLOT = false;
 
 # geometry setup
 λe0 = 2.0e-3;         # reference penetration depth in μm
@@ -80,67 +81,13 @@ include("alignmentFromDataC1s.jl")
 # alignement from O1s data
 include("alignmentFromDataO1s.jl")
 
+# other O1s data that are used as reference for S2p
+include("alignmentFromDataO1sforS2p.jl")
+
 # alignement from S2p data
 include("alignmentFromDataS2p.jl")
 
 # plotting
 if FLAG_PLOT
-    figure(figsize=[10, 10])
-    ax = subplot(221)
-    for i in 1:length(α_noiseO1s)
-        local plot_sym = Symbol(data_filesO1s[i][1:end-5]);
-        # scatter(1.0e9mean(α_noise[plot_sym]),mean(α_ratio[plot_sym]))
-        scatter(1.0e9α_noiseO1s[plot_sym],α_ratioO1s[plot_sym],label=replace(data_filesO1s[i][1:end-5],"_"=>" ")) #.^2.5
-    end
-    xlim(0.1,10.0)
-    ylim(0.1,10.0)
-    xlabel("model estimation [x\$10^{9}\$]",fontsize=14); 
-    ylabel("liq O1s/gas O1s",fontsize=14) 
-    xticks(fontsize=14); yticks(fontsize=14); 
-    ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-    ax.yaxis.offsetText.set_size(14)
-    ax.xaxis.offsetText.set_size(14)
-    xscale("log")
-    yscale("log")
-    legend(fontsize=14)
-
-    ax = subplot(222)
-    for i in 1:length(α_noiseC1s)
-        local plot_sym = Symbol(data_filesC1s[i][1:end-5]);
-        scatter(1.0e9mean(α_noiseC1s[plot_sym]),mean(α_ratioC1s[plot_sym]),label=replace(data_filesC1s[i][1:end-5],"_"=>" ")) # .^2.5
-    end
-    xlim(0.1,10.0)
-    ylim(0.1,10.0)
-    xlabel("model estimation [x\$10^{9}\$]",fontsize=14); 
-    ylabel("liq O1s/gas O1s",fontsize=14) 
-    xticks(fontsize=14); yticks(fontsize=14); 
-    ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-    ax.yaxis.offsetText.set_size(14)
-    ax.xaxis.offsetText.set_size(14)
-    xscale("log")
-    yscale("log")
-    legend(fontsize=14)
-
-    ax = subplot(224)
-    for i in 1:length(α_noiseS2p)
-        local plot_sym = Symbol(data_filesS2p[i][1:end-5]);
-        scatter(1.0e9mean(α_noiseS2p[plot_sym]),mean(α_ratioS2p[plot_sym]),label=replace(data_filesS2p[i][1:end-5],"_"=>" ")) # .^2.5
-    end
-    xlim(3.0e-4,1.5e-2)
-    ylim(0.1,10.0)
-    xlabel("model estimation [x\$10^{9}\$]",fontsize=14); 
-    ylabel("liq O1s/gas O1s",fontsize=14) 
-    xticks(fontsize=14); yticks(fontsize=14); 
-    ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-    ax.yaxis.offsetText.set_size(14)
-    ax.xaxis.offsetText.set_size(14)
-    xscale("log")
-    yscale("log")
-    legend(fontsize=14)
-    tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
-
-    if FLAG_SAVE_PLOT
-        savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_mean.png"))
-        savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_mean.pdf"))
-    end
+    include("plotAlignment.jl")
 end
