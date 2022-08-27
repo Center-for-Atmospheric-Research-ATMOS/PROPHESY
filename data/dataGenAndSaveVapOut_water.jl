@@ -31,8 +31,8 @@ MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = false
 
-FLAG_OFF_CENTER_0 = false;
-FLAG_OFF_CENTER_1 = true;
+FLAG_OFF_CENTER_0 = true;
+FLAG_OFF_CENTER_1 = false;
 FLAG_OFF_CENTER_2 = false;
 FLAG_OFF_CENTER_3 = false; # true;
 # FLAG_OFF_CENTER_4 = false;
@@ -84,7 +84,8 @@ P_H2O = 0.025;
 ρ_gas = (P_H2O*P_gas*M_water/(R_gas*T_gas))*(μ0./r_gas); # assume that the gas concentration profile is decreasing inversly proportional to the distance to the sample (the amount of mater crossing the surface of the cylinder is the same that crossing a bigger virtual cylinder)
 
 
-ρA_1 = ρ_bulk*logistic.(1000.0*(μ0.-r)/0.5,ρ_vac,ρ0,1.0);
+Δtr = 0.5 # 1.0; # 
+ρA_1 = ρ_bulk*logistic.(1000.0*(μ0.-r)/Δtr,ρ_vac,ρ0,1.0);
 exp_tag     = "water"
 
 # measurement operator (only the geometrical term since the other comes as a multiplicative scalar estimated from the data)
@@ -311,10 +312,15 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
 end
 
 if SAVE_DATA
+    save_folder = string(save_folder,"new_bg/")
     mkpath(string(save_folder,exp_tag,"/"));
     XLSX.writetable(string(save_folder,exp_tag,"/data.xlsx"); dictAllData...) 
     XLSX.writetable(string(save_folder,exp_tag,"/model.xlsx"); dictAllGeom...)
 end
 plot_sym=:Be
 include("plotData.jl")
+if SAVE_FIG
+    savefig(string(save_folder,exp_tag,"/full_measurement_model.png"))
+    savefig(string(save_folder,exp_tag,"/full_measurement_model.pdf"))
+end
 
