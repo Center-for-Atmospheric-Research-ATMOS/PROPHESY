@@ -42,9 +42,9 @@ FLAG_0003 = false
 FLAG_0004 = true
 
 save_folder = "./";
-SAVE_DATA = false   # flag for saving data and model
-SAVE_FIG  = false   # save the simulated data or not
-SWEEPS_ON = false
+SAVE_DATA = true   # flag for saving data and model
+SAVE_FIG  = true   # save the simulated data or not
+SWEEPS_ON = true
 nb_sweeps = 50;
 
 # geometry setup
