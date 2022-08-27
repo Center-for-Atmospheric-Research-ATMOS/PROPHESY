@@ -22,8 +22,11 @@ end
    simulated total cross section of the background of an acquisition involving inelastic electron interaction
    Ke is the kinetic energy of the incoming eletron
 """
+# function σ_bg(Ke::Cdouble)
+#    0.05*Ke
+# end
 function σ_bg(Ke::Cdouble)
-   0.05*Ke
+   10.0exp(-Ke/1000.0)
 end
 
 """
@@ -33,4 +36,8 @@ end
 """
 function σ_bg_density(Ke::Array{Cdouble,1},Ke_cutoff::Cdouble,ΔKe::Cdouble)
    (Ke/(2.0Ke_cutoff^2))./(1.0.+exp.((Ke.-Ke_cutoff)./ΔKe))
+end
+
+function σ_bg_lin_density(Ke::Array{Cdouble,1},Ke_cutoff::Cdouble,ΔKe::Cdouble)
+   (Ke[end].-Ke)./ΔKe
 end

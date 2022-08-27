@@ -12,7 +12,7 @@ using utilsFun
 using NewtonMethod  # used in XPSutils.jl
 
 # penetration depth and cross-section values: not sure it's really useful in this module since the values are supposed to be known to create the models
-export λe, σ_cs_orb, σ_bg_density, σ_bg
+export λe, σ_cs_orb, σ_bg_density, σ_bg_lin_density, σ_bg
 
 
 # data enhancement: baseline correction and peak fitting (requires sampling of the spectra)
@@ -23,8 +23,10 @@ export baseline_removal, EM_peaks, cross_section_spread_function, cross_section_
 export fingerGeom, planeGeom, cylinderGeom
 # distance and geometry factors
 export d_plane_P, d_sphere_P, plane_gain_H, finger_gain_H
-export cylinder_gain_H, alignmentParameter, beamProfile, d_cylinder_P, d_cylinder_P_simple
+export cylinder_gain_H,alignmentParameter, d_cylinder_P, d_cylinder_P_simple
 export cov_H_cylinder
+export sphere_gain_H,d_sphere_P,alignmentParameterSphere
+export beamProfile
 
 # objects modelling experiment and device
 export XPSacq # acquisition parameters

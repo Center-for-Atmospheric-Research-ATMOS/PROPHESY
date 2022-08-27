@@ -270,8 +270,6 @@ end
 """
     d_sphere_P(r::Array{Cdouble,1},θ::Array{Cdouble,1},φ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
 
-    NOT IMPLEMENTED YET!
-
     In the spherical geometry, e.g. droplet, this function computes the distance from any
     point M:(r,θ,φ) in the sample to the surface in direction to some point P:(x0,y0,z0).
     Note: M is given in spherical coordinates and P in Cartesian coordinates.
@@ -281,9 +279,55 @@ end
     θ is taken between Oz and the project of M onto the plane xOz, φ between M and Oy, and r = √(x^2+y^2+z^2)
     μ0 is the radius of the cylinder
 """
-function d_sphere_P(r::Array{Cdouble,1},θ::Array{Cdouble,1},φ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
-    # TODO
+function d_sphere_P(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
+    dp = zeros(Cdouble,length(r),length(φ),length(θ)); # create matrix of disctances
+    for i in 1:length(r)
+        for j in 1:length(φ)
+            for k in 1:length(θ)
+                ## M coordinates, spherical --> cartesian
+                xm = r[i]*cos(θ[k])*sin(φ[j]);
+                ym = r[i]*sin(θ[k])*sin(φ[j]);
+                zm = r[i]*cos(φ[j]);
+
+                ## compute all cos/sin
+                cosω = (x0 - xm) / sqrt((x0-xm)^2 + (y0-ym)^2); # azimuthal angle of the direction MP
+                sinω = (y0 - ym) / sqrt((x0-xm)^2 + (y0-ym)^2);
+
+                cosβ = (z0 - zm) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2); # polar angle of the direction MP is π/2-β
+                sinβ = sqrt((x0-xm)^2 + (y0-ym)^2) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2);
+
+                cosα = sin(φ[j]) * cosβ * (cos(θ[k]) * cosω + sin(θ[k]) * sinω) + cos(φ[j]) * sinβ;
+
+                dp[i,j,k] = -r[i] * cosα + sqrt(μ0^2 - r[i]^2 * (1 - cosα^2)); # distance from intersection to P
+            end
+        end
+    end
+    dp[dp.<0.0] .= 0.0;
+    dp
 end
+function d_sphere_P(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Cdouble,x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
+    dp = zeros(Cdouble,length(r),length(φ)); # create matrix of disctances
+    ## M coordinates, spherical --> cartesian
+    xm = cos(θ)*r*sin.(φ')
+    ym = sin(θ)*r*sin.(φ')
+    zm = r*cos.(φ')
+    ## compute all cos/sin
+    cosω = (x0 .- xm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2); # azimuthal angle of the direction MP
+    sinω = (y0 .- ym) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2)
+    cosβ = (z0 .- zm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2); # polar angle of the direction MP is π/2-β
+    sinβ = sqrt.((x0.-xm).^2 .+ (y0.-ym).^2) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2);
+    
+    cosα =  cosβ .* (cos(θ)*cosω+sin(θ)*sinω) .* sin.(φ')  +  sinβ .* cos.(φ') ;
+
+    A = -r.*cosα
+    B = μ0^2 .- r.^2 .* (1.0 .- cosα.^2)
+    A[r.>μ0,:] .= 0.0
+    B[r.>μ0,:] .= 0.0
+    dp = A+sqrt.(B);
+    dp[dp.<0.0] .= 0.0;
+    dp
+end
+
 
 
 ##
@@ -385,6 +429,51 @@ function cylinder_gain_H(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdoub
     H_r,H_rθy,Arn,Aθj,Ayk
 end
 
+"""
+sphere_gain_H(r::Array{Cdouble,1},θ::Array{Cdouble,1},φ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe::Cdouble)
+
+    Compute the volume integrales (exact for piecewise linear gain)
+
+    H_{n,j,k} = ∭ e_n(r)e_j(θ)e_k(φ) e^{-d_P(M)/λe} r^2sin(φ)drdφdθ
+
+    The geometry of the sample is so that Oy is the symmetry axis (along the droplet stream direction),
+    Oz is along the photon beam and Ox is the remaining axis in the orthogonal basis.
+
+    The arrays r, φ and θ are the discretization subdivisions (r: radial distance, φ polar angle, and θ azimuthal angle).
+    The polar axis is Oy, φ is the polar angle between M and Oy, θ is taken between Oz and the project of M onto the plane xOz, and r = √(x^2+y^2+z^2)
+
+    P:(x0,y0,z0) is the point in Cartesian coordinates used for the computation of the distance d_P
+    μ0 is the radius of the sphere
+    λe is the attenuation length in the Beer-Lambert model
+
+    Note: does not include the profile of the beam light, 
+    but it can be add easily if known, see alignmentParameterSphere
+"""
+function sphere_gain_H(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe::Cdouble)
+    # compute the elementary integrals
+    Ar1 = (1.0/(r[2]-r[1]))*( (r[2]/3.0)*(r[2]^3-r[1]^3) - (1.0/4.0)*(r[2]^4-r[1]^4) );
+    ArN = (1.0/(r[end]-r[end-1]))*( (1.0/4.0)*(r[end]^4-r[end-1]^4) - (r[end-1]/3.0)*(r[end]^3-r[end-1]^3));
+    Arn = [Ar1; (1.0/12.0)*((r[3:end].^3-r[1:end-2].^3) .+ r[2:end-1].*(r[3:end].^2-r[1:end-2].^2) .+ (r[3:end]-r[1:end-2])); ArN]; # r^2dr
+
+    Aφ1 = cos(φ[1]) - (1.0/(φ[2]-φ[1]))*(sin(φ[2]) - sin(φ[1]));
+    AφJ = (1.0/(φ[end]-φ[end-1]))*(sin(φ[end]) - sin(φ[end-1])) - cos(φ[end]);
+    Aφj = [Aφ1; ((sin.(φ[2:end-1])-sin.(φ[1:end-2]))./(φ[2:end-1]-φ[1:end-2]) - (sin.(φ[3:end])-sin.(φ[2:end-1]))./(φ[3:end]-φ[2:end-1])); AφJ];    # sinφdφ
+
+    Aθk = 0.5*[θ[2]-θ[1]; θ[3:end]-θ[1:end-2]; θ[end]-θ[end-1]];    # dθ
+
+    #compute the model
+    H_rφθ = zeros(Cdouble,length(r),length(φ),length(θ));
+    for k in 1:length(θ)
+        H_rφθ[:,:,k] = exp.(-d_sphere_P(r,φ,θ[k],x0,y0,z0,μ0)/λe)
+    end
+
+    H_r  = zeros(Cdouble,length(r));
+    for n in 1:length(r)
+        H_r[n] = Arn[n]*Aφj'*H_rφθ[n,:,:]*Aθk
+    end
+    H_r,H_rφθ,Arn,Aφj,Aθk
+end
+
 
 """
     beamProfile: structure describing the extent of the spread in space of the photon beam
@@ -454,6 +543,65 @@ function alignmentParameter(bp::beamProfile,r::Array{Cdouble,1},θ::Array{Cdoubl
     end
     H_r,H_rθy,H_r_ph,H_rθy_ph,Arn,Aθj,Ayk,sum(H_r_ph)/sum(H_r)
 end
+
+
+"""
+    alignmentParameterSphere(bp::beamProfile,r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe::Cdouble)
+
+    Compute the volume integrales (exact for piecewise linear gain)
+
+    H_{n,j,k} = ∭ e_n(r)e_j(φ)e_k(θ) f_beam(r,θ,y) e^{-d_P(M)/λe} r^2sin(φ)drdφdθ
+    H_{n,j,k} = ∭ e_n(r)e_j(φ)e_k(θ) e^{-d_P(M)/λe} r^2sin(φ)drdφdθ
+
+    The geometry of the sample is so that Oy is the symmetry axis (along the droplet stream direction),
+    Oz is along the photon beam and Ox is the remaining axis in the orthogonal basis.
+
+    The arrays r, φ and θ are the discretization subdivisions (r: radial distance, φ polar angle, and θ azimuthal angle).
+    The polar axis is Oy, φ is the polar angle between M and Oy, θ is taken between Oz and the project of M onto the plane xOz, and r = √(x^2+y^2+z^2)
+
+    P:(x0,y0,z0) is the point in Cartesian coordinates used for the computation of the distance d_P
+    μ0 is the radius of the cylinder
+    λe is the attenuation length in the Beer-Lambert model
+    bp: a beam profile object that describes the deviation from the center of the target and the spatial spread of the beam
+
+    Note: does not include the profile of the beam light, 
+    but it can be add easily if known, see alignmentParameterSphere
+"""
+function alignmentParameterSphere(bp::beamProfile,r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λe::Cdouble)
+    # compute the elementary integrals
+    Ar1 = (1.0/(r[2]-r[1]))*( (r[2]/3.0)*(r[2]^3-r[1]^3) - (1.0/4.0)*(r[2]^4-r[1]^4) );
+    ArN = (1.0/(r[end]-r[end-1]))*( (1.0/4.0)*(r[end]^4-r[end-1]^4) - (r[end-1]/3.0)*(r[end]^3-r[end-1]^3));
+    Arn = [Ar1; (1.0/12.0)*((r[3:end].^3-r[1:end-2].^3) .+ r[2:end-1].*(r[3:end].^2-r[1:end-2].^2) .+ (r[3:end]-r[1:end-2])); ArN]; # r^2dr
+
+    Aφ1 = cos(φ[1]) - (1.0/(φ[2]-φ[1]))*(sin(φ[2]) - sin(φ[1]));
+    AφJ = (1.0/(φ[end]-φ[end-1]))*(sin(φ[end]) - sin(φ[end-1])) - cos(φ[end]);
+    Aφj = [Aφ1; ((sin.(φ[2:end-1])-sin.(φ[1:end-2]))./(φ[2:end-1]-φ[1:end-2]) - (sin.(φ[3:end])-sin.(φ[2:end-1]))./(φ[3:end]-φ[2:end-1])); AφJ];    # sinφdφ
+
+    Aθk = 0.5*[θ[2]-θ[1]; θ[3:end]-θ[1:end-2]; θ[end]-θ[end-1]];    # dθ
+
+    #compute the model
+    H_rφθ    = zeros(Cdouble,length(r),length(φ),length(θ));
+    H_rφθ_ph = zeros(Cdouble,length(r),length(φ),length(θ));
+    y = r*cos.(φ');
+    x = r*sin.(φ');
+    
+    xym = r*sin.(φ')
+    for k in 1:length(θ)
+        H_rφθ[:,:,k] = exp.(-d_sphere_P(r,φ,θ[k],x0,y0,z0,μ0)/λe)
+        local f_p = (1.0/(2π*bp.σx*bp.σy)).*exp.(-((cos(θ[k])*xym.-bp.xc).^2/(2.0*bp.σx^2))).*exp.(-((sin(θ[k])*xym.-bp.yc).^2/(2.0*bp.σy^2)))
+        H_rφθ_ph[:,:,k] = H_rφθ[:,:,k].*f_p;
+    end
+
+    # radial model with and without beam profile
+    H_r     = zeros(Cdouble,length(r));
+    H_r_ph  = zeros(Cdouble,length(r));
+    for n in 1:length(r)
+        H_r[n]    = Arn[n]*Aφj'*H_rφθ[n,:,:]*Aθk
+        H_r_ph[n] = Arn[n]*Aφj'*H_rφθ_ph[n,:,:]*Aθk
+    end
+    H_r,H_rφθ,H_r_ph,H_rφθ_ph,Arn,Aφj,Aθk,sum(H_r_ph)/sum(H_r)
+end
+
 
 """
     Ψ_lin_peak(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
