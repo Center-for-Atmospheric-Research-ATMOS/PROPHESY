@@ -31,8 +31,8 @@ MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = false
 
-FLAG_OFF_CENTER_0 = true;
-FLAG_OFF_CENTER_1 = false;
+FLAG_OFF_CENTER_0 = false;
+FLAG_OFF_CENTER_1 = true;
 FLAG_OFF_CENTER_2 = false;
 FLAG_OFF_CENTER_3 = false; # true;
 # FLAG_OFF_CENTER_4 = false;
@@ -55,6 +55,16 @@ L = 20.0 # 25; # 100.0;     # height of the irradiated sample (the vertical exte
 x0 = sqrt(2.0)*5000.0 # (x0,y0,z0) are the coordinates of the analyzer's apperture
 y0 = 0.0;
 z0 = 5000.0;
+
+# integration inteval
+Δt = 10.0 # [s]
+D_dark = 0.0 # dark current coefficient is a number of electron per unit time [# s^{-1}]
+
+# unit conversion constant (some of the quantities are in μm, some in L and some in Mbarn)
+NA = 6.022e23;
+κ_simple_units = 1.0e-37*NA; # simplified model
+κ_units        = 1.0e-25*NA; # original model
+
 
 # soon add the option of sphere or plane geometry?
 save_folder = string(save_folder,"cylinder_radius_",μ0,"/peak_shift/")
@@ -250,22 +260,24 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ## geometry factors
     ##
     local H_deom,_,H_geom,_,_,_,_,al_liq = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[j])
+    al_liq = 1.0e-12*al_liq*κ_units/κ_simple_units # units conversion so that the unit is in μm^{-2}
 
     ##
     ## for the signal without noise
     ##
-    local SbgO1s      = (H_geom'*ρA_1)*Sj_bg
-    local SpectrumA_1 = (H_geom'*ρA_1)*Sj
+    local SbgO1s      = Δt*κ_units*(H_geom'*ρA_1)*Sj_bg
+    local SpectrumA_1 = Δt*κ_units*(H_geom'*ρA_1)*Sj
 
     ##
     ## gas phase signal
     ##
     local H_deom_gas,_,H_geom_gas,_,_,_,_,al_gas = alignmentParameter(bp,r_gas,θ_gas,y_gas,x0,y0,z0,μ0,λe[j])
+    al_gas = 1.0e-12*al_gas*κ_units/κ_simple_units # units conversion so that the unit is in μm^{-2}
     
     local Sj_gas,_,_,_ = simulateSpectrum(Fνj[j],hν[j],dhν[j],
         Keij,σ_ke[j],Tj[j],Kdisc,
         reverse(Be0),reverse(σ_cs_gas),zeros(Cdouble,Nspectrum));
-    local SpectrumA_1_gas = (H_geom_gas'*ρ_gas)*Sj_gas;
+    local SpectrumA_1_gas = Δt*κ_units*(H_geom_gas'*ρ_gas)*Sj_gas;
 
     # r_gas = collect(range(μ0,5μ0,length=Nr));
     # θ_gas = collect(range(θ0-π/2.0-acos(μ0/r_gas[end]),θ0+π/2.0+acos(μ0/r_gas[end]),Nθ));
@@ -280,7 +292,7 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
     ## add noise
     ##
-    local SO1snoise = countElectrons(SbgO1s+SpectrumA_1+SpectrumA_1_gas,0.0)
+    local SO1snoise = countElectrons(SbgO1s+SpectrumA_1+SpectrumA_1_gas,D_dark*Δt)
 
 
     ##
@@ -291,10 +303,10 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
         "σ_cs_dens" => σ_cs_liq./XPSpack.σ_O1s_interp[hν[j]], "σ_cs_dens_gas" => σ_cs_gas./XPSpack.σ_O1s_interp[hν[j]], "σ_tot" => XPSpack.σ_O1s_interp[hν[j]],
         "SpectrumA_1" => SpectrumA_1, "SpectrumA_1_gas" => SpectrumA_1_gas, "Sbg" => SbgO1s, 
         "Stot" => SbgO1s+SpectrumA_1, "Snoisy" => SO1snoise,
-        "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "α" => sum(SpectrumA_1)/sum(SpectrumA_1_gas));
+        "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt, "α" => sum(SpectrumA_1)/sum(SpectrumA_1_gas));
     local dictMetaData = Dict("μKe" => μKe,
         "σ_tot" => XPSpack.σ_O1s_interp[hν[j]], "peak_mode_liq" => μBe_liq, "peak_width_liq"=>σ_be_liq, "peak_mode_gas" => μBe_gas, "peak_width_gas"=>σ_be_gas,
-        "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
+        "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
 
     local dictGeom = Dict("model" => "sharp edge cylinder + outside vapor", 
                 "hν" => hν[j], "λ" => 1.0e3λe[j], "radius" => μ0, "max_depth" => k0*λe0,

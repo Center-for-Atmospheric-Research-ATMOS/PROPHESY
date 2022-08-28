@@ -31,8 +31,8 @@ MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = false
 
-FLAG_OFF_CENTER_0 = false;
-FLAG_OFF_CENTER_1 = true;
+FLAG_OFF_CENTER_0 = true;
+FLAG_OFF_CENTER_1 = false;
 FLAG_OFF_CENTER_2 = false;
 FLAG_OFF_CENTER_3 = false;
 
@@ -61,6 +61,15 @@ x0 = sqrt(2.0)*5000.0 # (x0,y0,z0) are the coordinates of the analyzer's appertu
 y0 = 0.0;
 z0 = 5000.0;
 
+# integration inteval
+Δt = 60.0 # [s]
+D_dark = 0.0 # dark current coefficient is a number of electron per unit time [# s^{-1}]
+
+# unit conversion constant (some of the quantities are in μm, some in L and some in Mbarn)
+NA = 6.022e23;
+κ_simple_units = 1.0e-37*NA; # simplified model
+κ_units        = 1.0e-25*NA; # original model
+
 FLAG_OFF_CENTER = [true false false false;
                     false true false false;
                     false false true false;
@@ -77,7 +86,6 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
         local save_folder = "./";
         save_folder = string(save_folder,"cylinder_radius_",μ0,"/peak_shift/")
 
-
         # spacial discretization 
         r = collect(range(μ0-k0*λe0,μ0+δr,length=Nr));
         r_lowres = collect(range(μ0-k0*λe0,μ0+δr,length=Nr_lowres));
@@ -89,8 +97,9 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
         ρ0 = 1.0
         ρ_vac = 0.0
 
-        # ρ_bulk =  5.0e-3; #  5mM
-        ρ_bulk = 10.0e-3; # 10mM
+        # bulk molar concentration
+        # ρ_bulk =  5.0e-3; 
+        ρ_bulk = 10.0e-3; # 10 
         Δtr = 0.5 # 1.0; # 
 
 
@@ -198,9 +207,9 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
         μBe_var = inv(Ahν)*Bhν;
 
         hhν = collect(310.0:20.0:1900.0);
-        figure()
-        scatter([650.0; 1315.0; 1884.0],Bhν)
-        plot(hhν,dropdims(μBe_var'*[hhν.^2 hhν.^1 hhν.^0]',dims=1))
+        # figure()
+        # scatter([650.0; 1315.0; 1884.0],Bhν)
+        # plot(hhν,dropdims(μBe_var'*[hhν.^2 hhν.^1 hhν.^0]',dims=1))
 
 
         # figure();
@@ -283,22 +292,24 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
             ## geometry factors
             ##
             local H_deom,_,H_geom,_,_,_,_,al_C1s = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[j])
+            al_C1s = 1.0e-12*al_C1s*κ_units/κ_simple_units # units conversion so that the unit is in μm^{-2}
 
             ##
-            ## for the signal without noise
+            ## the signal without noise (time integrated)
             ##
-            local SbgC1s      = (H_geom'*ρA_1)*Sj_bg
-            local SpectrumA_1 = (H_geom'*ρA_1)*Sj
+            local SbgC1s      = Δt*κ_units*(H_geom'*ρA_1)*Sj_bg
+            local SpectrumA_1 = Δt*κ_units*(H_geom'*ρA_1)*Sj
 
             ##
             ## add noise
             ##
-            local SC1snoise = countElectrons(SbgC1s+SpectrumA_1,1.0)
+            
+            local SC1snoise = countElectrons(SbgC1s+SpectrumA_1,D_dark*Δt)
 
             if SWEEPS_ON # just repeat the acquisition
                 local SC1snoise_sweeps = zeros(Cdouble,length(SC1snoise),nb_sweeps)
                 for i in 1:nb_sweeps
-                    SC1snoise_sweeps[:,i] = countElectrons(SbgC1s+SpectrumA_1,0.0);
+                    SC1snoise_sweeps[:,i] = countElectrons(SbgC1s+SpectrumA_1,D_dark*Δt);
                 end
             end
 
@@ -313,13 +324,13 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
                 "σ_cs_dens" => σ_cs_fg./XPSpack.σ_C1s_interp[hν[j]], "σ_tot" => XPSpack.σ_C1s_interp[hν[j]],
                 "SpectrumA_1" => SpectrumA_1, "Sbg" => SbgC1s, 
                 "Stot" => SbgC1s+SpectrumA_1, "Snoisy" => SC1snoise,
-                "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
+                "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
             if SWEEPS_ON
                 [dictData[string("Snoisy_",i)] = SC1snoise_sweeps[:,i] for i in 1:nb_sweeps]
             end
             local dictMetaData = Dict("μKe" => μKe,
                 "σ_tot" => XPSpack.σ_C1s_interp[hν[j]], "peak_mode" => μBe_dev, "peak_width"=>σ_be_var, "peak_probability"=>τ_be,
-                "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
+                "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
 
             local dictGeom = Dict("model" => "sharp edge cylinder + outside vapor", 
                         "hν" => hν[j], "λ" => 1.0e3λe[j], "radius" => μ0, "max_depth" => k0*λe0,
@@ -335,8 +346,8 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
             dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))]       = (eachcol(dfGeom),names(dfGeom))
         end
 
+        save_folder = string(save_folder,"new_bg/")
         if SAVE_DATA
-            # save_folder = string(save_folder,"new_bg/")
             mkpath(string(save_folder,exp_tag,"/"));
             XLSX.writetable(string(save_folder,exp_tag,"/data.xlsx"); dictAllData...) # TODO: get outside the loop
             XLSX.writetable(string(save_folder,exp_tag,"/model.xlsx"); dictAllGeom...)
