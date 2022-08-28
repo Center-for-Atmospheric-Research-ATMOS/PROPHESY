@@ -27,7 +27,7 @@ using utilsFun  # for the softMax functions
 using XPSpack # experiment model (geometry factor and cross section estimation)
 # using XPSsampling
 
-PLOT_FIG  = false
+PLOT_FIG  = true
 SAVE_FIG  = false
 SAVE_DATA = false
 
