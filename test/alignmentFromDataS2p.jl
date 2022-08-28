@@ -63,7 +63,7 @@ for idx_file in 1:length(data_filesS2p)
         local S_noisy = dictAllData[plot_sym].Raw_spectrum;
         local ρ = ρS2p_bulk*ones(Cdouble,Nr)
         α_al_noise[idx],_    = noiseAndParameterEstimation(σ_all,H_geom,S_noisy,Sbg,ρ)
-        α_al_noise[idx]      = α_al_noise[idx]/(dictPeak[plot_sym][!,σtot_sym][1]*dictPeak[plot_sym][!,ph_flu_sym][1])
+        α_al_noise[idx]      = α_al_noise[idx]/(κ_units*dictPeak[plot_sym][!,σtot_sym][1]*dictPeak[plot_sym][!,ph_flu_sym][1])
         α_al_ratio[idx]      = dictPeak[plot_sym][!,α_al_sym][1]
         idx = idx + 1;
     end

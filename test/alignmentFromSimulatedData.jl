@@ -27,7 +27,7 @@ using utilsFun  # for the softMax functions
 using XPSpack # experiment model (geometry factor and cross section estimation)
 # using XPSsampling
 
-PLOT_FIG  = true
+PLOT_FIG  = false
 SAVE_FIG  = false
 SAVE_DATA = false
 
@@ -45,12 +45,17 @@ data_folders = folder_content[list_match.!=nothing]
 xc_off     = zeros(Cdouble,5*length(data_folders));
 α_al_noise = zeros(Cdouble,5*length(data_folders));
 # τ_al_noise_gt = zeros(Cdouble,5*length(data_folders));
+# unit conversion constant (some of the quantities are in μm, some in L and some in Mbarn)
+NA = 6.022e23;
+κ_simple_units = 1.0e-37*NA; # simplified model
+κ_units        = 1.0e-25*NA; # original model
+
 idx = 1
 for folder_tag in data_folders
     # local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"water/data.xlsx"),r"^hν_[0-9]*",r"meta");
     # local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"water/model.xlsx"));
-    local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"/water/data.xlsx"),r"^hν_[0-9]*",r"meta");
-    local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"/water/model.xlsx"));
+    local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"/new_bg/water/data.xlsx"),r"^hν_[0-9]*",r"meta");
+    local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"/new_bg/water/model.xlsx"));
     local Ndata                     = length(dictAllData);
 
     global idx
@@ -68,7 +73,9 @@ for folder_tag in data_folders
         local Tj = dictAllData[sym_data][!,:T][1];
         local Fνj = dictAllData[sym_data][!,:F][1];
         local σ_tot = dictAllData[sym_data][!,:σ_tot][1];
-        α_al_noise[idx] = α_al_noise[idx]/(Tj*Fνj*σ_tot)
+        local Δt = dictAllData[sym_data][!,:Δt][1];
+        α_al_noise[idx] = α_al_noise[idx]/(κ_units*Tj*Fνj*σ_tot*Δt)
+        α_al_noise[idx] = 1.0e12α_al_noise[idx] # convert to m^{-2} from μm^{-2}
         # τ_al_noise_gt[idx],_ = noiseAndParameterEstimation(dictAllData[symbol_h][1][:σ_cs_dens],dictAllGeom[simbol_λ][1][:H],
         #                     Array{Cdouble,1}(dictAllData[symbol_h][1][:Snoisy]),dictAllData[symbol_h][1][:Sbg],ρA_1)
 
@@ -124,9 +131,10 @@ end
 if PLOT_FIG
     figure(figsize=[10, 5]); # scatter(1.0e9α_gt,α_ratio)
     ax = subplot(122)
-    scatter(1.0e10α_gt_mean,α_ratio_mean,color="tab:orange",label="liquid/vapor ratio") # α_ratio_mean.^2.5
-    scatter(1.0e10α_gt_mean,1.0e10α_al_mean,color="tab:green",label="noise estimation [x\$10^{10}\$]") 
-    xlabel("GT [x\$10^{9}\$]",fontsize=14); 
+    scatter(1.0e8α_gt_mean,1.0e-2α_ratio_mean,color="tab:orange",label="liquid/vapor ratio") # α_ratio_mean.^2.5
+    scatter(1.0e8α_gt_mean,1.0e8α_al_mean,color="tab:green",label="noise estimation [cm\$^{-2}\$]") 
+    xlim(-0.001,0.033); ylim(-0.001)
+    xlabel("GT [cm\$^{-2}\$]",fontsize=14); 
     ylabel("estimation",fontsize=14) 
     xticks(fontsize=14); yticks(fontsize=14); 
     ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
@@ -135,9 +143,10 @@ if PLOT_FIG
     legend(fontsize=14)
 
     ax = subplot(121)
-    scatter(xc_off[1:5:end],1.0e10α_gt_mean,label="GT [x\$10^{10}\$]")
-    scatter(xc_off[1:5:end],α_ratio_mean,label="liquid/vapor area ratio")
-    scatter(xc_off[1:5:end],1.0e10α_al_mean,label="noise estimation [x\$10^{10}\$]")
+    scatter(xc_off[1:5:end],1.0e8α_gt_mean,label="GT [cm\$^{-2}\$]")
+    scatter(xc_off[1:5:end],1.0e-2α_ratio_mean,label="liquid/vapor area ratio")
+    scatter(xc_off[1:5:end],1.0e8α_al_mean,label="noise estimation [cm\$^{-2}\$]")
+    ylim(-0.001)
     xlabel("horizontal offset [\$\\mu\$m]",fontsize=14); 
     ylabel("alignment parameter",fontsize=14) 
     xticks(fontsize=14); yticks(fontsize=14); 
@@ -148,8 +157,8 @@ if PLOT_FIG
     tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
     if SAVE_FIG
-        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter.png"))
-        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter.pdf"))
+        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units.png"))
+        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units.pdf"))
     end
 end
 

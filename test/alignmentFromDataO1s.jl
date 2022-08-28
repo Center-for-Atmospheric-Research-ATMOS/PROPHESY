@@ -67,7 +67,7 @@ for idx_file in 1:length(data_filesO1s)
         S_noisy = dictAllData[plot_sym].Raw_spectrum.-dictAllData[plot_sym].Curve2;
         ρ = ρO1s_bulk*ones(Cdouble,Nr)
         α_al_noise[idx],_    = noiseAndParameterEstimation(σ_all,H_geom,S_noisy,Sbg,ρ)
-        α_al_noise[idx]      = α_al_noise[idx]/(dictPeak[plot_sym][!,Symbol("Sigma")][1]*dictPeak[plot_sym][!,Symbol("Photon flux")][1])
+        α_al_noise[idx]      = α_al_noise[idx]/(κ_units*dictPeak[plot_sym][!,Symbol("Sigma")][1]*dictPeak[plot_sym][!,Symbol("Photon flux")][1])
         α_al_ratio[idx]      = dictPeak[plot_sym][!,Symbol("Alignment")][1]
         global idx = idx + 1;
     end

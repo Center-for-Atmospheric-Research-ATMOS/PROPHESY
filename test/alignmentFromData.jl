@@ -54,6 +54,11 @@ r = collect(range(μ0-k0*λe0,μ0+δr,length=Nr));
 θ = collect(range(θ0-π/2.0,θ0+π/2.0,Nθ));
 y = collect(range(-L/2.0,L/2.0,length=Ny));
 
+# unit conversion constant (some of the quantities are in μm, some in L and some in Mbarn)
+NA = 6.022e23;
+κ_simple_units = 1.0e-37*NA; # simplified model
+κ_units        = 1.0e-25*NA; # original model
+
 
 
 # column names fo the fitted results
