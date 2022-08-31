@@ -13,7 +13,7 @@ using NewtonMethod  # used in XPSutils.jl
 
 # penetration depth and cross-section values: not sure it's really useful in this module since the values are supposed to be known to create the models
 export λe, λe_exp, σ_cs_orb, σ_bg_density, σ_bg_lin_density, σ_bg
-export σ_C1s_exp,σ_O1s_exp
+export σ_C1s_exp,σ_O1s_exp,σ_S2p_exp
 
 # data enhancement: baseline correction and peak fitting (requires sampling of the spectra)
 export baseline_removal, EM_peaks, cross_section_spread_function, cross_section_spread_function_sample # in XPSutils.jl

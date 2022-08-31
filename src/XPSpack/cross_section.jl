@@ -33,12 +33,30 @@ function σ_O1s_exp(hν_ph::Cdouble)
 end
 
 
+include("S2p.jl")
+log_x_S2p = log.(σ_S2p[:,1]);
+log_y_S2p = log.(σ_S2p[:,2]);
+sum_xx = sum(log_x_S2p.^2);
+sum_x = sum(log_x_S2p);
+sum_1 = length(log_x_S2p);
+sum_y = sum(log_y_S2p);
+sum_xy = sum(log_y_S2p.*log_x_S2p);
+μσ_S2p_bar = inv([sum_xx sum_x; sum_x sum_1])*[sum_xy; sum_y];
+
+function σ_S2p_exp(hν_ph::Cdouble)
+   exp(μσ_S2p_bar[1]*log(hν_ph) + μσ_S2p_bar[2])
+end
+
+
+
 function σ_cs_orb(ħν::Cdouble,nl::String="C1s") # for the time being, only implement C1s, but you can get other orbitales from https://vuo.elettra.eu/services/elements/WebElements.html
    val = 0.0
    if (nl=="C1s")
       val = σ_C1s_exp(ħν) # σ_C1s_interp(ħν)
-   else
+   elseif (nl=="O1s")
       val = σ_O1s_exp(ħν) # σ_O1s_interp(ħν)
+   elseif (nl=="S2p")
+      val = σ_S2p_exp(ħν)
    end
    val
 end
