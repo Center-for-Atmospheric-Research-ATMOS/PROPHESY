@@ -25,15 +25,15 @@ using ATTIRE  # kinetic energy analyzer
 
 
 # tags
-SHORT_RANGE = true # WARNING: not ready for wide range (i.e. SHORT_RANGE=false)
+# SHORT_RANGE = true # WARNING: not ready for wide range (i.e. SHORT_RANGE=false)
 
 MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = false
 
 
-SAVE_DATA = true   # flag for saving data and model
-SAVE_FIG  = true   # save the simulated data or not
+SAVE_DATA = false  # flag for saving data and model
+SAVE_FIG  = false   # save the simulated data or not
 
 # geometry setup
 λe0 = 2.0e-3;        # reference penetration depth in μm
@@ -100,23 +100,25 @@ if MODEL_20
     Ndata = 20;
 end
 
-for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5)
+for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5) #  
     local save_folder = "./";
     save_folder = string(save_folder,"cylinder_radius_",μ0,"/peak_shift/")
 
     # not sure it's that short anymore
-    if SHORT_RANGE                                          # bounds of the attenuation lengths
-        λe1 = 1.3; hν1 =  650.0;
-        λe2 = 3.8; hν2 = 1884.0;
+    # if SHORT_RANGE                                          # bounds of the attenuation lengths
+        λe1 = 1.3; hν1 =  897.0; # 650.0;
+        λe2 = 3.8; hν2 = 2117.0; # 1884.0;
         save_folder = string(save_folder,"eal_",Ndata,"_restricted_range/")
-    else
-        λe1 = 0.5; hν1 = 310.0;
-        λe2 = 5.5; hν2 = 1900.0;
-        save_folder = string(save_folder,"eal_",Ndata,"/")
-    end
+    # else
+    #     λe1 = 0.5; hν1 = 310.0;
+    #     λe2 = 5.5; hν2 = 1900.0;
+    #     save_folder = string(save_folder,"eal_",Ndata,"/")
+    # end
     # XPSpack.λe_thurmer[collect(range(hν1,hν2,Ndata)).-534.0] # does not seem realistic for energies above 900 eV
-    global λe = 1.0e-3collect(range(λe1,λe2,Ndata));              # attenuation length range
+    # global λe = 1.0e-3collect(range(λe1,λe2,Ndata));              # attenuation length range
     global hν = collect(LinRange(hν1, hν2,Ndata));                # central photon energy for each measurement
+    BeO1s = 534.0;
+    global λe = 1.0e-3λe_exp.(hν.-BeO1s);              # attenuation length range
 
     ##
     ## alignment
@@ -136,7 +138,7 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5)
     dKe = 0.05;
     Be = collect(526.0:dKe:542.0);
     Nspectrum = length(Be);
-    BeO1s = 547.0 # 549.0 # Be[end] # mean(Be);
+    BeO1s_th = 547.0 # 549.0 # Be[end] # mean(Be);
     ΔBeO1s = 3.0 # 2.0;
 
     hknot_peak = [650.0;  651.0;  789.0;      897.0; 907.0;      1154.0;   1197.0; 1565.0; 1900.0];
@@ -155,7 +157,7 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5)
     σBe_var_gas = (inv(Ahν'*Ahν)*Ahν'*σEb_knot_gas)';
 
 
-    hhν = collect(310.0:20.0:1900.0);
+    # hhν = collect(310.0:20.0:1900.0);
     # figure()
     # scatter(hknot_peak,Eb_knot_liq)
     # plot(hhν,dropdims(μBe_var_liq*[hhν.^3 hhν.^2 hhν.^1 hhν.^0]',dims=1))
@@ -177,7 +179,8 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5)
         σ_peak = (1.0/sqrt(2.0π*σBe_O1s_liq^2))*exp.(-(Be_liq.-μBe_O1s_liq).^2/(2.0σBe_O1s_liq^2));
 
         # cross section value
-        XPSpack.σ_O1s_interp[hν]*σ_peak,μBe_O1s_liq,σBe_O1s_liq
+        # XPSpack.σ_O1s_interp[hν]*σ_peak,μBe_O1s_liq,σBe_O1s_liq
+        σ_O1s_exp(hν)*σ_peak,μBe_O1s_liq,σBe_O1s_liq
     end
 
     function σ_cs_O1s_gas(hν::Cdouble,Ke::Array{Cdouble,1})
@@ -189,7 +192,8 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5)
         σ_peak = (1.0/sqrt(2.0π*σBe_O1s_gas^2))*exp.(-(Be_gas.-μBe_O1s_gas).^2/(2.0σBe_O1s_gas^2));
 
         # cross section value
-        XPSpack.σ_O1s_interp[hν]*σ_peak,μBe_O1s_gas,σBe_O1s_gas
+        # XPSpack.σ_O1s_interp[hν]*σ_peak,μBe_O1s_gas,σBe_O1s_gas
+        σ_O1s_exp(hν)*σ_peak,μBe_O1s_gas,σBe_O1s_gas
     end
 
     ##
@@ -202,8 +206,12 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5)
     σ_ke       = 2.0*dKe*ones(Cdouble,Ndata);                                  # kinetic energy bandwidths of the analyzer (one per photon energy)
     dhν        = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
 
-    hknot = [650.0; 1884.0; 1315.0; 907.0]
-    Fknot = [3.943312e+13; 1.419204e+14; 3.853618e+14; 1.651883e+14]
+    # hknot = [650.0; 1884.0; 1315.0; 907.0]
+    # Fknot = [3.943312e+13; 1.419204e+14; 3.853618e+14; 1.651883e+14]
+
+    hknot = [897.0; 1565.0; 1154.0; 2117.0];    
+    Fknot = [96551987962033.5; 180756074879052.0; 174706655794778.0; 26025420979116.2]
+
     μF_var =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*Fknot)';
     Fνj    = dropdims(μF_var*[hν.^3 hν.^2 hν.^1 hν.^0]',dims=1);
     # figure()
@@ -235,7 +243,7 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5)
         ##
         local Sj,Sj_bg,_,_ = simulateSpectrum(Fνj[j],hν[j],dhν[j],
             Keij,σ_ke[j],Tj[j],Kdisc,
-            reverse(Be0),reverse(σ_cs_liq),σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeO1s,ΔBeO1s).+0.001);
+            reverse(Be0),reverse(σ_cs_liq),σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeO1s_th,ΔBeO1s).+0.001);
 
         ##
         ## geometry factors
@@ -279,14 +287,22 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5)
         ##
         ## push data to dicts
         ##
+        # local dictData = Dict( "Ke" => Keij, "Be" => Be0, "μKe" => μKe,
+        #     "σ_cs_dens" => σ_cs_liq./XPSpack.σ_O1s_interp[hν[j]], "σ_cs_dens_gas" => σ_cs_gas./XPSpack.σ_O1s_interp[hν[j]], "σ_tot" => XPSpack.σ_O1s_interp[hν[j]],
+        #     "SpectrumA_1" => SpectrumA_1, "SpectrumA_1_gas" => SpectrumA_1_gas, "Sbg" => SbgO1s, 
+        #     "Stot" => SbgO1s+SpectrumA_1, "Snoisy" => SO1snoise,
+        #     "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt, "α" => sum(SpectrumA_1)/sum(SpectrumA_1_gas));
+        # local dictMetaData = Dict("μKe" => μKe,
+        #     "σ_tot" => XPSpack.σ_O1s_interp[hν[j]], "peak_mode_liq" => μBe_liq, "peak_width_liq"=>σ_be_liq, "peak_mode_gas" => μBe_gas, "peak_width_gas"=>σ_be_gas,
+        #     "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
         
         local dictData = Dict( "Ke" => Keij, "Be" => Be0, "μKe" => μKe,
-            "σ_cs_dens" => σ_cs_liq./XPSpack.σ_O1s_interp[hν[j]], "σ_cs_dens_gas" => σ_cs_gas./XPSpack.σ_O1s_interp[hν[j]], "σ_tot" => XPSpack.σ_O1s_interp[hν[j]],
+            "σ_cs_dens" => σ_cs_liq./σ_O1s_exp(hν[j]), "σ_cs_dens_gas" => σ_cs_gas./σ_O1s_exp(hν[j]), "σ_tot" => σ_O1s_exp(hν[j]),
             "SpectrumA_1" => SpectrumA_1, "SpectrumA_1_gas" => SpectrumA_1_gas, "Sbg" => SbgO1s, 
             "Stot" => SbgO1s+SpectrumA_1, "Snoisy" => SO1snoise,
             "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt, "α" => sum(SpectrumA_1)/sum(SpectrumA_1_gas));
         local dictMetaData = Dict("μKe" => μKe,
-            "σ_tot" => XPSpack.σ_O1s_interp[hν[j]], "peak_mode_liq" => μBe_liq, "peak_width_liq"=>σ_be_liq, "peak_mode_gas" => μBe_gas, "peak_width_gas"=>σ_be_gas,
+            "σ_tot" => σ_O1s_exp(hν[j]), "peak_mode_liq" => μBe_liq, "peak_width_liq"=>σ_be_liq, "peak_mode_gas" => μBe_gas, "peak_width_gas"=>σ_be_gas,
             "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
 
         local dictGeom = Dict("model" => "sharp edge cylinder + outside vapor", 
@@ -304,7 +320,8 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5)
         dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))]       = (eachcol(dfGeom),names(dfGeom))
     end
 
-    save_folder = string(save_folder,"new_bg/")
+    # save_folder = string(save_folder,"new_bg/")
+    save_folder = string(save_folder,"new_eal/")
     if SAVE_DATA
         mkpath(string(save_folder,exp_tag,"/"));
         XLSX.writetable(string(save_folder,exp_tag,"/data.xlsx"); dictAllData...) 
