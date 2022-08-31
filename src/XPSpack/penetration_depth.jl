@@ -8,3 +8,17 @@ Ke_thurmer = [25.0; 30.0; 40.0; 50.0; 70.0; 100.0; 150.0; 200.0; 300.0; 400.0; 5
 function λe(Ke::Cdouble)
     λe_thurmer(Ke)
 end
+
+Ke_nots = [366; 623; 1031; 1600; 363; 620.0; 1031; 1583];
+λe_knot = [1.33; 1.88; 2.70; 3.79; 1.32; 1.86; 2.70; 3.75];
+sum_xx = sum(Ke_nots.^2);
+sum_x = sum(Ke_nots);
+sum_1 = length(Ke_nots);
+sum_y = sum(λe_knot);
+sum_xy = sum(λe_knot.*Ke_nots);
+
+μλ_bar = inv([sum_xx sum_x; sum_x sum_1])*[sum_xy; sum_y];
+
+function λe_exp(Ke::Cdouble)
+    μλ_bar[1]*Ke + μλ_bar[2]
+end
