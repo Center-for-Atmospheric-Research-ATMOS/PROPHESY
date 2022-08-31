@@ -112,7 +112,13 @@ function dataAndMeta_xlsx2df(fileName::String,regData::Regex,regMeta::Regex)
         local x = XLSX.getdata(xf_data[xf_name])
         local dataPairs = Array{Pair{String,Vector{Cdouble}}}(undef,size(x,2));
         for j in 1:size(x,2)
-            dataPairs[j] = (x[1,j] => convert(Array{Cdouble,1},x[2:end,j]))
+            if (typeof(x[2:end,j][1])<:AbstractString)
+                local data_x = coalesce.(x[2:end,j],"0.0") # [.!ismissing.(x[2:end,j])]; # eltype(x)
+                dataPairs[j] = (x[1,j] => parse.(Cdouble,replace.(data_x, r"[,;]" => "")))
+            else
+                local data_x = coalesce.(x[2:end,j],0.0)
+                dataPairs[j] = (x[1,j] => convert(Array{Cdouble,1},data_x))
+            end
         end
         df = DataFrame(dataPairs);
         dictAllData[Symbol(xf_name)] = df 
