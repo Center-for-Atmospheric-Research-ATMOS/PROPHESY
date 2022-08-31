@@ -25,7 +25,7 @@ using ATTIRE  # kinetic energy analyzer
 
 
 # tags
-SHORT_RANGE = true              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
+# SHORT_RANGE = true              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
 
 MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
@@ -42,9 +42,9 @@ FLAG_0003 = false
 FLAG_0004 = true
 
 save_folder = "./";
-SAVE_DATA = true   # flag for saving data and model
-SAVE_FIG  = true   # save the simulated data or not
-SWEEPS_ON = true
+SAVE_DATA = false   # flag for saving data and model
+SAVE_FIG  = false   # save the simulated data or not
+SWEEPS_ON = false
 nb_sweeps = 50;
 
 # geometry setup
@@ -60,6 +60,15 @@ Nθ = 257;            # number of discretization points in the azimuthal angle d
 x0 = sqrt(2.0)*5000.0 # (x0,y0,z0) are the coordinates of the analyzer's apperture
 y0 = 0.0;
 z0 = 5000.0;
+
+# integration inteval
+Δt = 60.0 # [s]
+D_dark = 0.0 # dark current coefficient is a number of electron per unit time [# s^{-1}]
+
+# unit conversion constant (some of the quantities are in μm, some in L and some in Mbarn)
+NA = 6.022e23;
+κ_simple_units = 1.0e-37*NA; # simplified model
+κ_units        = 1.0e-25*NA; # original model
 
 # soon add the option of sphere or plane geometry?
 save_folder = string(save_folder,"sphere_radius_",μ0,"/peak_shift/")
@@ -111,19 +120,21 @@ if MODEL_20
 end
 
 # not sure it's that short anymore
-if SHORT_RANGE                                          # bounds of the attenuation lengths
+# if SHORT_RANGE                                          # bounds of the attenuation lengths
     # λe1 = 1.3; hν1 = 365.0;
     # λe2 = 2.5; hν2 = 1500.0;
     λe1 = 1.3; hν1 =  650.0;
     λe2 = 3.8; hν2 = 1884.0;
     save_folder = string(save_folder,"eal_",Ndata,"_restricted_range/")
-else
-    λe1 = 0.5; hν1 = 310.0;
-    λe2 = 5.5; hν2 = 1900.0;
-    save_folder = string(save_folder,"eal_",Ndata,"/")
-end
-λe = 1.0e-3collect(range(λe1,λe2,Ndata));              # attenuation length range
+# else
+#     λe1 = 0.5; hν1 = 310.0;
+#     λe2 = 5.5; hν2 = 1900.0;
+#     save_folder = string(save_folder,"eal_",Ndata,"/")
+# end
+# λe = 1.0e-3collect(range(λe1,λe2,Ndata));              # attenuation length range
 hν = collect(LinRange(hν1, hν2,Ndata));                # central photon energy for each measurement
+BeC1s = 284.0;
+λe = 1.0e-3λe_exp.(hν.-BeC1s);                         # attenuation length range
 
 ##
 ## alignment
@@ -173,7 +184,7 @@ Nspectrum = length(Be);
 # σ_be = sqrt(2.0)*[0.45; 0.25; 0.6];
 σ_be = 0.5e-3*[935.238187; 935.238187; 854.723209];
 
-BeC1s = 284.0 # mean(Be);
+BeC1s_th = 284.0 # mean(Be);
 ΔBeC1s = 6.0 # 12.0/5.0#(Be[end]-Be[1])/5;
 
 # The width may change, let's say, from 1000 to 1300 a.u on depth range 1,5...3,7 nm, for example. Peak positions may vary up to 4-5 nm, in my case it's from 284 to 280 eV for a SDS head group on depth range mentioned above. 
@@ -184,10 +195,10 @@ Ahν  = [650.0^2  650.0 1.0;
 Bhν = [1.0; (286.0+1.0)/286.0; (286.0-3.0)/286.0];
 μBe_var = inv(Ahν)*Bhν;
 
-hhν = collect(310.0:20.0:1900.0);
-figure()
-scatter([650.0; 1315.0; 1884.0],Bhν)
-plot(hhν,dropdims(μBe_var'*[hhν.^2 hhν.^1 hhν.^0]',dims=1))
+# hhν = collect(310.0:20.0:1900.0);
+# figure()
+# scatter([650.0; 1315.0; 1884.0],Bhν)
+# plot(hhν,dropdims(μBe_var'*[hhν.^2 hhν.^1 hhν.^0]',dims=1))
 
 
 # figure();
@@ -210,7 +221,7 @@ function σ_cs(hν::Cdouble,Ke::Array{Cdouble,1},μKe::Cdouble;μKe0::Cdouble=50
     p3 = 1.0-(p1+p2);
 
     # cross section value (only for hν ∈ [295,1500.0])
-    XPSpack.σ_C1s_interp[hν]*(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3),μBe_dev,σ_be_var,[p1;p2;p3]
+    σ_C1s_exp(hν)*(p1*σ_peak_1+p2*σ_peak_2+p3*σ_peak_3),μBe_dev,σ_be_var,[p1;p2;p3]
 end
 
 ##
@@ -261,23 +272,25 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
     local Sj,Sj_bg,_,_ = simulateSpectrum(Fνj[j],hν[j],dhν[j],
         Keij,σ_ke[j],Tj[j],Kdisc,
-        reverse(Be0),reverse(σ_cs_fg),σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeC1s,ΔBeC1s)); # σ_bg_lin_density(Keij,hν[j]-BeC1s,5.0e4ΔBeC1s) 5.0
+        reverse(Be0),reverse(σ_cs_fg),σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeC1s_th,ΔBeC1s)); # σ_bg_lin_density(Keij,hν[j]-BeC1s_th,5.0e4ΔBeC1s) 5.0
 
     ##
     ## geometry factors
     ##
     local H_deom,_,H_geom,_,_,_,_,al_C1s = alignmentParameterSphere(bp,r,φ,θ,x0,y0,z0,μ0,λe[j])
+    al_C1s = 1.0e-12*al_C1s*κ_units/κ_simple_units
 
     ##
     ## for the signal without noise
     ##
-    local SbgC1s      = (H_geom'*ρA_1)*Sj_bg
-    local SpectrumA_1 = (H_geom'*ρA_1)*Sj
+    local SbgC1s      = Δt*κ_units*(H_geom'*ρA_1)*Sj_bg
+    local SpectrumA_1 = Δt*κ_units*(H_geom'*ρA_1)*Sj
 
     ##
     ## add noise
     ##
-    local SC1snoise = countElectrons(SbgC1s+SpectrumA_1,1.0)
+    local SC1snoise = countElectrons(SbgC1s+SpectrumA_1,D_dark*Δt)
+
 
     if SWEEPS_ON # just repeat the acquisition
         local SC1snoise_sweeps = zeros(Cdouble,length(SC1snoise),nb_sweeps)
@@ -292,20 +305,20 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     ##
     ## push data to dicts
     ##
-
+    
     local dictData = Dict( "Ke" => Keij, "Be" => Be0, "μKe" => μKe,
-        "σ_cs_dens" => σ_cs_fg./XPSpack.σ_C1s_interp[hν[j]], "σ_tot" => XPSpack.σ_C1s_interp[hν[j]],
-        "SpectrumA_1" => SpectrumA_1, "Sbg" => SbgC1s, 
-        "Stot" => SbgC1s+SpectrumA_1, "Snoisy" => SC1snoise,
-        "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
+                    "σ_cs_dens" => σ_cs_fg./σ_C1s_exp(hν[j]), "σ_tot" => σ_C1s_exp(hν[j]),
+                    "SpectrumA_1" => SpectrumA_1, "Sbg" => SbgC1s, 
+                    "Stot" => SbgC1s+SpectrumA_1, "Snoisy" => SC1snoise,
+                    "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
     if SWEEPS_ON
         [dictData[string("Snoisy_",i)] = SC1snoise_sweeps[:,i] for i in 1:nb_sweeps]
     end
     local dictMetaData = Dict("μKe" => μKe,
-        "σ_tot" => XPSpack.σ_C1s_interp[hν[j]], "peak_mode" => μBe_dev, "peak_width"=>σ_be_var, "peak_probability"=>τ_be,
-        "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j]);
+        "σ_tot" => σ_C1s_exp(hν[j]), "peak_mode" => μBe_dev, "peak_width"=>σ_be_var, "peak_probability"=>τ_be,
+        "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
 
-    local dictGeom = Dict("model" => "sharp edge cylinder + outside vapor", 
+    local dictGeom = Dict("model" => "sharp edge sphere + outside vapor", 
                 "hν" => hν[j], "λ" => 1.0e3λe[j], "radius" => μ0, "max_depth" => k0*λe0,
                     "x0" => x0, "y0" => y0, "z0" => z0, "δr" => δr,"xc" => xc, "yc" => yc, "σx" => σx, "σy" => σy, "α" => al_C1s,
                     "r" => r, "H" => H_deom, "H_true" => H_geom, "ρ" => ρA_1)
@@ -319,6 +332,7 @@ for j in 1:Ndata # can potentially multi-thread this loop: but need to sync befo
     dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))]       = (eachcol(dfGeom),names(dfGeom))
 end
 
+save_folder = string(save_folder,"new_eal/")
 if SAVE_DATA
     mkpath(string(save_folder,exp_tag,"/"));
     XLSX.writetable(string(save_folder,exp_tag,"/data.xlsx"); dictAllData...) # TODO: get outside the loop
@@ -326,3 +340,7 @@ if SAVE_DATA
 end
 plot_sym=:Be
 include("plotData.jl")
+if SAVE_FIG
+    savefig(string(save_folder,exp_tag,"/full_measurement_model.png"))
+    savefig(string(save_folder,exp_tag,"/full_measurement_model.pdf"))
+end

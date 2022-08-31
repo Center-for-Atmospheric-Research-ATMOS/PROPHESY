@@ -208,7 +208,7 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
         Bhν = [1.0; (286.0+1.0)/286.0; (286.0-3.0)/286.0];
         μBe_var = inv(Ahν)*Bhν;
 
-        hhν = collect(310.0:20.0:1900.0);
+        # hhν = collect(310.0:20.0:1900.0);
         # figure()
         # scatter([650.0; 1315.0; 1884.0],Bhν)
         # plot(hhν,dropdims(μBe_var'*[hhν.^2 hhν.^1 hhν.^0]',dims=1))
