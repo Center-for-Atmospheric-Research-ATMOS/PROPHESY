@@ -108,6 +108,6 @@ tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
 if FLAG_SAVE_PLOT
     # savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_mean.png"))
     # savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_mean.pdf"))
-    savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_more_O1s_with_mean_units.png"))
-    savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_more_O1s_with_mean_units.pdf"))
+    savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_more_O1s_with_mean_units_new_cross_section.png"))
+    savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_more_O1s_with_mean_units_new_cross_section.pdf"))
 end
