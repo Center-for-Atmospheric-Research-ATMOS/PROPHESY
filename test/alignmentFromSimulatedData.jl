@@ -27,9 +27,10 @@ using utilsFun  # for the softMax functions
 using XPSpack # experiment model (geometry factor and cross section estimation)
 # using XPSsampling
 
-PLOT_FIG  = false
-SAVE_FIG  = false
-SAVE_DATA = false
+PLOT_FIG  = true
+SAVE_FIG  = true
+SAVE_DATA = true
+USING_GT_PROFILE = false
 
 data_folder = "../data/cylinder_radius_10.0/peak_shift/eal_5_restricted_range/"
 
@@ -54,8 +55,10 @@ idx = 1
 for folder_tag in data_folders
     # local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"water/data.xlsx"),r"^hν_[0-9]*",r"meta");
     # local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"water/model.xlsx"));
-    local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"/new_bg/water/data.xlsx"),r"^hν_[0-9]*",r"meta");
-    local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"/new_bg/water/model.xlsx"));
+    # local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"/new_bg/water/data.xlsx"),r"^hν_[0-9]*",r"meta");
+    # local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"/new_bg/water/model.xlsx"));
+    local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"/new_eal/water/data.xlsx"),r"^hν_[0-9]*",r"meta");
+    local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"/new_eal/water/model.xlsx"));
     local Ndata                     = length(dictAllData);
 
     global idx
@@ -68,14 +71,18 @@ for folder_tag in data_folders
         local S_liq_noisy = Array{Cdouble,1}(dictAllData[sym_data][!,:Snoisy]) - Array{Cdouble,1}(dictAllData[sym_data][!,:SpectrumA_1_gas]);
         local σ_cs_liq = dictAllData[sym_data][!,:σ_cs_dens]
         local Sbg = dictAllData[sym_data][!,:Sbg]
-        local ρ = 55.49*ones(Cdouble,Nr) # dictAllGeom[symbolDict[sym_data]][!,:ρ] # it works way too well with the true concentration profile
+        if USING_GT_PROFILE
+            local ρ = dictAllGeom[symbolDict[sym_data]][!,:ρ] # it works way too well with the true concentration profile
+        else
+            local ρ = 55.49*ones(Cdouble,Nr)
+        end
         α_al_noise[idx],_    = noiseAndParameterEstimation(σ_cs_liq,H_liq,S_liq_noisy,Sbg,ρ)
         local Tj = dictAllData[sym_data][!,:T][1];
         local Fνj = dictAllData[sym_data][!,:F][1];
         local σ_tot = dictAllData[sym_data][!,:σ_tot][1];
         local Δt = dictAllData[sym_data][!,:Δt][1];
         α_al_noise[idx] = α_al_noise[idx]/(κ_units*Tj*Fνj*σ_tot*Δt)
-        α_al_noise[idx] = 1.0e12α_al_noise[idx] # convert to m^{-2} from μm^{-2}
+        # α_al_noise[idx] = 1.0e12α_al_noise[idx] # convert to m^{-2} from μm^{-2}
         # τ_al_noise_gt[idx],_ = noiseAndParameterEstimation(dictAllData[symbol_h][1][:σ_cs_dens],dictAllGeom[simbol_λ][1][:H],
         #                     Array{Cdouble,1}(dictAllData[symbol_h][1][:Snoisy]),dictAllData[symbol_h][1][:Sbg],ρA_1)
 
@@ -157,8 +164,13 @@ if PLOT_FIG
     tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 
     if SAVE_FIG
-        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units.png"))
-        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units.pdf"))
+        if USING_GT_PROFILE
+            savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.png"))
+            savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.pdf"))
+        else
+            savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units.png"))
+            savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units.pdf"))
+        end
     end
 end
 
@@ -167,5 +179,10 @@ end
 
 df_α =  DataFrame( "α_gt"=> α_gt_mean, "α_ratio" =>  α_ratio_mean, "x_offset" => xc_off[1:5:end]);
 if SAVE_DATA
-    XLSX.writetable(string(data_folder,"/alignment_list.xlsx"), collect(eachcol(df_α)), names(df_α));
+    # XLSX.writetable(string(data_folder,"/alignment_list.xlsx"), collect(eachcol(df_α)), names(df_α));
+    if USING_GT_PROFILE
+        XLSX.writetable(string(data_folder,"/alignment_list_new_eal_gt.xlsx"), collect(eachcol(df_α)), names(df_α));
+    else
+        XLSX.writetable(string(data_folder,"/alignment_list_new_eal.xlsx"), collect(eachcol(df_α)), names(df_α));
+    end
 end
