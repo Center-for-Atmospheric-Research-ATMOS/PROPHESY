@@ -28,9 +28,8 @@ using XPSpack # experiment model (geometry factor and cross section estimation)
 # using XPSsampling
 
 PLOT_FIG  = true
-SAVE_FIG  = true
-SAVE_DATA = true
-USING_GT_PROFILE = false
+SAVE_FIG  = false
+SAVE_DATA = false
 
 data_folder = "../data/cylinder_radius_10.0/peak_shift/eal_5_restricted_range/"
 
@@ -41,10 +40,11 @@ data_folder = "../data/cylinder_radius_10.0/peak_shift/eal_5_restricted_range/"
 folder_content = readdir(data_folder);
 list_match = match.(r"^offcenter_",folder_content)
 data_folders = folder_content[list_match.!=nothing]
-α_gt       = zeros(Cdouble,5*length(data_folders));
-α_ratio    = zeros(Cdouble,5*length(data_folders));
-xc_off     = zeros(Cdouble,5*length(data_folders));
-α_al_noise = zeros(Cdouble,5*length(data_folders));
+α_gt                  = zeros(Cdouble,5*length(data_folders));
+α_ratio               = zeros(Cdouble,5*length(data_folders));
+xc_off                = zeros(Cdouble,5*length(data_folders));
+α_al_noise            = zeros(Cdouble,5*length(data_folders));
+α_al_noise_gt_profile = zeros(Cdouble,5*length(data_folders));
 # τ_al_noise_gt = zeros(Cdouble,5*length(data_folders));
 # unit conversion constant (some of the quantities are in μm, some in L and some in Mbarn)
 NA = 6.022e23;
@@ -71,17 +71,16 @@ for folder_tag in data_folders
         local S_liq_noisy = Array{Cdouble,1}(dictAllData[sym_data][!,:Snoisy]) - Array{Cdouble,1}(dictAllData[sym_data][!,:SpectrumA_1_gas]);
         local σ_cs_liq = dictAllData[sym_data][!,:σ_cs_dens]
         local Sbg = dictAllData[sym_data][!,:Sbg]
-        if USING_GT_PROFILE
-            local ρ = dictAllGeom[symbolDict[sym_data]][!,:ρ] # it works way too well with the true concentration profile
-        else
-            local ρ = 55.49*ones(Cdouble,Nr)
-        end
-        α_al_noise[idx],_    = noiseAndParameterEstimation(σ_cs_liq,H_liq,S_liq_noisy,Sbg,ρ)
+        local ρ = dictAllGeom[symbolDict[sym_data]][!,:ρ] # it works way too well with the true concentration profile
+        α_al_noise_gt_profile[idx],_ = noiseAndParameterEstimation(σ_cs_liq,H_liq,S_liq_noisy,Sbg,ρ)
+        ρ       = 55.49*ones(Cdouble,Nr) # now with the information we have at hand
+        α_al_noise[idx],_            = noiseAndParameterEstimation(σ_cs_liq,H_liq,S_liq_noisy,Sbg,ρ)
         local Tj = dictAllData[sym_data][!,:T][1];
         local Fνj = dictAllData[sym_data][!,:F][1];
         local σ_tot = dictAllData[sym_data][!,:σ_tot][1];
         local Δt = dictAllData[sym_data][!,:Δt][1];
         α_al_noise[idx] = α_al_noise[idx]/(κ_units*Tj*Fνj*σ_tot*Δt)
+        α_al_noise_gt_profile[idx] = α_al_noise_gt_profile[idx]/(κ_units*Tj*Fνj*σ_tot*Δt)
         # α_al_noise[idx] = 1.0e12α_al_noise[idx] # convert to m^{-2} from μm^{-2}
         # τ_al_noise_gt[idx],_ = noiseAndParameterEstimation(dictAllData[symbol_h][1][:σ_cs_dens],dictAllGeom[simbol_λ][1][:H],
         #                     Array{Cdouble,1}(dictAllData[symbol_h][1][:Snoisy]),dictAllData[symbol_h][1][:Sbg],ρA_1)
@@ -128,49 +127,54 @@ Ndata = 5;
 α_gt_mean    = zeros(Cdouble,length(data_folders));
 α_ratio_mean = zeros(Cdouble,length(data_folders));
 α_al_mean    = zeros(Cdouble,length(data_folders));
+α_al_mean_gt = zeros(Cdouble,length(data_folders));
 for i in 1: length(data_folders)
     α_gt_mean[i]    = mean(α_gt[(i-1)*Ndata+1:i*Ndata])
     α_ratio_mean[i] = mean(α_ratio[(i-1)*Ndata+1:i*Ndata])
     α_al_mean[i]    = mean(α_al_noise[(i-1)*Ndata+1:i*Ndata])
+    α_al_mean_gt[i] = mean(α_al_noise_gt_profile[(i-1)*Ndata+1:i*Ndata])
 end
 
 
 if PLOT_FIG
     figure(figsize=[10, 5]); # scatter(1.0e9α_gt,α_ratio)
-    ax = subplot(122)
+    ax2 = subplot(122)
     scatter(1.0e8α_gt_mean,1.0e-2α_ratio_mean,color="tab:orange",label="liquid/vapor ratio") # α_ratio_mean.^2.5
-    scatter(1.0e8α_gt_mean,1.0e8α_al_mean,color="tab:green",label="noise estimation [cm\$^{-2}\$]") 
-    xlim(-0.001,0.033); ylim(-0.001)
+    scatter(1.0e8α_gt_mean,1.0e8α_al_mean,color="tab:green",label="APE [cm\$^{-2}\$]") 
+    scatter(1.0e8α_gt_mean,1.0e8α_al_mean_gt,color="tab:red",label="APE (true profile) [cm\$^{-2}\$]")
+    xlim(-0.0005,0.0325); ylim(-0.001)
     xlabel("GT [cm\$^{-2}\$]",fontsize=14); 
     ylabel("estimation",fontsize=14) 
     xticks(fontsize=14); yticks(fontsize=14); 
-    ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-    ax.yaxis.offsetText.set_size(14)
-    ax.xaxis.offsetText.set_size(14)
-    legend(fontsize=14)
+    ax2.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
+    ax2.ticklabel_format(axis="x",style="sci",scilimits=(-1,1),useOffset=true)
+    ax2.yaxis.offsetText.set_size(14)
+    ax2.xaxis.offsetText.set_size(14)
+    legend(fontsize=14,borderpad=0.2,borderaxespad=0.2,handletextpad=0.2,handlelength=1.0) # ,labelspacing=0.2
 
-    ax = subplot(121)
+    ax1 = subplot(121)
     scatter(xc_off[1:5:end],1.0e8α_gt_mean,label="GT [cm\$^{-2}\$]")
     scatter(xc_off[1:5:end],1.0e-2α_ratio_mean,label="liquid/vapor area ratio")
-    scatter(xc_off[1:5:end],1.0e8α_al_mean,label="noise estimation [cm\$^{-2}\$]")
+    scatter(xc_off[1:5:end],1.0e8α_al_mean,label="APE [cm\$^{-2}\$]")
+    scatter(xc_off[1:5:end],1.0e8α_al_mean_gt,label="APE (true profile) [cm\$^{-2}\$]")
     ylim(-0.001)
+    xlim(-3.0,178.0)
     xlabel("horizontal offset [\$\\mu\$m]",fontsize=14); 
     ylabel("alignment parameter",fontsize=14) 
     xticks(fontsize=14); yticks(fontsize=14); 
-    ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-    ax.yaxis.offsetText.set_size(14)
-    ax.xaxis.offsetText.set_size(14)
-    legend(fontsize=14)
-    tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+    ax1.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
+    ax1.yaxis.offsetText.set_size(14)
+    ax1.xaxis.offsetText.set_size(14)
+    legend(fontsize=14,borderpad=0.2,borderaxespad=0.2,handletextpad=0.2,handlelength=1.0)
+    tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
+
+    ax1.text(-0.12, 0.95, "a)", transform=ax1.transAxes,fontsize=16)
+    ax2.text(-0.05, 0.95, "b)", transform=ax2.transAxes,fontsize=16)
+
 
     if SAVE_FIG
-        if USING_GT_PROFILE
-            savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.png"))
-            savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.pdf"))
-        else
-            savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units.png"))
-            savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units.pdf"))
-        end
+        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.png"))
+        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.pdf"))
     end
 end
 
