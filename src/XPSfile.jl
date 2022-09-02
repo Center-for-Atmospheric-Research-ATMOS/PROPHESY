@@ -20,6 +20,8 @@ export dataAndFit_xlsx2df,curveFromFit
 
 export dataAndMeta_xlsx2df, model_xlsx2df
 
+export IGORcolumn_xlsx2df # quite specific 
+
 
 include("XPSfile/XPSxlsx.jl")
 end

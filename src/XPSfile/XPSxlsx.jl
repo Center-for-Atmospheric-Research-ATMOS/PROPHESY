@@ -170,3 +170,53 @@ function model_xlsx2df(fileName::String)
     # return
     dictAllGeom,symbolDict
 end
+
+
+function IGORcolumn_xlsx2df(fileName::String,regSheet::Regex,regData::Regex,regMeta::Regex)
+    local xf_data = XLSX.readxlsx(fileName);
+    local xf_sheet_names = XLSX.sheetnames(xf_data);
+    local list_match_data = match.(regSheet,xf_sheet_names);
+    local xf_data_sheet_names = xf_sheet_names[list_match_data.!=nothing];
+
+    # the data
+    dictAllData = Dict();
+    dictAllMeta = Dict();
+    for xf_name in xf_data_sheet_names
+        local x = XLSX.getdata(xf_data[xf_name])
+
+        ## data
+        local list_data_column = match.(regData,coalesce.(x[1,:],""));
+        local x_data = x[:,list_data_column.!=nothing];
+        local dataPairs = Array{Pair{String,Vector{Cdouble}}}(undef,size(x_data,2));
+        for j in 1:size(x_data,2)
+            if (typeof(x_data[2:end,j][1])<:AbstractString)
+                local data_x = coalesce.(x_data[2:end,j],"0.0") # [.!ismissing.(x[2:end,j])]; # eltype(x)
+                dataPairs[j] = (x_data[1,j] => parse.(Cdouble,replace.(data_x, r"[,;]" => "")))
+            else
+                local data_x = coalesce.(x_data[2:end,j],0.0)
+                dataPairs[j] = (x_data[1,j] => convert(Array{Cdouble,1},data_x))
+            end
+        end
+        df = DataFrame(dataPairs);
+        dictAllData[Symbol(xf_name[1:end-5])] = df 
+
+        ## meta data
+        local list_meta_column = match.(regMeta,coalesce.(x[1,:],""));
+        local x_meta = x[:,list_meta_column.!=nothing];
+        local metaPairs = Array{Pair{String,Vector{Cdouble}}}(undef,size(x_meta,2));
+        for j in 1:size(x_meta,2)
+            meta_x = collect(skipmissing(x_meta[2:end,j]))
+            if (typeof(meta_x[1])<:AbstractString)
+                # local data_x = coalesce.(x_meta[2:end,j],"0.0") # [.!ismissing.(x[2:end,j])]; # eltype(x)
+                metaPairs[j] = (x_meta[1,j] => parse.(Cdouble,replace.(meta_x, r"[,;]" => "")))
+            else
+                # local data_x = coalesce.(x_meta[2:end,j],0.0)
+                metaPairs[j] = (x_meta[1,j] => convert(Array{Cdouble,1},meta_x))
+            end
+        end
+        dictAllMeta[Symbol(xf_name[1:end-5])] = DataFrame(metaPairs);
+    end
+
+    # return
+    dictAllData,dictAllMeta
+end
