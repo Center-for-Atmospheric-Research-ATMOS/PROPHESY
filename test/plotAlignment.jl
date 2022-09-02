@@ -27,7 +27,7 @@ end
 α_ratio_log_fit = dropdims(μab*[α_noise_log_fit; ones(Cdouble,length(α_noise_log_fit))'],dims=1)
 
 figure(figsize=[12, 10])
-ax = subplot(221)
+ax1 = subplot(221)
 for i in 1:length(α_noiseO1s)
     local plot_sym = Symbol(data_filesO1s[i][1:end-5]);
     scatter(1.0e8mean(α_noiseO1s[plot_sym]),mean(α_ratioO1s[plot_sym]),s=100,color=color_array[i],alpha=0.5)
@@ -40,14 +40,15 @@ ylim(0.1,10.0)
 xlabel("model estimation [cm\$^{-2}\$]",fontsize=14); 
 ylabel("liq O1s/gas O1s",fontsize=14) 
 xticks(fontsize=14); yticks(fontsize=14); 
-ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-ax.yaxis.offsetText.set_size(14)
-ax.xaxis.offsetText.set_size(14)
+ax1.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
+ax1.yaxis.offsetText.set_size(14)
+ax1.xaxis.offsetText.set_size(14)
 xscale("log")
 yscale("log")
-legend(fontsize=12)
+# legend(fontsize=12)
+legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 
-ax = subplot(223)
+ax3 = subplot(223)
 for i in 1:length(α_noiseO1sS2p)
     local plot_sym = Symbol(data_filesO1sS2p[i][1:end-5]);
     scatter(1.0e8mean(α_noiseO1sS2p[plot_sym]),mean(α_ratioO1sS2p[plot_sym]),s=100,color=color_array[i],alpha=0.5)
@@ -59,14 +60,15 @@ ylim(0.1,10.0)
 xlabel("model estimation [cm\$^{-2}\$]",fontsize=14); 
 ylabel("liq O1s/gas O1s",fontsize=14) 
 xticks(fontsize=14); yticks(fontsize=14); 
-ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-ax.yaxis.offsetText.set_size(14)
-ax.xaxis.offsetText.set_size(14)
+ax3.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
+ax3.yaxis.offsetText.set_size(14)
+ax3.xaxis.offsetText.set_size(14)
 xscale("log")
 yscale("log")
-legend(fontsize=12)
+# legend(fontsize=12)
+legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 
-ax = subplot(222)
+ax2 = subplot(222)
 for i in 1:length(α_noiseC1s)
     local plot_sym = Symbol(data_filesC1s[i][1:end-5]);
     scatter(1.0e8α_noiseC1s[plot_sym],α_ratioC1s[plot_sym],label=replace(data_filesC1s[i][1:end-5],"_"=>" "),color=color_array[i])
@@ -78,14 +80,15 @@ ylim(0.1,10.0)
 xlabel("model estimation [cm\$^{-2}\$]",fontsize=14); 
 ylabel("liq O1s/gas O1s",fontsize=14) 
 xticks(fontsize=14); yticks(fontsize=14); 
-ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-ax.yaxis.offsetText.set_size(14)
-ax.xaxis.offsetText.set_size(14)
+ax2.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
+ax2.yaxis.offsetText.set_size(14)
+ax2.xaxis.offsetText.set_size(14)
 xscale("log")
 yscale("log")
-legend(fontsize=12)
+# legend(fontsize=12)
+legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 
-ax = subplot(224)
+ax4 = subplot(224)
 for i in 1:length(α_noiseS2p)
     local plot_sym = Symbol(data_filesS2p[i][1:end-5]);
     scatter(1.0e8α_noiseS2p[plot_sym],α_ratioS2p[plot_sym],label=replace(data_filesS2p[i][1:end-5],"_"=>" "),color=color_array[i])
@@ -97,13 +100,19 @@ ylim(0.1,10.0)
 xlabel("model estimation [cm\$^{-2}\$]",fontsize=14); 
 ylabel("liq O1s/gas O1s",fontsize=14) 
 xticks(fontsize=14); yticks(fontsize=14); 
-ax.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-ax.yaxis.offsetText.set_size(14)
-ax.xaxis.offsetText.set_size(14)
+ax4.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
+ax4.yaxis.offsetText.set_size(14)
+ax4.xaxis.offsetText.set_size(14)
 xscale("log")
 yscale("log")
-legend(fontsize=12)
+# legend(fontsize=12)
+legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
+
+ax1.text(-0.12, 0.9, "a)", transform=ax1.transAxes,fontsize=16)
+ax2.text(-0.07, 0.9, "b)", transform=ax2.transAxes,fontsize=16)
+ax3.text(-0.12, 0.9, "c)", transform=ax3.transAxes,fontsize=16)
+ax4.text(-0.07, 0.9, "d)", transform=ax4.transAxes,fontsize=16)
 
 if FLAG_SAVE_PLOT
     # savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_mean.png"))
@@ -111,3 +120,7 @@ if FLAG_SAVE_PLOT
     savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_more_O1s_with_mean_units_new_cross_section.png"))
     savefig(string("../data/TK/","ratio_vs_model_O1s_C1s_S2p_more_O1s_with_mean_units_new_cross_section.pdf"))
 end
+
+
+
+    
