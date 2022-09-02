@@ -135,6 +135,18 @@ for i in 1: length(data_folders)
     α_al_mean_gt[i] = mean(α_al_noise_gt_profile[(i-1)*Ndata+1:i*Ndata])
 end
 
+# model 1.0e-2α_ratio = C*(1.0e8α_gt)^n, n≃21/8 
+yi       = log.(1.0e-2α_ratio);
+xi       = log.(1.0e8α_gt);
+sum_xixi = sum(xi.^2);
+sum_xi   = sum(xi);
+sum_1    = length(xi);
+sum_yixi = sum(xi.*yi);
+sum_yi   = sum(yi);
+μα_bar   = inv([sum_xixi sum_xi; sum_xi sum_1])*[sum_yixi; sum_yi];
+
+α_disc = collect(0.0001:0.0001:0.032);
+α_mod  = exp(μα_bar[2])*(α_disc).^μα_bar[1] # (μα_bar[1]-0.01) # the little offset because there is a bias due to this type of fits
 
 if PLOT_FIG
     figure(figsize=[10, 5]); # scatter(1.0e9α_gt,α_ratio)
@@ -142,12 +154,15 @@ if PLOT_FIG
     scatter(1.0e8α_gt_mean,1.0e-2α_ratio_mean,color="tab:orange",label="liquid/vapor ratio") # α_ratio_mean.^2.5
     scatter(1.0e8α_gt_mean,1.0e8α_al_mean,color="tab:green",label="APE [cm\$^{-2}\$]") 
     scatter(1.0e8α_gt_mean,1.0e8α_al_mean_gt,color="tab:red",label="APE (true profile) [cm\$^{-2}\$]")
-    xlim(-0.0005,0.0325); ylim(-0.001)
+    ax2.plot(α_disc,α_mod,label=string("model 0.1368\$\\alpha^{0.371}\$"))
+    # xlim(-0.0005,0.0325); ylim(-0.001)
+    xlim(9.0e-5,0.04); ylim(4.0e-5,0.04)
     xlabel("GT [cm\$^{-2}\$]",fontsize=14); 
     ylabel("estimation",fontsize=14) 
+    xscale("log"); yscale("log");
     xticks(fontsize=14); yticks(fontsize=14); 
-    ax2.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-    ax2.ticklabel_format(axis="x",style="sci",scilimits=(-1,1),useOffset=true)
+    # ax2.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
+    # ax2.ticklabel_format(axis="x",style="sci",scilimits=(-1,1),useOffset=true)
     ax2.yaxis.offsetText.set_size(14)
     ax2.xaxis.offsetText.set_size(14)
     legend(fontsize=14,borderpad=0.2,borderaxespad=0.2,handletextpad=0.2,handlelength=1.0) # ,labelspacing=0.2
@@ -173,8 +188,10 @@ if PLOT_FIG
 
 
     if SAVE_FIG
-        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.png"))
-        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.pdf"))
+        # savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.png"))
+        # savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.pdf"))
+        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.png"))
+        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf"))
     end
 end
 
