@@ -149,12 +149,14 @@ sum_yi   = sum(yi);
 α_mod  = exp(μα_bar[2])*(α_disc).^μα_bar[1] # (μα_bar[1]-0.01) # the little offset because there is a bias due to this type of fits
 
 if PLOT_FIG
-    figure(figsize=[10, 5]); # scatter(1.0e9α_gt,α_ratio)
+    figure(figsize=[12, 5]); # scatter(1.0e9α_gt,α_ratio)
     ax2 = subplot(122)
     scatter(1.0e8α_gt_mean,1.0e-2α_ratio_mean,color="tab:orange",label="liquid/vapor ratio") # α_ratio_mean.^2.5
     scatter(1.0e8α_gt_mean,1.0e8α_al_mean,color="tab:green",label="APE [cm\$^{-2}\$]") 
     scatter(1.0e8α_gt_mean,1.0e8α_al_mean_gt,color="tab:red",label="APE (true profile) [cm\$^{-2}\$]")
-    ax2.plot(α_disc,α_mod,label=string("model 0.1368\$\\alpha^{0.371}\$"))
+    ax2.plot(α_disc,α_mod,label=string("model 0.1368\$\\alpha^{0.371}\$"),color="tab:orange")
+    ax2.plot(α_disc,α_disc,label="1:1",color="tab:red")
+    ax2.plot(α_disc,0.5α_disc,label="2:1",color="tab:green")
     # xlim(-0.0005,0.0325); ylim(-0.001)
     xlim(9.0e-5,0.04); ylim(4.0e-5,0.04)
     xlabel("GT [cm\$^{-2}\$]",fontsize=14); 
@@ -184,8 +186,7 @@ if PLOT_FIG
     tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
 
     ax1.text(-0.12, 0.95, "a)", transform=ax1.transAxes,fontsize=16)
-    ax2.text(-0.05, 0.95, "b)", transform=ax2.transAxes,fontsize=16)
-
+    ax2.text(-0.1, 0.95, "b)", transform=ax2.transAxes,fontsize=16)
 
     if SAVE_FIG
         # savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.png"))
