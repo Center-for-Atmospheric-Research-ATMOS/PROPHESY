@@ -161,9 +161,9 @@ fileNamesC1sAll = filenames[match.(r"[cC]1[sS]",filenames).!=nothing]
 fileNamesO1sAll = filenames[match.(r"[oO]1[sS]",filenames).!=nothing]
 figure(figsize=[12, 5])
 ax1 = subplot(121)
-ax1.plot([1e-11; 3.0e-8],[1e-11; 3.0e-8],label="1:1")
-xlim(1e-11,3.0e-8)
-ylim(1e-11,3.0e-8)
+ax1.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*[1e-11; 3.0e-8],label="1:1")
+xlim(1.0e8*1e-11,1.0e8*3.0e-8)
+ylim(1.0e8*1e-11,1.0e8*3.0e-8)
 yscale("log")
 xscale("log")
 xlabel("alignment parameter GT [cm\$^{-2}\$]",fontsize=14); 
@@ -173,10 +173,10 @@ xticks(fontsize=14); yticks(fontsize=14);
 ax1.yaxis.offsetText.set_size(14)
 ax1.xaxis.offsetText.set_size(14)
 ax2 = subplot(122)
-ax2.plot([1e-11; 3.0e-8],[1e-11; 3.0e-8],label="1:1")
-ax2.plot([1e-11; 3.0e-8],0.5*[1e-11; 3.0e-8],label="2:1")
-xlim(1e-11,3.0e-8)
-ylim(1e-11,3.0e-8)
+ax2.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*[1e-11; 3.0e-8],label="1:1")
+ax2.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*0.5*[1e-11; 3.0e-8],label="2:1")
+xlim(1.0e8*1e-11,1.0e8*3.0e-8)
+ylim(1.0e8*1e-11,1.0e8*3.0e-8)
 yscale("log")
 xscale("log")
 yscale("log")
@@ -195,9 +195,9 @@ for fileNameC1s in fileNamesC1sAll
     local idxArray = 1
     local xc = 0.0
     for dictTmp in values(dictAllAPE[fileNameC1s])
-        α_GT[idxArray]         = dictTmp["α_GT"]
-        α_APE[idxArray]        = dictTmp["α_APE"]
-        α_APE_approx[idxArray] = dictTmp["α_APE_approx"]
+        α_GT[idxArray]         = 1.0e8dictTmp["α_GT"]
+        α_APE[idxArray]        = 1.0e8dictTmp["α_APE"]
+        α_APE_approx[idxArray] = 1.0e8dictTmp["α_APE_approx"]
         xc                     = dictTmp["xc"]
         idxArray               = idxArray + 1
     end
@@ -213,9 +213,9 @@ for fileNameO1s in fileNamesO1sAll
     local idxArray = 1
     local xc = 0.0
     for dictTmp in values(dictAllAPE[fileNameO1s])
-        α_GT[idxArray]         = dictTmp["α_GT"]
-        α_APE[idxArray]        = dictTmp["α_APE"]
-        α_APE_approx[idxArray] = dictTmp["α_APE_approx"]
+        α_GT[idxArray]         = 1.0e8dictTmp["α_GT"]
+        α_APE[idxArray]        = 1.0e8dictTmp["α_APE"]
+        α_APE_approx[idxArray] = 1.0e8dictTmp["α_APE_approx"]
         xc                     = dictTmp["xc"]
         idxArray               = idxArray + 1
     end
@@ -226,8 +226,8 @@ end
 ax1.legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 ax2.legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
-ax1.text(-0.06, 0.95, "a)", transform=ax1.transAxes,fontsize=16)
-ax2.text(-0.06, 0.95, "b)", transform=ax2.transAxes,fontsize=16)
+ax1.text(-0.1, 0.95, "a)", transform=ax1.transAxes,fontsize=16)
+ax2.text(-0.1, 0.95, "b)", transform=ax2.transAxes,fontsize=16)
 ax1.text(0.5, 0.25, "\$\\rho\$ GT density", transform=ax1.transAxes,fontsize=16)
 ax2.text(0.5, 0.25, "\$\\rho\$ constant density", transform=ax2.transAxes,fontsize=16)
 
