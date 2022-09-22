@@ -77,41 +77,44 @@ ylabel("normalized gain")
 
 
 
-fig = figure(figsize=[9,5])
+fig = figure(figsize=[10,5])
 # near analyzer
 ax1 = subplot(121,polar=true)
-ax1.set_rlabel_position(-22.5)
+ax1.set_rlabel_position(-50.0)
 ax1.set_rticks([μ0-0.03, μ0-0.02, μ0-0.01, μ0])
 ax1.plot(atan(x0_far,z0_far)*ones(Cdouble,2),[μ0-0.03; μ0+δr], color="red",label="\$\\theta\\simeq54.7\$")
 pcm1 = ax1.pcolormesh(θ_near,r_surf,H_rθy_near[:,:,128],edgecolors="face")
 ylim(μ0-0.03,μ0+δr)
 xticks(fontsize=12)
 yticks(fontsize=12)
-ax1.legend(loc="lower left", bbox_to_anchor=(.5 + cos(atan(x0_far,z0_far))/2, .5 + sin(atan(x0_far,z0_far))/2))
+ax1.legend(loc="lower left", bbox_to_anchor=(.5 + cos(atan(x0_far,z0_far))/2, .5 + sin(atan(x0_far,z0_far))/2),fontsize=14,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 cax1 = fig.add_axes([0.15, .37, 0.02, 0.25])
 cb1 = fig.colorbar(pcm1, orientation="vertical", cax=cax1, shrink=0.6)
 cb1.set_label("gain [a.u.]", fontsize=12) # , color="white"
 
 ax2 = subplot(122)
-l_cylinder, = ax2.plot(r_surf,H_r_far/maximum(H_r_far), color="tab:blue", label="cylinder  \$\\lambda_e\$"); #
+l_cylinder, = ax2.plot(r_surf,H_r_far/maximum(H_r_far), color="tab:blue", label="cylinder"); #
 # ax2.plot(r_surf,H_r_near/maximum(H_r_near), label="cylinder: near \$\\lambda_e\$", color="tab:green");
-l_planar, = ax2.plot(r_surf,H_z/maximum(H_z), color="tab:orange", label="planar approximation \$\\lambda_e\$"); # ,
-s = @sprintf "planar approximation limits" #  \$[%.2f\\lambda_e,%.2f\\lambda_e]\$" r_eal_min_far r_eal_max_far
-l_un = ax2.fill_between(r_surf,H_z_far_min/maximum(H_z_far_min),H_z_far_max/maximum(H_z_far_max),alpha=0.5,color="tab:orange",label=s) # ,
+l_planar, = ax2.plot(r_surf,H_z/maximum(H_z), color="tab:orange", label="pointwise"); # ,
+# s = @sprintf "planar approximation limits" #  \$[%.2f\\lambda_e,%.2f\\lambda_e]\$" r_eal_min_far r_eal_max_far
+# l_un = ax2.fill_between(r_surf,H_z_far_min/maximum(H_z_far_min),H_z_far_max/maximum(H_z_far_max),alpha=0.5,color="tab:orange",label=s) # ,
 s = @sprintf "planar approximation limits (near)" #  \$[%.2f\\lambda_e,%.2f\\lambda_e]\$" r_eal_min_near r_eal_max_near
 # ax2.fill_between(r_surf,H_z_near_min/maximum(H_z_near_min),H_z_near_max/maximum(H_z_near_max),alpha=0.5,color="tab:pink",label=s)
-legend(fontsize=12) # [l_cylinder,(l_planar,l_un)],["cylinder \$\\lambda_e\$","planar approximation \$\\lambda_e\$"]
-xticks(fontsize=12)
-yticks(fontsize=12)
-xlabel("radius [\$\\mu m\$]",fontsize=12)
-ylabel("normalized gain",fontsize=12)
+# legend(fontsize=12) # [l_cylinder,(l_planar,l_un)],["cylinder \$\\lambda_e\$","planar approximation \$\\lambda_e\$"]
+legend(fontsize=14,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
+xticks(fontsize=14)
+yticks(fontsize=14)
+xlabel("radial distance [\$\\mu\$m]",fontsize=16)
+ylabel("normalized gain [a.u.]",fontsize=16)
+# ax2.ticklabel_format(axis="x",style="sci", scilimits=(-2, 2))
+ax2.xaxis.offsetText.set_size(12)
 
-tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
+tight_layout(pad=1.5, w_pad=0.5, h_pad=0.5)
 # ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(0.0, 1.0), textcoords="axes fraction", color="black",fontsize=14)
 # ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(0.0, 1.0), textcoords="axes fraction", color="black",fontsize=14)
-ax1.text(-0.05, 1.0, "a)", transform=ax1.transAxes,fontsize=14)
-ax2.text(-0.14, 0.95, "b)", transform=ax2.transAxes,fontsize=14)
-
+ax1.text(-0.1, 0.95, "a)", transform=ax1.transAxes,fontsize=16)
+ax2.text(-0.14, 0.95, "b)", transform=ax2.transAxes,fontsize=16)
+ax2.text(0.25, 0.4, "\$\\lambda_e\$ = 2[nm]", transform=ax2.transAxes,fontsize=20)
 
 # savefig("meas_op_outside.pdf")
 # savefig("meas_op_outside.png")

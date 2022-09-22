@@ -20,6 +20,7 @@ using XPSpack
 
 μ0 = 20.0; # radius of the microjet
 λe = 2.0e-3; # μ0; # EAL
+k0 = 5.0;
 L = 3μ0;
 
 N = 51;
@@ -51,7 +52,7 @@ include("distance.jl")
 ##
 
 ## model specific discretization
-r_surf = collect(range(μ0-5λe,μ0,length=N));
+r_surf = collect(range(μ0-k0*λe,μ0,length=N));
 θ0_far  = atan(x0_far,z0_far);
 θ_far   = collect(range(θ0_far-π/2.0,θ0_far+π/2.0,length=J));
 θ0_near = atan(x0_near,z0_near);
@@ -71,11 +72,26 @@ Ny = K;
 Nz = N;
 x_far   = collect(range(-μ0,μ0,length=Nx));
 x_near  = collect(range(-μ0,μ0,length=Nx));
-z_surf = collect(range(-5λe,0.0,length=N));
+z_surf = collect(range(-k0*λe,0.0,length=N));
 
 ## compute models and plot
 include("finger_and_planar_model.jl")
 
+
+##
+## spherical model
+##
+# r = collect(range(μ0-k0*λe0,μ0,length=Nr)); # +δr
+# θ0 = atan(x0,z0);
+# φ0 = acos(y0/sqrt(x0^2 + y0^2 + z0^2));
+# φ = collect(range(φ0-π/2.0,φ0+π/2.0,Nφ)); 
+# θ = collect(range(θ0-π/2.0,θ0+π/2.0,Nθ));
+Nθ = K;
+Nφ = J;
+φ_sphere = collect(range(0.0,π,Nφ));    # the polar angle (different notations compared with )
+θ_sphere = collect(range(0.0,2.0π,Nθ)); # the azimuthal angle
+
+include("finger_and_sphere_model.jl")
 
 
 ##
