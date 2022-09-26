@@ -1,5 +1,7 @@
-# push!(LOAD_PATH,"/path/to/package/XPSinv.jl/src/")
+# push!(LOAD_PATH,"/path/to/package/XPSpack/")
 # sudo nano /opt/julias/julia-1.3.1/etc/julia/startup.jl
+# or nano ~/.julia/julia-1.8.0/etc/julia/startup.jl
+# or nano ~/.julia/config/startup.jl
 
 
 module XPSpack
@@ -8,8 +10,7 @@ using Statistics
 using LinearAlgebra # for the definition of the I matrix in XPSutils... could be avoided, but the package is very common
 using Interpolations # used in XPSmeas.jl
 using Printf
-using utilsFun
-using NewtonMethod  # used in XPSutils.jl
+using NMOpt # unregistered package at (https://github.com/matthewozon/NMOpt)  # used in XPSutils.jl
 
 # penetration depth and cross-section values: not sure it's really useful in this module since the values are supposed to be known to create the models
 export λe, λe_exp, σ_cs_orb, σ_bg_density, σ_bg_lin_density, σ_bg
@@ -36,10 +37,10 @@ export Ψ_lin_peaks # implemented in XPSmeas.jl
 export noiseAndParameterEstimation
 
 # include the implementation of the exported functions and objects
-include("XPSpack/penetration_depth.jl")
-include("XPSpack/cross_section.jl")
-include("XPSpack/XPSmeas.jl")  # implement most function exported so far
-include("XPSpack/XPSutils.jl") # common algorithms used for data processing
+include("penetration_depth.jl")
+include("cross_section.jl")
+include("XPSmeas.jl")  # implement most function exported so far
+include("XPSutils.jl") # common algorithms used for data processing
 
 
 end # module

@@ -20,8 +20,8 @@ module XPSsampling
     export samplePosteriorMargin, acceptSampleMargin
 
     # implementation of the exported function/objects
-    include("XPSsampling/sampleCov.jl")
-    include("XPSsampling/communicationMechanism.jl")
+    include("sampleCov.jl")
+    include("communicationMechanism.jl")
     # include("XPSsampling/SAoptim.jl") # hide this for the time being
     # Metropolis Hastings samplers: fairly efficient since the sampled distributions are made up of the product of Gaussian distributions with a positivity constraint
     # [1] N. Metropolis et S. Ulam, The Monte Carlo method, 
@@ -32,8 +32,8 @@ module XPSsampling
     #     DOI: 10.2307/2334940
     # [3] wikipedia link https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm
     # include("XPSsampling/MHentropy.jl")      # hide this for the time being
-    include("XPSsampling/MHquad.jl")         # good to use
-    include("XPSsampling/MHquadBoundary.jl") # not really useful here
+    include("MHquad.jl")         # good to use
+    include("MHquadBoundary.jl") # not really useful here
 
 end
 

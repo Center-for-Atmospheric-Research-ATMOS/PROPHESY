@@ -23,5 +23,5 @@ export dataAndMeta_xlsx2df, model_xlsx2df
 export IGORcolumn_xlsx2df # quite specific 
 
 
-include("XPSfile/XPSxlsx.jl")
+include("XPSxlsx.jl")
 end

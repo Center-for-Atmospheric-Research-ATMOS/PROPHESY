@@ -1,0 +1,13 @@
+name = "XPSfile"
+uuid = "56f44198-ba77-4bbc-bc42-32006285a19d"
+version = "0.2.0"
+
+[deps]
+XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Query = "1a8c2f83-1ff3-5112-b086-8aa67b057ba1"
+DataValues = "e7dc6d0d-1eca-5fa6-8ad6-5aecde8b7ea5"
+
+[compat]
+julia = "1"
+

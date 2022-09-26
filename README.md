@@ -139,5 +139,7 @@ Test for:
 # Dependence
 
 - Interpolations
-- utilsFun
-- TODO: add the rest of the deps
+- utilsFun (not anymore)
+- TODO: add the rest of the deps (in Project.toml files)
+
+# Users may store their own personal commands in `~/.julia/config/startup.jl`.
