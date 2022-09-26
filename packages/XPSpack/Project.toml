@@ -12,8 +12,7 @@ NMOpt = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
 
 #unregistered packages
 [where]
-NMOpt = "https://github.com/matthewozon/NMOpt" # "/home/mattu/Dev/NMOpt/" 
-# utilsFun = "/home/mattu/Dev/utilsFun.jl/" #"fc37059f-9214-4d70-ba1e-6a2f1d57b035"
+NMOpt = "https://github.com/matthewozon/NMOpt" # "/path/to/package/NMOpt/" 
 
 [compat]
 julia = "1"
