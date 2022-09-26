@@ -138,8 +138,51 @@ Test for:
 
 # Dependence
 
-- Interpolations
-- utilsFun (not anymore)
-- TODO: add the rest of the deps (in Project.toml files)
+In the Project.toml files you'll find the dependences list hereafter
 
-# Users may store their own personal commands in `~/.julia/config/startup.jl`.
+## XPSpack
+
+- LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+- Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+- Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+- Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+- NMOpt = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
+
+The package is an unregistered package that can be intalled from the github repository. In Julia RPEL, type:
+
+`] add https://github.com/matthewozon/NMOpt`
+
+## XPSinv
+
+- LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+- Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+## XPSfile
+
+- XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
+- DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+- Query = "1a8c2f83-1ff3-5112-b086-8aa67b057ba1"
+- DataValues = "e7dc6d0d-1eca-5fa6-8ad6-5aecde8b7ea5"
+
+# Installation
+
+## Julia
+
+Julia can be downloaded from <https://julialang.org/downloads/>
+
+## packages
+
+TODO
+
+## tips
+
+Once Julia is installed, if you do not install the package through the package manager (Pkg or ]), you need to tell Julia where to find the packages by updating the env variable `LOAD_PATH`. In the directory where Julia is installed, you can create the directory config (if it does not already exist) and add the file startup.jl (or edit it if it already exists). For instance, adding the `XPSpack` package located at `/path/to/package/XPSpack/`, you can add in the startup file the line:
+
+`push!(LOAD_PATH,"/path/to/package/XPSpack/")`
+
+where `/path/to/package/` needs to be change to your configuration.
+
+
+
+On linux systems, the startup file is likely found at `~/.julia/config/startup.jl`.
+
