@@ -18,7 +18,7 @@ export σ_C1s_exp,σ_O1s_exp,σ_S2p_exp
 
 # data enhancement: baseline correction and peak fitting (requires sampling of the spectra)
 export baseline_removal, EM_peaks, cross_section_spread_function, cross_section_spread_function_sample # in XPSutils.jl
-
+export logistic
 
 # possible geometry of the sample
 export fingerGeom, planeGeom, cylinderGeom

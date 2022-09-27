@@ -256,3 +256,52 @@ function noiseAndParameterEstimation(σ_χ::Array{Cdouble,1},H::Array{Cdouble,1}
 
    mean(σ_data[σ_χ.>0.1*maximum(σ_χ)]./(σ_χ[σ_χ.>0.1*maximum(σ_χ)]*(H'*ρ))),noise_data
 end
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# logistic function
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function logistic(x::Cdouble,thX::Cdouble=33.275)
+   if x<-thX
+       y = 0.0
+   elseif x>thX
+       y = 1.0
+   else
+       y = 1.0/(1.0+exp(-x))
+   end
+   y
+end
+
+function logistic(x_::Array{Cdouble,1},thX::Cdouble=33.275)
+   idx1 = findall(q->q<-thX,x_)
+   idx2 = findall(q->q>thX,x_)
+   idx3 = findall(q->((q>=-thX) & (q<=thX)),x_)
+   y_ = similar(x_)
+   y_[idx1] .= 0.0
+   y_[idx2] .= 1.0
+   y_[idx3] = 1.0./(1.0.+exp.(-x_[idx3]))
+   y_
+end
+
+function logistic(x_::Cdouble,a_::Cdouble,b_::Cdouble,alpha_::Cdouble=1.0,thX::Cdouble=33.275)
+   if (alpha_*x_)<-thX
+       y = a_
+   elseif (alpha_*x_)>thX
+       y = b_
+   else
+       y = a_ + (b_-a_)/(1.0+(1.0/alpha_)*exp(-alpha_*x_))
+   end
+   y
+end
+
+function logistic(x_::Array{Cdouble,1},a_::Cdouble,b_::Cdouble,alpha_::Cdouble=1.0,thX::Cdouble=33.275)
+   idx1 = findall(q->q<-thX,alpha_*x_)
+   idx2 = findall(q->q>thX,alpha_*x_)
+   idx3 = findall(q->((q>=-thX) & (q<=thX)),alpha_*x_)
+   y_ = similar(x_)
+   y_[idx1] .= a_
+   y_[idx2] .= b_
+   y_[idx3] = a_ .+ (b_-a_)./(1.0.+(1.0/alpha_)*exp.(-alpha_*x_[idx3]))
+   y_
+end
