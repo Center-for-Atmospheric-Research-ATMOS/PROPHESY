@@ -7,7 +7,7 @@ rc("text", usetex=true)
 using Printf
 
 # implemented scientific packages
-using utilsFun  # for the softMax functions
+# using utilsFun  # for the softMax functions
 using Statistics
 using DataFrames
 using CSV

@@ -14,11 +14,7 @@ using DataFrames
 using LinearAlgebra
 using StatsBase
 
-# implemented scientific packages
-using utilsFun  # for the softMax functions
-
 # modeling XPS
-# using XPSpack
 using XPSinv
 using XPSsampling
 

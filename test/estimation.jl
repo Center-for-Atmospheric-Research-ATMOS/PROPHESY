@@ -14,9 +14,6 @@ using DataFrames
 using LinearAlgebra
 using StatsBase
 
-# implemented scientific packages
-using utilsFun  # for the softMax functions
-
 # inversion and sampling package
 using XPSinv
 using XPSsampling

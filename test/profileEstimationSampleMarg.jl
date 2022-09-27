@@ -2,7 +2,6 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
-fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json") # TODO: look for the path automatically
 rc("text", usetex=true)
 rc("figure",max_open_warning=50)
 using myPlot
@@ -15,9 +14,6 @@ using DataFrames
 # scientific package from the official Julia repositories
 using LinearAlgebra
 using StatsBase
-
-# implemented scientific packages
-using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSinv

@@ -18,9 +18,6 @@ using SpecialMatrices
 using Polynomials
 using StatsBase
 
-# implemented scientific packages
-using utilsFun  # for the softMax functions
-
 # modeling XPS
 using XPSpack
 
