@@ -2,6 +2,7 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
+using PyCall
 rc("text", usetex=true)
 rc("figure",max_open_warning=50)
 # using myPlot
@@ -35,6 +36,7 @@ PLOT_DATA = false
 # folders where the data files are
 data_folder = "../../../data/TK/";
 data_folderC1s = string(data_folder,"C1s/")
+data_folderC1s = string(data_folder,"S2p/")
 
 # flags
 FLAG_PLOT = true;
@@ -105,27 +107,48 @@ include("profileReconstruction.jl")
 ## plot the results
 ##
 if PLOT_FIG
-    figure()
+    figure(figsize=[10, 5])
+    ax1 = subplot(121)
     l_ρ, = plot(1.0e3*(r.-μ0),ρC1s_bulk*ρ_cp,color=color_array[1])
     if SAMPLING
         l_ρ_std =  fill_between(1.0e3*(r[N0:end-1].-μ0),ρC1s_bulk*(ρ_est-stdρ_HI),ρC1s_bulk*(ρ_est+stdρ_HI),alpha=0.5,color=color_array[1])
     end
+    l_λ = Array{PyObject,1}(undef,Ndata)
+    for i in 1:Ndata
+        l_λ[i], = plot(-[λ_all[i]; λ_all[i]],[0.0; 1.0], color=color_array[i+1])
+    end
+    # l_s, = plot(-[0.0; 0.0],[0.0; 1.0], color=color_array[Ndata+2]) # ;"sharp edge surface"
     xlim(1.0e3*(r[1].-μ0),2.5e3*(r[end].-μ0))
     ylim(-0.01ρC1s_bulk,max(1.6ρC1s_bulk,1.1maximum(ρC1s_bulk*(ρ_est+stdρ_HI))))
     xlabel("depth [nm]",fontsize=14); 
     ylabel("molar concentraion [M]",fontsize=14) 
     xticks(fontsize=14); yticks(fontsize=14); 
-    ax1 = gca()
+    # ax1 = gca()
     ax1.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
     ax1.yaxis.offsetText.set_size(14)
     ax1.xaxis.offsetText.set_size(14)
     # legend(fontsize=12)
-    legend([(l_ρ,l_ρ_std)],["estimates\$\\pm\\sigma\$"],fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
-    tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
-    ax1.text(0.05, 0.1, replace(data_filesC1s[idx_file][1:end-5],"_"=>" "), transform=ax1.transAxes,fontsize=16)
+    legend([(l_ρ,l_ρ_std);l_λ],["estimates\$\\pm\\sigma\$ [M]"; string.("\$\\lambda_e\$ = ",floor.(100λ_all)/100," [nm]")],fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
+
+    ax2 = subplot(122)
+    scatter(λ_all,ρC1s_bulk*y_data_1)
+    ylim(0.9ρC1s_bulk*minimum(y_data_1),1.1ρC1s_bulk*maximum(y_data_1))
+    xlabel("IMFP [nm]",fontsize=14); 
+    ylabel("peak area [mol]",fontsize=14)
+    xticks(fontsize=14); yticks(fontsize=14); 
+    ax2.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
+    ax2.yaxis.offsetText.set_size(14)
+    ax2.xaxis.offsetText.set_size(14)
+    legend(["data"],fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
     
-    savefig(string(data_filesC1s[idx_file][1:end-5],"_reconstruction.png"))
-    savefig(string(data_filesC1s[idx_file][1:end-5],"_reconstruction.pdf"))
+
+    tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
+    ax1.text(-0.14, 0.97, "a)", transform=ax1.transAxes,fontsize=16)
+    ax2.text(0.05, 0.1+0.75, replace(data_filesC1s[idx_file][1:end-5],"_"=>" "), transform=ax2.transAxes,fontsize=16)
+    ax2.text(-0.14, 0.97, "b)", transform=ax2.transAxes,fontsize=16)
+
+    savefig(string(data_filesC1s[idx_file][1:end-5],"_reconstruction_and_data.png"))
+    savefig(string(data_filesC1s[idx_file][1:end-5],"_reconstruction_and_data.pdf"))
 
     if SAMPLING
         figure()
