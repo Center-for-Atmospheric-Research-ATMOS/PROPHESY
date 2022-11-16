@@ -16,7 +16,7 @@ using StatsBase
 using Interpolations
 
 # implemented scientific packages
-using utilsFun  # for the softMax functions
+# using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack # experiment model (geometry factor and cross section estimation)
@@ -42,9 +42,9 @@ MODEL_20  = false
 # FLAG_0004 = false
 
 save_folder = "./";
-SAVE_DATA = false   # flag for saving data and model
-SAVE_FIG  = false   # save the simulated data or not
-SWEEPS_ON = false
+SAVE_DATA = true   # flag for saving data and model
+SAVE_FIG  = true   # save the simulated data or not
+SWEEPS_ON = true
 nb_sweeps = 50;
 
 # geometry setup
@@ -74,14 +74,17 @@ FLAG_OFF_CENTER = [true false false false;
                     false true false false;
                     false false true false;
                     false false false true];
-FLAG_PROFILE    = [true false false false;
-                    false true false false;
-                    false false true false;
-                    false false false true];
+FLAG_PROFILE    = [true false false false false;
+                    false true false false false;
+                    false false true false false;
+                    false false false true false;
+                    false false false false true];
+
+FLAG_PROFILE = [false false false false true]';
 
 # for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3,FLAG_0001,FLAG_0002,FLAG_0003,FLAG_0004) in zip(FLAG_OFF_CENTER,FLAG_PROFILE)
 for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in eachcol(FLAG_OFF_CENTER)
-    for (FLAG_0001,FLAG_0002,FLAG_0003,FLAG_0004) in eachcol(FLAG_PROFILE)
+    for (FLAG_0001,FLAG_0002,FLAG_0003,FLAG_0004,FLAG_0005) in eachcol(FLAG_PROFILE)
         # soon add the option of sphere or plane geometry?
         local save_folder = "./";
         save_folder = string(save_folder,"cylinder_radius_",μ0,"/peak_shift/")
@@ -118,6 +121,10 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
         if FLAG_0004
             ρA_1 = ρ_bulk*exp.(-(1000.0((μ0.-r))).^2. /(2.0*Δtr^2));
             global exp_tag     = "0004"
+        end
+        if FLAG_0005
+            ρA_1 = ρ_bulk*(logistic.(1000.0*(μ0.-r)/Δtr,ρ_vac,ρ0,1.0) .+ exp.(-(1000.0*(μ0.-r).-0.5).^2. /(2.0*(2.0Δtr)^2)));
+            global exp_tag     = "0005"
         end
 
         # measurement operator (only the geometrical term since the other comes as a multiplicative scalar estimated from the data)
