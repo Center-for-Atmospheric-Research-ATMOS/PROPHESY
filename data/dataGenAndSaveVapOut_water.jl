@@ -15,18 +15,13 @@ using LinearAlgebra
 using StatsBase
 using Interpolations
 
-# implemented scientific packages
-using utilsFun  # for the softMax functions
-
 # modeling XPS
 using XPSpack # experiment model (geometry factor and cross section estimation)
 using ATTIRE  # kinetic energy analyzer
 
 
 
-# tags
-# SHORT_RANGE = true # WARNING: not ready for wide range (i.e. SHORT_RANGE=false)
-
+# flags
 MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = false
@@ -57,9 +52,6 @@ D_dark = 0.0 # dark current coefficient is a number of electron per unit time [#
 NA = 6.022e23;
 κ_simple_units = 1.0e-37*NA; # simplified model
 κ_units        = 1.0e-25*NA; # original model
-
-
-
 
 # spacial discretization 
 r = collect(range(μ0-k0*λe0,μ0+δr,length=Nr));
@@ -100,126 +92,101 @@ if MODEL_20
     Ndata = 20;
 end
 
+# beamprofile spread
+σx = 0.5*100.0; # spread of the beam
+σy = 0.5*25.0;
+
+##
+## limits of the photon energy range
+##
+hν1 =  897.0;
+hν2 = 2117.0;
+
+# photon flux variation w.r.t. photon energy
+hknot  = [897.0; 1565.0; 1154.0; 2117.0];    
+Fknot  = [96551987962033.5; 180756074879052.0; 174706655794778.0; 26025420979116.2]
+μF_var = (inv([hknot.^3 hknot.^2 hknot hknot.^0])*Fknot)';
+
+## 
+## cross section density model: just a dummy model looking like O1s
+## 
+dKe = 0.05;
+Be = collect(526.0:dKe:542.0);
+Nspectrum = length(Be);
+
+BeO1s    = 534.0; # reference binding energy of O1s under some circumstencies...
+BeO1s_th = 547.0; # threshold for the background in the case of O1s (I took it away from the reference binding energy contrary to C1s)
+ΔBeO1s   = 3.0;   # width of the background transition (width around the threshold)
+
+hknot_peak = [650.0;  651.0;  789.0;      897.0; 907.0;      1154.0;   1197.0; 1565.0; 1900.0];
+Eb_knot_liq = [533.84;  533.882; 534.392; 534.456; 534.581; 534.869; 534.667; 533.989; 0.998*533.989];
+Eb_knot_gas = [535.818; 535.756; 536.273; 536.324; 536.438; 536.680; 536.479; 535.765; 0.998*535.765];
+
+σEb_knot_liq = 0.5*[1.091; 1.008 ; 1.498; 1.608; 1.618; 1.624; 1.659; 1.641; 0.7*1.641];
+σEb_knot_gas = 0.5*[0.629; 0.631; 0.804; 0.853;  0.863; 0.949; 0.995; 1.016; 0.7*1.016];
+
+Ahν = [hknot_peak.^3 hknot_peak.^2 hknot_peak.^1 hknot_peak.^0];
+
+μBe_var_liq = (inv(Ahν'*Ahν)*Ahν'*Eb_knot_liq)';
+μBe_var_gas = (inv(Ahν'*Ahν)*Ahν'*Eb_knot_gas)';
+
+σBe_var_liq = (inv(Ahν'*Ahν)*Ahν'*σEb_knot_liq)';
+σBe_var_gas = (inv(Ahν'*Ahν)*Ahν'*σEb_knot_gas)';
+
+function σ_cs_O1s_liq(hν::Cdouble,Ke::Array{Cdouble,1})
+    Be_liq = hν.-Ke;
+    # make the peaks vary in location and width
+    μBe_O1s_liq = μBe_var_liq*[hν^3; hν^2; hν; 1.0];
+    σBe_O1s_liq = σBe_var_liq*[hν^3; hν^2; hν; 1.0];
+    # partial cross section (one for each chemical state)
+    σ_peak = (1.0/sqrt(2.0π*σBe_O1s_liq^2))*exp.(-(Be_liq.-μBe_O1s_liq).^2/(2.0σBe_O1s_liq^2));
+
+    # cross section value
+    σ_O1s_exp(hν)*σ_peak,μBe_O1s_liq,σBe_O1s_liq
+end
+
+function σ_cs_O1s_gas(hν::Cdouble,Ke::Array{Cdouble,1})
+    Be_gas = hν.-Ke;
+    # make the peaks vary in location and width
+    μBe_O1s_gas = μBe_var_gas*[hν^3; hν^2; hν; 1.0];
+    σBe_O1s_gas = σBe_var_gas*[hν^3; hν^2; hν; 1.0];
+    # partial cross section (one for each chemical state)
+    σ_peak = (1.0/sqrt(2.0π*σBe_O1s_gas^2))*exp.(-(Be_gas.-μBe_O1s_gas).^2/(2.0σBe_O1s_gas^2));
+
+    # cross section value
+    σ_O1s_exp(hν)*σ_peak,μBe_O1s_gas,σBe_O1s_gas
+end
+
+
+# photon energy and attenuation length ranges
+hν   = collect(LinRange(hν1, hν2,Ndata));  # central photon energy for each measurement
+λe_s = 1.0e-3λe_exp.(hν.-BeO1s);           # attenuation length range
+
+# for each offset between the beam center and the LJ center
 for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5) #  
+    # path to save location
     local save_folder = "./";
     save_folder = string(save_folder,"cylinder_radius_",μ0,"/peak_shift/")
-
-    # not sure it's that short anymore
-    # if SHORT_RANGE                                          # bounds of the attenuation lengths
-        λe1 = 1.3; hν1 =  897.0; # 650.0;
-        λe2 = 3.8; hν2 = 2117.0; # 1884.0;
-        save_folder = string(save_folder,"eal_",Ndata,"_restricted_range/")
-    # else
-    #     λe1 = 0.5; hν1 = 310.0;
-    #     λe2 = 5.5; hν2 = 1900.0;
-    #     save_folder = string(save_folder,"eal_",Ndata,"/")
-    # end
-    # XPSpack.λe_thurmer[collect(range(hν1,hν2,Ndata)).-534.0] # does not seem realistic for energies above 900 eV
-    # global λe = 1.0e-3collect(range(λe1,λe2,Ndata));              # attenuation length range
-    global hν = collect(LinRange(hν1, hν2,Ndata));                # central photon energy for each measurement
-    BeO1s = 534.0;
-    global λe = 1.0e-3λe_exp.(hν.-BeO1s);              # attenuation length range
+    save_folder = string(save_folder,"eal_",Ndata,"_restricted_range/")
 
     ##
     ## alignment
     ##
-    σx = 0.5*100.0; # spread of the beam
-    σy = 0.5*25.0;
     xc = kc*σx;
     yc = 70.0 # 75.0; # 5.0*σy; # 6.0*σy #WARNING: this value accounts for the 
     save_folder = string(save_folder,"offcenter_",kc,"/")
     # beam profile
     bp = beamProfile(xc,yc,σx,σy);
 
-
-    ## 
-    ## cross section density model: just a dummy model looking like O1s
-    ## 
-    dKe = 0.05;
-    Be = collect(526.0:dKe:542.0);
-    Nspectrum = length(Be);
-    BeO1s_th = 547.0 # 549.0 # Be[end] # mean(Be);
-    ΔBeO1s = 3.0 # 2.0;
-
-    hknot_peak = [650.0;  651.0;  789.0;      897.0; 907.0;      1154.0;   1197.0; 1565.0; 1900.0];
-    Eb_knot_liq = [533.84;  533.882; 534.392; 534.456; 534.581; 534.869; 534.667; 533.989; 0.998*533.989];
-    Eb_knot_gas = [535.818; 535.756; 536.273; 536.324; 536.438; 536.680; 536.479; 535.765; 0.998*535.765];
-
-    σEb_knot_liq = 0.5*[1.091; 1.008 ; 1.498; 1.608; 1.618; 1.624; 1.659; 1.641; 0.7*1.641];
-    σEb_knot_gas = 0.5*[0.629; 0.631; 0.804; 0.853;  0.863; 0.949; 0.995; 1.016; 0.7*1.016];
-
-    Ahν = [hknot_peak.^3 hknot_peak.^2 hknot_peak.^1 hknot_peak.^0];
-
-    μBe_var_liq = (inv(Ahν'*Ahν)*Ahν'*Eb_knot_liq)';
-    μBe_var_gas = (inv(Ahν'*Ahν)*Ahν'*Eb_knot_gas)';
-
-    σBe_var_liq = (inv(Ahν'*Ahν)*Ahν'*σEb_knot_liq)';
-    σBe_var_gas = (inv(Ahν'*Ahν)*Ahν'*σEb_knot_gas)';
-
-
-    # hhν = collect(310.0:20.0:1900.0);
-    # figure()
-    # scatter(hknot_peak,Eb_knot_liq)
-    # plot(hhν,dropdims(μBe_var_liq*[hhν.^3 hhν.^2 hhν.^1 hhν.^0]',dims=1))
-    # scatter(hknot_peak,Eb_knot_gas)
-    # plot(hhν,dropdims(μBe_var_gas*[hhν.^3 hhν.^2 hhν.^1 hhν.^0]',dims=1))
-
-    # figure()
-    # scatter(hknot_peak,σEb_knot_liq)
-    # plot(hhν,dropdims(σBe_var_liq*[hhν.^3 hhν.^2 hhν.^1 hhν.^0]',dims=1))
-    # scatter(hknot_peak,σEb_knot_gas)
-    # plot(hhν,dropdims(σBe_var_gas*[hhν.^3 hhν.^2 hhν.^1 hhν.^0]',dims=1))
-
-    function σ_cs_O1s_liq(hν::Cdouble,Ke::Array{Cdouble,1})
-        Be_liq = hν.-Ke;
-        # make the peaks vary in location and width
-        μBe_O1s_liq = μBe_var_liq*[hν^3; hν^2; hν; 1.0];
-        σBe_O1s_liq = σBe_var_liq*[hν^3; hν^2; hν; 1.0];
-        # partial cross section (one for each chemical state)
-        σ_peak = (1.0/sqrt(2.0π*σBe_O1s_liq^2))*exp.(-(Be_liq.-μBe_O1s_liq).^2/(2.0σBe_O1s_liq^2));
-
-        # cross section value
-        # XPSpack.σ_O1s_interp[hν]*σ_peak,μBe_O1s_liq,σBe_O1s_liq
-        σ_O1s_exp(hν)*σ_peak,μBe_O1s_liq,σBe_O1s_liq
-    end
-
-    function σ_cs_O1s_gas(hν::Cdouble,Ke::Array{Cdouble,1})
-        Be_gas = hν.-Ke;
-        # make the peaks vary in location and width
-        μBe_O1s_gas = μBe_var_gas*[hν^3; hν^2; hν; 1.0];
-        σBe_O1s_gas = σBe_var_gas*[hν^3; hν^2; hν; 1.0];
-        # partial cross section (one for each chemical state)
-        σ_peak = (1.0/sqrt(2.0π*σBe_O1s_gas^2))*exp.(-(Be_gas.-μBe_O1s_gas).^2/(2.0σBe_O1s_gas^2));
-
-        # cross section value
-        # XPSpack.σ_O1s_interp[hν]*σ_peak,μBe_O1s_gas,σBe_O1s_gas
-        σ_O1s_exp(hν)*σ_peak,μBe_O1s_gas,σBe_O1s_gas
-    end
-
     ##
     ## acqusition parameters
     ##
-
     θ_aperture = 0.5*π/4                                                       # aperture's cone angle
     α_Ω        = 4π*sin(θ_aperture/2.0)^2;                                     # aperture's solid angle
     Tj         = α_Ω*ones(Cdouble,Ndata);                                      # transmission factors
     σ_ke       = 2.0*dKe*ones(Cdouble,Ndata);                                  # kinetic energy bandwidths of the analyzer (one per photon energy)
     dhν        = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
-
-    # hknot = [650.0; 1884.0; 1315.0; 907.0]
-    # Fknot = [3.943312e+13; 1.419204e+14; 3.853618e+14; 1.651883e+14]
-
-    hknot = [897.0; 1565.0; 1154.0; 2117.0];    
-    Fknot = [96551987962033.5; 180756074879052.0; 174706655794778.0; 26025420979116.2]
-
-    μF_var =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*Fknot)';
-    Fνj    = dropdims(μF_var*[hν.^3 hν.^2 hν.^1 hν.^0]',dims=1);
-    # figure()
-    # scatter(hν,Fνj)
-    # scatter(hknot,Fknot)
-    # scatter(collect(300.0:10.0:2000.0),dropdims(μF_var*[collect(300.0:10.0:2000.0).^3 collect(300.0:10.0:2000.0).^2 collect(300.0:10.0:2000.0).^1 collect(300.0:10.0:2000.0).^0]',dims=1))
-
-
+    Fνj        = dropdims(μF_var*[hν.^3 hν.^2 hν.^1 hν.^0]',dims=1);           # flux densities
 
     # dictionary where to push the data and geometry factor
     global dictAllData  = Dict()
@@ -248,7 +215,7 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5) #
         ##
         ## geometry factors
         ##
-        local H_deom,_,H_geom,_,_,_,_,al_liq = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe[j])
+        local H_deom,_,H_geom,_,_,_,_,al_liq = alignmentParameter(bp,r,θ,y,x0,y0,z0,μ0,λe_s[j])
         al_liq = 1.0e-12*al_liq*κ_units/κ_simple_units # units conversion so that the unit is in μm^{-2}
 
         ##
@@ -260,23 +227,13 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5) #
         ##
         ## gas phase signal
         ##
-        local H_deom_gas,_,H_geom_gas,_,_,_,_,al_gas = alignmentParameter(bp,r_gas,θ_gas,y_gas,x0,y0,z0,μ0,λe[j])
+        local H_deom_gas,_,H_geom_gas,_,_,_,_,al_gas = alignmentParameter(bp,r_gas,θ_gas,y_gas,x0,y0,z0,μ0,λe_s[j])
         al_gas = 1.0e-12*al_gas*κ_units/κ_simple_units # units conversion so that the unit is in μm^{-2}
         
         local Sj_gas,_,_,_ = simulateSpectrum(Fνj[j],hν[j],dhν[j],
             Keij,σ_ke[j],Tj[j],Kdisc,
             reverse(Be0),reverse(σ_cs_gas),zeros(Cdouble,Nspectrum));
         local SpectrumA_1_gas = Δt*κ_units*(H_geom_gas'*ρ_gas)*Sj_gas;
-
-        # r_gas = collect(range(μ0,5μ0,length=Nr));
-        # θ_gas = collect(range(θ0-π/2.0-acos(μ0/r_gas[end]),θ0+π/2.0+acos(μ0/r_gas[end]),Nθ));
-        # y_gas = y;
-        # H_r,H_rθy,H_r_ph,H_rθy_ph,_,_,_,_ = alignmentParameter(bp,r_gas,θ_gas,y_gas,x0,y0,z0,μ0,λe[1])
-        # figure(); imshow(H_rθy_ph[:,:,128]); colorbar()
-        # ax1 = subplot(121,polar=true)
-        # pcm1 = ax1.pcolormesh(θ_gas,r_gas,H_rθy_ph[:,:,128].*(0.5μ0./r_gas),edgecolors="face")
-        # ax2 = subplot(122,polar=true)
-        # pcm2 = ax2.pcolormesh(θ_gas,r_gas,H_rθy_ph[:,:,1].*(0.5μ0./r_gas),edgecolors="face")
 
         ##
         ## add noise
@@ -287,26 +244,17 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5) #
         ##
         ## push data to dicts
         ##
-        # local dictData = Dict( "Ke" => Keij, "Be" => Be0, "μKe" => μKe,
-        #     "σ_cs_dens" => σ_cs_liq./XPSpack.σ_O1s_interp[hν[j]], "σ_cs_dens_gas" => σ_cs_gas./XPSpack.σ_O1s_interp[hν[j]], "σ_tot" => XPSpack.σ_O1s_interp[hν[j]],
-        #     "SpectrumA_1" => SpectrumA_1, "SpectrumA_1_gas" => SpectrumA_1_gas, "Sbg" => SbgO1s, 
-        #     "Stot" => SbgO1s+SpectrumA_1, "Snoisy" => SO1snoise,
-        #     "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt, "α" => sum(SpectrumA_1)/sum(SpectrumA_1_gas));
-        # local dictMetaData = Dict("μKe" => μKe,
-        #     "σ_tot" => XPSpack.σ_O1s_interp[hν[j]], "peak_mode_liq" => μBe_liq, "peak_width_liq"=>σ_be_liq, "peak_mode_gas" => μBe_gas, "peak_width_gas"=>σ_be_gas,
-        #     "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
-        
         local dictData = Dict( "Ke" => Keij, "Be" => Be0, "μKe" => μKe,
             "σ_cs_dens" => σ_cs_liq./σ_O1s_exp(hν[j]), "σ_cs_dens_gas" => σ_cs_gas./σ_O1s_exp(hν[j]), "σ_tot" => σ_O1s_exp(hν[j]),
             "SpectrumA_1" => SpectrumA_1, "SpectrumA_1_gas" => SpectrumA_1_gas, "Sbg" => SbgO1s, 
             "Stot" => SbgO1s+SpectrumA_1, "Snoisy" => SO1snoise,
-            "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt, "α" => sum(SpectrumA_1)/sum(SpectrumA_1_gas));
+            "T" => Tj[j], "λ" => 1.0e3λe_s[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt, "α" => sum(SpectrumA_1)/sum(SpectrumA_1_gas));
         local dictMetaData = Dict("μKe" => μKe,
             "σ_tot" => σ_O1s_exp(hν[j]), "peak_mode_liq" => μBe_liq, "peak_width_liq"=>σ_be_liq, "peak_mode_gas" => μBe_gas, "peak_width_gas"=>σ_be_gas,
-            "T" => Tj[j], "λ" => 1.0e3λe[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
+            "T" => Tj[j], "λ" => 1.0e3λe_s[j], "F" => Fνj[j], "hν" => hν[j], "Δt" => Δt);
 
         local dictGeom = Dict("model" => "sharp edge cylinder + outside vapor", 
-                    "hν" => hν[j], "λ" => 1.0e3λe[j], "radius" => μ0, "max_depth" => k0*λe0,
+                    "hν" => hν[j], "λ" => 1.0e3λe_s[j], "radius" => μ0, "max_depth" => k0*λe0,
                         "x0" => x0, "y0" => y0, "z0" => z0, "δr" => δr, "xc" => xc, "yc" => yc, "σx" => σx, "σy" => σy, "α" => al_liq,
                         "r" => r, "r_gas" => r_gas, "H" => H_deom, "H_true" => H_geom, "H_gas"=>H_deom_gas, "H_gas_true"=>H_geom_gas, 
                         "ρ" => ρA_1, "ρ_gas" => ρ_gas)
@@ -317,7 +265,7 @@ for kc in [0; 1; 2; 3] # collect(0.0:0.1:3.5) #
 
         dictAllData[Symbol(string("hν_",Int64(round(hν[j]))))]      = (eachcol(dfData),names(dfData))
         dictAllData[Symbol(string("meta_hν_",Int64(round(hν[j]))))] = (eachcol(dfMetaData),names(dfMetaData))
-        dictAllGeom[Symbol(string("λe_",string(1.0e3λe[j])))]       = (eachcol(dfGeom),names(dfGeom))
+        dictAllGeom[Symbol(string("λe_",string(1.0e3λe_s[j])))]       = (eachcol(dfGeom),names(dfGeom))
     end
 
     # save_folder = string(save_folder,"new_bg/")

@@ -15,18 +15,13 @@ using LinearAlgebra
 using StatsBase
 using Interpolations
 
-# implemented scientific packages
-# using utilsFun  # for the softMax functions
-
 # modeling XPS
 using XPSpack # experiment model (geometry factor and cross section estimation)
 using ATTIRE  # kinetic energy analyzer
 
 
 
-# tags
-# SHORT_RANGE = true              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
-
+# flags
 MODEL_5   = true               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = false
@@ -90,18 +85,18 @@ hν2 = 1726.0;
 ## variation model for binding energy, spread and photon flux w.r.t. photon energy (spline interpolation of experimental values)
 ##
 
-hknot = [532.0; 789.0; 1197.0; 1726.0]
+hknot     = [532.0; 789.0; 1197.0; 1726.0]
 μBe1_knot = [168.996; 169.914; 169.777; 168.174]
 μBe2_knot = [170.156; 171.074; 170.937; 169.334]
 # σLG_knot  = 0.5e-3*[1517.535; 1471.508; 1554.653; 1340.764]; # G and L
-σG_knot  = 0.5e-3*[732.133; 891.293; 632.185; 1294.616];
-Fknot  = [6.5249e13; 8.7439e13; 3.5089e14; 3.476e14];
+σG_knot   = 0.5e-3*[732.133; 891.293; 632.185; 1294.616];
+Fknot     = [6.5249e13; 8.7439e13; 3.5089e14; 3.476e14];
 
-μBe1_var =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*μBe1_knot)';
-μBe2_var =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*μBe2_knot)';
+μBe1_var  =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*μBe1_knot)';
+μBe2_var  =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*μBe2_knot)';
 # μσBe_var =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*σLG_knot)';
-μσBe_var =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*σG_knot)';
-μF_var =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*Fknot)';
+μσBe_var  =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*σG_knot)';
+μF_var    =  (inv([hknot.^3 hknot.^2 hknot hknot.^0])*Fknot)';
 
 ## 
 ## cross section density model: just a dummy model looking like S2p
@@ -145,13 +140,15 @@ FLAG_PROFILE    = [true false false false false;
 
 # FLAG_PROFILE = [false false false false true]';
 
-# for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3,FLAG_0001,FLAG_0002,FLAG_0003,FLAG_0004) in zip(FLAG_OFF_CENTER,FLAG_PROFILE)
+# for each offset between the beam center and the LJ center
 for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in eachcol(FLAG_OFF_CENTER)
+    # for each concentration profile
     for (FLAG_0001,FLAG_0002,FLAG_0003,FLAG_0004,FLAG_0005) in eachcol(FLAG_PROFILE)
-        # soon add the option of sphere or plane geometry?
+        # path to save location
         local save_folder = "./";
         save_folder = string(save_folder,"cylinder_radius_",μ0,"/peak_shift/")
 
+        # select concentration profile
         if FLAG_0001
             ρA_1 = ρ_bulk*logistic.(1000.0*(μ0.-r)/Δtr,ρ_vac,ρ0,1.0);
             global exp_tag     = "0001/S2p"
@@ -173,7 +170,7 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
             global exp_tag     = "0005/S2p"
         end
 
-        # measurement operator (only the geometrical term since the other comes as a multiplicative scalar estimated from the data)
+        # number of attenuation length
         global  Ndata = 5;
         if MODEL_5                                   # number of measurement (penetration depth)
             Ndata = 5;
@@ -185,7 +182,7 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
             Ndata = 20;
         end
 
-
+        # photon energy and attenuation length ranges
         save_folder = string(save_folder,"eal_",Ndata,"_restricted_range/")
         global hν = collect(LinRange(hν1, hν2,Ndata));                # central photon energy for each measurement
         global λe = 1.0e-3λe_exp.(hν.-BeS2p);              # attenuation length range
@@ -207,25 +204,20 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
         end
         xc = kc*σx; # alignment with the photon flux
         yc = 70.0 # 75.0; # 99.0; # 5.0*σy; # 6.0*σy #WARNING: this value accounts for the misalignment with the analyzer
-
         save_folder = string(save_folder,"offcenter_",kc,"/")
         # beam profile
         bp = beamProfile(xc,yc,σx,σy);
 
         
         ##
-        ## acqusition parameters
+        ## acqusition parameters (the rest of it)
         ##
-
         θ_aperture = 0.5*π/4                                                       # aperture's cone angle
         α_Ω        = 4π*sin(θ_aperture/2.0)^2;                                     # aperture's solid angle
-        # Tj         = α_Ω*(10.0.+0.0collect(LinRange(5.0,10.0,Ndata)));             # transmission factors
         Tj         = α_Ω*ones(Cdouble,Ndata);                                      # transmission factors
         σ_ke       = 2.0*dKe*ones(Cdouble,Ndata);                                  # kinetic energy bandwidths of the analyzer (one per photon energy)
         dhν        = hν.*((1.0/25000.0)*(hν.<500.0) + (1.0/15000.0)*(hν.>=500.0)); # bandwidth of the photon beam
-        # Fνj        = 1.5e11*ones(Cdouble,Ndata);                                   # flux densities
-        # Fνj        = 1.5e12*ones(Cdouble,Ndata);                                   # flux densities
-        Fνj        = dropdims(μF_var*[hν.^3 hν.^2 hν.^1 hν.^0]',dims=1);
+        Fνj        = dropdims(μF_var*[hν.^3 hν.^2 hν.^1 hν.^0]',dims=1);           # flux densities
 
         # dictionary where to push the data and geometry factor
         global dictAllData  = Dict()
@@ -247,9 +239,6 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
             ##
             ## electron flux without the geometry factor: signal of interest (Sj) and background signal (Sj_bg)
             ##
-            # local Sj,Sj_bg,_,_ = simulateSpectrum(Fνj[j],hν[j],dhν[j],
-            #     Keij,σ_ke[j],Tj[j],Kdisc,
-            #     reverse(Be0),reverse(σ_cs_fg),σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeS2p_th,ΔBeS2p)); # σ_bg_lin_density(Keij,hν[j]-BeS2p_th,5.0e4ΔBeC1s)
             local Sj,Sj_bg,_,_ = simulateSpectrum(Fνj[j],hν[j],dhν[j],
                 Keij,σ_ke[j],Tj[j],Kdisc,
                 reverse(Be0),reverse(σ_cs_fg),25.0*σ_bg(μKe)*σ_bg_density(Keij,hν[j]-BeS2p_th,ΔBeS2p)); # σ_bg_lin_density(Keij,hν[j]-BeS2p_th,5.0e4ΔBeC1s) 5.0
@@ -278,9 +267,6 @@ for (FLAG_OFF_CENTER_0,FLAG_OFF_CENTER_1,FLAG_OFF_CENTER_2,FLAG_OFF_CENTER_3) in
                     SC1snoise_sweeps[:,i] = countElectrons(SbgC1s+SpectrumA_1,D_dark*Δt);
                 end
             end
-
-            # plot signals w.r.t. the kinetic energy
-            # figure(); plot(Keij,SbgC1s); plot(Keij,SbgC1s+SpectrumA_1); scatter(Keij,rand.(Poisson.(SbgC1s+SpectrumA_1))); xlabel("kinetic energy [eV]"); ylabel("spectrum [a.u.]") 
 
             ##
             ## push data to dicts
