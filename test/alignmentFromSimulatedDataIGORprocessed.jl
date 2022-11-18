@@ -28,8 +28,8 @@ using XPSpack # experiment model (geometry factor and cross section estimation)
 # using XPSsampling
 
 PLOT_FIG  = true
-SAVE_FIG  = true
-SAVE_DATA = true
+SAVE_FIG  = !true
+SAVE_DATA = !true
 USING_GT_PROFILE = false
 
 data_folder = "../data/cylinder_radius_10.0/peak_shift/eal_5_restricted_range/"

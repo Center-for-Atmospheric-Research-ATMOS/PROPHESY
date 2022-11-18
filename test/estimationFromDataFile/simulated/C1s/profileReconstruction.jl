@@ -19,6 +19,7 @@ end
 if FLAG_0004
     σd     = 0.2
 end
+σd     = 0.025
 cor_len_lowres = 2.5;
 
 # amplitude of the communication mecanism for sampling the a posteriori model
@@ -36,8 +37,10 @@ if FLAG_0004
     σw     = 1.0e-3
 end
 
+σw     = 2.0e-3;
+
 # deeper than some distance, the signal is not likely to be disantangled
-d0 = 2.5e-3 # [μm] maximum depth
+d0 = 15.0e-3 # 2.5e-3 # [μm] maximum depth
 N0 = findlast(r.-μ0.<=-d0);
 N = Nr-N0;
 
@@ -56,6 +59,7 @@ if FLAG_0004
 end
 δy = H0*0.0;                          # outside the sample the concentration is nearly 0
 y_tilde  = y_data_1-(Δy+δy);          # total correction
+# y_tilde  = y_data_2-(Δy+δy);          # total correction
 
 
 

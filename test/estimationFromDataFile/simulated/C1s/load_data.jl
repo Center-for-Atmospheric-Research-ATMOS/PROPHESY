@@ -6,6 +6,7 @@ folder_content = readdir(data_folder);
 list_match = match.(r"^offcenter_[0-3]$",folder_content)
 data_folders = folder_content[list_match.!=nothing]
 folder_tag = data_folders[1]
+folder_tag = data_folders[4]
 
 # unit conversion constant (some of the quantities are in μm, some in L and some in Mbarn)
 NA = 6.022e23;
@@ -32,6 +33,10 @@ end
 if FLAG_0004
     dictAllDataC1s,dfC1s,symbolDictC1s = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"/new_eal/0004/data.xlsx"),r"^hν_[0-9]*",r"meta")
     dictAllGeomC1s,symbolDictInvC1s = model_xlsx2df(string(data_folder,folder_tag,"/new_eal/0004/model.xlsx"));
+end
+if FLAG_0005
+    dictAllDataC1s,dfC1s,symbolDictC1s = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"/new_eal/0005/data.xlsx"),r"^hν_[0-9]*",r"meta")
+    dictAllGeomC1s,symbolDictInvC1s = model_xlsx2df(string(data_folder,folder_tag,"/new_eal/0005/model.xlsx"));
 end
 
 
