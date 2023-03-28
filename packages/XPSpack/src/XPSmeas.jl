@@ -14,13 +14,13 @@
 #------------------------------------------------------------------------------
 """
 
-# XPSmeas_simple.jl --
+# XPSmeas.jl --
 #
-# XPSmeas_simple.jl implements a simplified version of the discretization
-# of the different XPS configurations:
+# XPSmeas.jl implements a simplified version of the discretization
+# of the different XPS experiment configurations:
 #   - planar interface
 #   - microjet: cylindrical geometry
-#   - particle/droplet: spherical model (TODO)
+#   - particle/droplet: spherical model 
 #
 #------------------------------------------------------------------------------
 #

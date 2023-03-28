@@ -4,13 +4,9 @@
 using PyPlot
 rc("text", usetex=true)
 rc("figure",max_open_warning=50)
-# using myPlot
 color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "tab:brown"; "tab:pink"; "tab:gray"; "tab:olive"; "tab:cyan"; "magenta"; "yellow"; "hotpink"; "darkmagenta"; "chartreuse"; "deepskyblue"; "navy"; "darkcyan"; "crimson"; "firebrick"]; 
 
 # data manipulation (loading, writing, etc)
-# using Printf
-# using XLSX # CSV does not deal with multiple sheets
-# using DataValues
 using XPSfile
 using DataFrames
 using Query
@@ -20,12 +16,9 @@ using LinearAlgebra
 using StatsBase
 using Interpolations
 
-# implemented scientific packages
-# using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack # experiment model (geometry factor and cross section estimation)
-# using XPSsampling
 
 PLOT_FIG  = true
 SAVE_FIG  = !true
@@ -39,14 +32,6 @@ data_folder = "../../../data/cylinder_radius_10.0/peak_shift/eal_5_restricted_ra
 ##
 
 folder_content = readdir(data_folder);
-# list_match = match.(r"^offcenter_",folder_content)
-# data_folders = folder_content[list_match.!=nothing]
-# α_gt       = zeros(Cdouble,5*length(data_folders));
-# α_ratio    = zeros(Cdouble,5*length(data_folders));
-# xc_off     = zeros(Cdouble,5*length(data_folders));
-# α_al_noise = zeros(Cdouble,5*length(data_folders));
-# τ_al_noise_gt = zeros(Cdouble,5*length(data_folders));
-# unit conversion constant (some of the quantities are in μm, some in L and some in Mbarn)
 NA = 6.022e23;
 κ_simple_units = 1.0e-37*NA; # simplified model
 κ_units        = 1.0e-25*NA; # original model
@@ -72,13 +57,6 @@ FLAG_O1S = FLAG_O1S_VECT[idx_file];
 regIGORsheet  = r"^hν_[0-9]*_IGOR"
 regDataColumn = r"((\bBe\b)|(\bCurve_[0-9]*\b)|(\bAll_curves\b)|(\bBackground\b))"
 regMetaColumn = r"((\b[Bb]inding_energy\b)|(\b[Ii]ntensity\b)|(\b[Aa]rea\b)|(\b[Ll]orentzian\b)|(\b[Gg]aussian\b)|(\b[Ff]ull_width\b))";
-
-# # load data and model
-# dictAllData,_,symbolDict = dataAndMeta_xlsx2df(string(data_folder,filenames[idx_file]),r"^hν_[0-9]*$",r"meta");
-# dictAllGeom,_ = model_xlsx2df(string(data_folder,filenamesModels[idx_file]));
-
-# # load IGOR results
-# dataIGOR,metaIGOR = IGORcolumn_xlsx2df(string(data_folder,filenames[idx_file]),regIGORsheet,regDataColumn,regMetaColumn);
 
 
 # automation of the APE

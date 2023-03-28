@@ -37,7 +37,6 @@ data_folders = folder_content[list_match.!=nothing]
 xc_off                = zeros(Cdouble,5*length(data_folders));
 α_al_noise            = zeros(Cdouble,5*length(data_folders));
 α_al_noise_gt_profile = zeros(Cdouble,5*length(data_folders));
-# τ_al_noise_gt = zeros(Cdouble,5*length(data_folders));
 # unit conversion constant (some of the quantities are in μm, some in L and some in Mbarn)
 NA = 6.022e23;
 κ_simple_units = 1.0e-37*NA; # simplified model
@@ -45,10 +44,6 @@ NA = 6.022e23;
 
 idx = 1
 for folder_tag in data_folders
-    # local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"water/data.xlsx"),r"^hν_[0-9]*",r"meta");
-    # local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"water/model.xlsx"));
-    # local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"/new_bg/water/data.xlsx"),r"^hν_[0-9]*",r"meta");
-    # local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"/new_bg/water/model.xlsx"));
     local dictAllData,df,symbolDict = dataAndMeta_xlsx2df(string(data_folder,folder_tag,"/new_eal/water/data.xlsx"),r"^hν_[0-9]*",r"meta");
     local dictAllGeom,symbolDictInv = model_xlsx2df(string(data_folder,folder_tag,"/new_eal/water/model.xlsx"));
     local Ndata                     = length(dictAllData);
