@@ -11,6 +11,7 @@ The package XPSpack is part of the PROPHESY suite. It is a package which covers 
  - attenuation length (form experimental data or reported in [4])
  - alignment parameter estimation [5]
 
+This package was used and introduced in two manuscripts submitted to JSR [5,6]
 
 # Dependence
 
@@ -54,7 +55,7 @@ In the [test](../../test/) folder, several examples of use of XPSpack are implem
 
  - [geometry/geom.jl](../../test/geometry/geom.jl): for several sample geometry, the geometry factors are compared
  - [outsideModel/geom_vapor.jl](../../test/outsideModel/geom_vapor.jl): show an example of geometry factor that takes into account the outside of the sample where the vapor or low-density-liquid exists and produces significant photoelectronic signal.
- - [alignmentParameter](../../test/alignmentParameter/): several examples of alignment parameter estimate are showcased (requires XPSfile)
+ - [alignmentParameter](../../test/alignmentParameter/): several examples of alignment parameter estimate are showcased (requires [XPSfile](../XPSfile/))
  - [bg_removal_and_proba_density.jl](../../test/bg_removal_and_proba_density.jl): illusatration of the background removal and photionization cross-section density estimation
 
 
@@ -65,7 +66,4 @@ In the [test](../../test/) folder, several examples of use of XPSpack are implem
 - [3] A. P. Dempster, N. M. Laird  and D. B. Rubin,  Maximum likelihood from incomplete data via the EM algorithm, Journal of the royal statistical society: series B (methodological), Wiley Online Library, 1977, 39, 1-22 ([DOI: 10.1111/j.2517-6161.1977.tb01600.x](https://www.doi.org/10.1111/j.2517-6161.1977.tb01600.x))
 - [4] S. Thürmer, R. Seidel, M. Faubel, W. Eberhardt, J. C. Hemminger, S. E. Bradforth and B. Winter, Photoelectron angular distributions from liquid water: Effects of electron scattering Physical review letters, Physical review letters, 2013, Vol. 111, p. 173005 ([DOI: 10.1103/PhysRevLett.111.173005](https://www.doi.org/10.1103/PhysRevLett.111.173005))
 - [5] M. Ozon, K. Tumashevich and N. L. Prisle , Quantitative alignment parameter estimation for analyzing X-ray photoelectron spectra, Journal of Synchrotron Radiation, 2023, Vol. -, p. - ([DOI: 10.1107/-](https://www.doi.org/10.1107/-))
-
-<--
 - [6]: M.Ozon, K. Tumashevich, J. J. Lin and N. L. Prisle , Inversion model for extracting chemically resolved depth profiles across liquid interfaces of various configurations from XPS data: PROPHESY, Journal of Synchrotron Radiation, 2023, Vol. -, p. - ([DOI: 10.1107/-](https://www.doi.org/10.1107/-))
-!-->
