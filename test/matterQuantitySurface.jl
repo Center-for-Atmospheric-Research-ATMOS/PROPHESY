@@ -1,3 +1,5 @@
+#WARNING: requires that the concentration profiles have been estimated (see reconstruction/estimation.jl)
+
 # data manipulation (loading, writing, etc)
 using Printf
 
