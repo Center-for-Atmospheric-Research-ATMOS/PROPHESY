@@ -68,7 +68,7 @@ cor_len_lowres = 2.5 # this quantity should be set in terms of length instead of
 σB = 0.01; 
 
 # where to load the data from
-model_folder = "../data/";
+model_folder = "../../data/";
 
 if (MODEL_5 & !SHORT_RANGE)
     model_folder = string(model_folder,"eal_5/")

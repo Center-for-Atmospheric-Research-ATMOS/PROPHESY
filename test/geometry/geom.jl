@@ -36,9 +36,9 @@ y0_near = 0.0;
 z0_near = 21.0;
 
 # far away from the analyzer
-x0_far = 200.0*sqrt(2.0);
+x0_far = 5000.0*sqrt(2.0);
 y0_far = 0.0;
-z0_far = 200.0;
+z0_far = 5000.0;
 
 ## compute and plot distances for two cases (near and far), and compare the full model and its approximation
 include("distance.jl")
@@ -114,48 +114,45 @@ include("geom_acquisition.jl")
 # ## plot distance and geometry factor in the away case
 # ##
 
-if false
-    ## plot
-    fig = figure(figsize=[10,5])
-    ax1 = subplot(121,polar=true)
-    ax1.set_rticks([μ0/4, 2μ0/4, 3μ0/4, μ0])
-    yticks(fontsize=12)
-    xticks(fontsize=12)
-    # ax1.set_rlabel_position(-22.5)
-    ax1.set_rlabel_position(234.7)
-    ax1.plot(atan(x0_far,z0_far)*ones(Cdouble,2),[0.0; μ0], color="red",label="\$\\theta\\simeq54.7\$")
-    pcm1 = ax1.pcolormesh(θ,r,DD_away,edgecolors="face")
-    cax1 = fig.add_axes([0.08, .35, 0.02, 0.3])
-    cb1 = fig.colorbar(pcm1, orientation="vertical", cax=cax1, shrink=0.6)
-    cb1.set_label("distance [\$\\mu\$m]", fontsize=12)
-    cb1.ax.tick_params(labelsize=12)
-    ax1.legend(loc="lower left", bbox_to_anchor=(.5 + cos(atan(x0_far,z0_far))/2, .5 + sin(atan(x0_far,z0_far))/2),fontsize=12)
+fig = figure(figsize=[10,5])
+ax1 = subplot(121,polar=true)
+ax1.set_rticks([μ0/4, 2μ0/4, 3μ0/4, μ0])
+yticks(fontsize=12)
+xticks(fontsize=12)
+# ax1.set_rlabel_position(-22.5)
+ax1.set_rlabel_position(234.7)
+ax1.plot(atan(x0_far,z0_far)*ones(Cdouble,2),[0.0; μ0], color="red",label="\$\\theta\\simeq54.7\$")
+pcm1 = ax1.pcolormesh(θ,r,DD_away,edgecolors="face")
+cax1 = fig.add_axes([0.08, .35, 0.02, 0.3])
+cb1 = fig.colorbar(pcm1, orientation="vertical", cax=cax1, shrink=0.6)
+cb1.set_label("distance [\$\\mu\$m]", fontsize=12)
+cb1.ax.tick_params(labelsize=12)
+ax1.legend(loc="lower left", bbox_to_anchor=(.5 + cos(atan(x0_far,z0_far))/2, .5 + sin(atan(x0_far,z0_far))/2),fontsize=12)
 
 
-    #far analyzer
-    ax2 = subplot(122,polar=true)
-    # ax2.set_rlabel_position(-22.5)
-    ax2.set_rlabel_position(234.7)
-    ax2.set_rticks([μ0-0.03, μ0-0.02, μ0-0.01, μ0])
-    yticks(fontsize=12)
-    xticks(fontsize=12)
-    ax2.plot(atan(x0_far,z0_far)*ones(Cdouble,2),[μ0-0.03; μ0], color="red",label="\$\\theta\\simeq54.7\$")
-    pcm2 = ax2.pcolormesh(θ_far,r_surf,H_rθy_far[:,:,128],edgecolors="face")
-    ylim(μ0-0.03,μ0)
-    ax2.legend(loc="lower left", bbox_to_anchor=(.5 + cos(atan(x0_far,z0_far))/2, .5 + sin(atan(x0_far,z0_far))/2),fontsize=12)
-    cax2 = fig.add_axes([0.65-0.07, .35, 0.02, 0.3])
-    cb2  = fig.colorbar(pcm2, orientation="vertical", cax=cax2, shrink=0.6)
-    cb2.set_label("gain [a.u.]", fontsize=12) # , color="white"
-    cb2.ax.tick_params(labelsize=12)
+#far analyzer
+ax2 = subplot(122,polar=true)
+# ax2.set_rlabel_position(-22.5)
+ax2.set_rlabel_position(234.7)
+ax2.set_rticks([μ0-0.03, μ0-0.02, μ0-0.01, μ0])
+yticks(fontsize=12)
+xticks(fontsize=12)
+ax2.plot(atan(x0_far,z0_far)*ones(Cdouble,2),[μ0-0.03; μ0], color="red",label="\$\\theta\\simeq54.7\$")
+pcm2 = ax2.pcolormesh(θ_far,r_surf,H_rθy_far[:,:,128],edgecolors="face")
+ylim(μ0-0.03,μ0)
+ax2.legend(loc="lower left", bbox_to_anchor=(.5 + cos(atan(x0_far,z0_far))/2, .5 + sin(atan(x0_far,z0_far))/2),fontsize=12)
+cax2 = fig.add_axes([0.65-0.07, .35, 0.02, 0.3])
+cb2  = fig.colorbar(pcm2, orientation="vertical", cax=cax2, shrink=0.6)
+cb2.set_label("gain [a.u.]", fontsize=12) # , color="white"
+cb2.ax.tick_params(labelsize=12)
 
 
 
-    tight_layout(pad=1.0, w_pad=2.0, h_pad=0.2)
+tight_layout(pad=1.0, w_pad=2.0, h_pad=0.2)
 
-    ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(0.0, 1.0), textcoords="axes fraction", color="black",fontsize=14)
-    ax1.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(1.3, 1.0), textcoords="axes fraction", color="black",fontsize=14)
+ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(0.0, 1.0), textcoords="axes fraction", color="black",fontsize=14)
+ax1.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(1.3, 1.0), textcoords="axes fraction", color="black",fontsize=14)
 
-    # fig.savefig("distance_and_gain_far_20_microns.png")
-    # fig.savefig("distance_and_gain_far_20_microns.pdf")
-end 
+# fig.savefig("distance_and_gain_far_20_microns.png")
+# fig.savefig("distance_and_gain_far_20_microns.pdf")
 

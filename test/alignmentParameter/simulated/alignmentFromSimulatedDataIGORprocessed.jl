@@ -4,11 +4,11 @@
 using PyPlot
 rc("text", usetex=true)
 rc("figure",max_open_warning=50)
-using myPlot
+# using myPlot
 color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "tab:brown"; "tab:pink"; "tab:gray"; "tab:olive"; "tab:cyan"; "magenta"; "yellow"; "hotpink"; "darkmagenta"; "chartreuse"; "deepskyblue"; "navy"; "darkcyan"; "crimson"; "firebrick"]; 
 
 # data manipulation (loading, writing, etc)
-using Printf
+# using Printf
 # using XLSX # CSV does not deal with multiple sheets
 # using DataValues
 using XPSfile
@@ -32,7 +32,7 @@ SAVE_FIG  = !true
 SAVE_DATA = !true
 USING_GT_PROFILE = false
 
-data_folder = "../data/cylinder_radius_10.0/peak_shift/eal_5_restricted_range/"
+data_folder = "../../../data/cylinder_radius_10.0/peak_shift/eal_5_restricted_range/"
 
 ##
 ## load data and meta data

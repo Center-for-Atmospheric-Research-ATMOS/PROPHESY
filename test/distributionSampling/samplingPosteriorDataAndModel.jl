@@ -1,28 +1,15 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
-fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json") # TODO: look for the path automatically
-# fm = PyPlot.matplotlib.font_manager.json_load("/home/mattoz/.cache/matplotlib/fontlist-v310.json")
-# fm.findfont("serif", rebuild_if_missing=false)
-# fm.findfont("serif", fontext="afm", rebuild_if_missing=false)
-# rc("font",family="serif",serif="Computer Modern Roman")
 rc("text", usetex=true)
 rc("figure",max_open_warning=50)
-using myPlot
 
 # data manipulation (loading, writing, etc)
 using Printf
 
 # scientific package from the official Julia repositories
 using LinearAlgebra
-# using Statistics
-# using DSP
-# using SpecialMatrices
-# using Polynomials
 using StatsBase
-
-# implemented scientific packages
-using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack
@@ -86,8 +73,6 @@ for i in 1:Nr
     end
 end
 
-# figure(); imshow(Γprior); colorbar()
-
 
 Dprior = D2nd(Nr) # D2nd(Nr+2)[:,2:end-1];
 # Bprior = 1.0e-12Dprior'*inv(Γprior[2:end-1,2:end-1])*Dprior; # 1.0e-8
@@ -146,7 +131,7 @@ w = σw*ones(Cdouble,Nr); # not optimal because we know that the concentration v
 Γsqrt = real(sqrt(corrCovariance(w;cor_len=15.0)));
 ρB = [ρA_1[1]; ρA_1[end]]; # known values 
 σB = 0.1*[0.01; 0.01];         # how much do we trust these known values
-Ns = 100000 # 0; # number of samples... no idea a priori how many samples are needed
+Ns = 100 # 000 ; # number of samples #NOTE: 100 for quick test and 1000000 for estimation (but it may take long)
 
 Γρ_IG = zeros(Cdouble,Nr,Nr,Nnoise);
 μρ_IG = zeros(Cdouble,Nr,Nnoise);

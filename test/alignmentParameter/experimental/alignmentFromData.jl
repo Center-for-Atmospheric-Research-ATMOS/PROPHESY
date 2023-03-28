@@ -4,7 +4,6 @@
 using PyPlot
 rc("text", usetex=true)
 rc("figure",max_open_warning=50)
-# using myPlot
 color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "tab:brown"; "tab:pink"; "tab:gray"; "tab:olive"; "tab:cyan"; "magenta"; "yellow"; "hotpink"; "darkmagenta"; "chartreuse"; "deepskyblue"; "navy"; "darkcyan"; "crimson"; "firebrick"]; 
 
 # data manipulation (loading, writing, etc)
@@ -20,12 +19,8 @@ using StatsBase
 using XPSpack # experiment model (geometry factor and cross section estimation)
 
 
-# import functions for importing and formatting data
-# include("loadFunctionXLSX2DataFrame.jl")
-
-
 # folders where the data files are
-data_folder = "../data/TK/";
+data_folder = "../../../data/TK/";
 data_folderC1s = string(data_folder,"C1s/")
 data_folderO1s = string(data_folder,"O1s/")
 data_folderO1sS2p = string(data_folder,"O1sforS2p/")
