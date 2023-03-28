@@ -3,12 +3,6 @@
 using PyPlot
 rc("text", usetex=true)
 
-# data manipulation (loading, writing, etc)
-using Printf
-
-# implemented scientific packages
-using utilsFun  # for the softMax functions
-
 # modeling XPS
 using XPSpack
 

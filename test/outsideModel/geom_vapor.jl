@@ -4,7 +4,7 @@ using PyPlot
 rc("text", usetex=true)
 
 # data manipulation (loading, writing, etc)
-using Printf
+using Printf # @sprintf
 
 # modeling XPS
 using XPSpack
