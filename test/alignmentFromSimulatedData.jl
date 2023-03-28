@@ -21,7 +21,7 @@ using StatsBase
 using Interpolations
 
 # implemented scientific packages
-using utilsFun  # for the softMax functions
+# using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack # experiment model (geometry factor and cross section estimation)
@@ -149,40 +149,57 @@ sum_yi   = sum(yi);
 α_mod  = exp(μα_bar[2])*(α_disc).^μα_bar[1] # (μα_bar[1]-0.01) # the little offset because there is a bias due to this type of fits
 
 if PLOT_FIG
-    figure(figsize=[12, 5]); # scatter(1.0e9α_gt,α_ratio)
+    TWO_COLUMN = true
+    if TWO_COLUMN
+        FONTSIZE = 16
+    else
+        FONTSIZE = 14
+    end
+    if TWO_COLUMN
+        LEGEND_FONTSIZE = 14
+    else
+        LEGEND_FONTSIZE = 14
+    end
+    LINEWIDTH = 2.5
+    if TWO_COLUMN
+        figure(figsize=[14, 5])
+    else
+        figure(figsize=[12, 5])
+    end
+    # figure(figsize=[12, 5]); # scatter(1.0e9α_gt,α_ratio)
     ax2 = subplot(122)
-    scatter(1.0e8α_gt_mean,1.0e-2α_ratio_mean,color="tab:orange",label="liquid/vapor ratio") # α_ratio_mean.^2.5
-    scatter(1.0e8α_gt_mean,1.0e8α_al_mean,color="tab:green",label="APE [cm\$^{-2}\$]") 
-    scatter(1.0e8α_gt_mean,1.0e8α_al_mean_gt,color="tab:red",label="APE (true profile) [cm\$^{-2}\$]")
-    ax2.plot(α_disc,α_mod,label=string("model 0.1368\$\\alpha^{0.371}\$"),color="tab:orange")
-    ax2.plot(α_disc,α_disc,label="1:1",color="tab:red")
-    ax2.plot(α_disc,0.5α_disc,label="2:1",color="tab:green")
+    scatter(1.0e8α_gt_mean,1.0e-2α_ratio_mean,color="tab:orange",label="LGPAR") # α_ratio_mean.^2.5
+    scatter(1.0e8α_gt_mean,1.0e8α_al_mean,color="tab:green",label="APE (\$\\rho\\!=\\!\\rho_B\$) [cm\$^{-2}\$]") 
+    scatter(1.0e8α_gt_mean,1.0e8α_al_mean_gt,color="tab:red",label="APE (true \$\\rho\$) [cm\$^{-2}\$]")
+    ax2.plot(α_disc,α_mod,label=string("model 0.1368\$\\alpha^{0.371}\$"),color="tab:orange",linewidth=LINEWIDTH)
+    ax2.plot(α_disc,α_disc,label="1:1",color="tab:red",linewidth=LINEWIDTH)
+    ax2.plot(α_disc,0.5α_disc,label="2:1",color="tab:green",linewidth=LINEWIDTH)
     # xlim(-0.0005,0.0325); ylim(-0.001)
     xlim(9.0e-5,0.04); ylim(4.0e-5,0.04)
-    xlabel("GT [cm\$^{-2}\$]",fontsize=14); 
-    ylabel("estimation",fontsize=14) 
+    xlabel("\$\\alpha\$ GT [cm\$^{-2}\$]",fontsize=FONTSIZE); 
+    ylabel("estimation",fontsize=FONTSIZE) 
     xscale("log"); yscale("log");
-    xticks(fontsize=14); yticks(fontsize=14); 
+    xticks(fontsize=FONTSIZE); yticks(fontsize=FONTSIZE); 
     # ax2.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
     # ax2.ticklabel_format(axis="x",style="sci",scilimits=(-1,1),useOffset=true)
-    ax2.yaxis.offsetText.set_size(14)
-    ax2.xaxis.offsetText.set_size(14)
-    legend(fontsize=14,borderpad=0.2,borderaxespad=0.2,handletextpad=0.2,handlelength=1.0) # ,labelspacing=0.2
+    ax2.yaxis.offsetText.set_size(FONTSIZE)
+    ax2.xaxis.offsetText.set_size(FONTSIZE)
+    legend(fontsize=LEGEND_FONTSIZE,borderpad=0.2,borderaxespad=0.2,handletextpad=0.2,handlelength=1.0) # ,labelspacing=0.2
 
     ax1 = subplot(121)
-    scatter(xc_off[1:5:end],1.0e8α_gt_mean,label="GT [cm\$^{-2}\$]")
-    scatter(xc_off[1:5:end],1.0e-2α_ratio_mean,label="liquid/vapor area ratio")
-    scatter(xc_off[1:5:end],1.0e8α_al_mean,label="APE [cm\$^{-2}\$]")
-    scatter(xc_off[1:5:end],1.0e8α_al_mean_gt,label="APE (true profile) [cm\$^{-2}\$]")
+    scatter(xc_off[1:5:end],1.0e8α_gt_mean,label="\$\\alpha\$ GT [cm\$^{-2}\$]")
+    scatter(xc_off[1:5:end],1.0e-2α_ratio_mean,label="LGPAR")
+    scatter(xc_off[1:5:end],1.0e8α_al_mean,label="APE (\$\\rho\\!=\\!\\rho_B\$) [cm\$^{-2}\$]")
+    scatter(xc_off[1:5:end],1.0e8α_al_mean_gt,label="APE (true \$\\rho\$) [cm\$^{-2}\$]")
     ylim(-0.001)
     xlim(-3.0,178.0)
-    xlabel("horizontal offset [\$\\mu\$m]",fontsize=14); 
-    ylabel("alignment parameter",fontsize=14) 
-    xticks(fontsize=14); yticks(fontsize=14); 
+    xlabel("horizontal off-center \$x_c\$ [\$\\mu\$m]",fontsize=FONTSIZE); 
+    ylabel("alignment",fontsize=FONTSIZE) 
+    xticks(fontsize=FONTSIZE); yticks(fontsize=FONTSIZE); 
     ax1.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-    ax1.yaxis.offsetText.set_size(14)
-    ax1.xaxis.offsetText.set_size(14)
-    legend(fontsize=14,borderpad=0.2,borderaxespad=0.2,handletextpad=0.2,handlelength=1.0)
+    ax1.yaxis.offsetText.set_size(FONTSIZE)
+    ax1.xaxis.offsetText.set_size(FONTSIZE)
+    legend(fontsize=LEGEND_FONTSIZE,borderpad=0.2,borderaxespad=0.2,handletextpad=0.2,handlelength=1.0)
     tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
 
     ax1.text(-0.12, 0.95, "a)", transform=ax1.transAxes,fontsize=16)
@@ -191,8 +208,10 @@ if PLOT_FIG
     if SAVE_FIG
         # savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.png"))
         # savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt.pdf"))
-        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.png"))
-        savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf"))
+        # savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.png"))
+        # savefig(string(data_folder,"liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf"))
+        savefig(string(data_folder,"two_col_liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.png"))
+        savefig(string(data_folder,"two_col_liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf"))
     end
 end
 

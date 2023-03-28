@@ -147,8 +147,8 @@ if PLOT_FIG
     ax2.text(0.05, 0.1+0.75, replace(data_filesC1s[idx_file][1:end-5],"_"=>" "), transform=ax2.transAxes,fontsize=16)
     ax2.text(-0.14, 0.97, "b)", transform=ax2.transAxes,fontsize=16)
 
-    savefig(string(data_filesC1s[idx_file][1:end-5],"_reconstruction_and_data.png"))
-    savefig(string(data_filesC1s[idx_file][1:end-5],"_reconstruction_and_data.pdf"))
+    savefig(string(data_filesC1s[idx_file][1:end-5],"_reconstruction_and_data_new.png"))
+    savefig(string(data_filesC1s[idx_file][1:end-5],"_reconstruction_and_data_new.pdf"))
 
     if SAMPLING
         figure()

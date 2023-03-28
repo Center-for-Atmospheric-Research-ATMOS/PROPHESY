@@ -203,9 +203,10 @@ ax = gca()
 ax.invert_xaxis()
 legend([(l_plot_1,l_fill_1),(l_plot_2,l_fill_2),(l_plot_3,l_fill_3),(l_plot_4,l_fill_4),(l_plot_5,l_fill_5)],["\$h\\nu\$ = 350 [eV]"; "\$h\\nu\$ = 500 [eV]"; "\$h\\nu\$ = 700 [eV]"; "\$h\\nu\$ = 900 [eV]"; "\$h\\nu\$ = 1200 [eV]";],fontsize=14,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
-ax.text(0.5, 0.12, "\$\\frac{\\sigma_{\\mathrm{C1s}}(h\\nu,K_e)}{\\sigma_{\\mathrm{C1s}}(h\\nu)}\$", transform=ax.transAxes,fontsize=20)
-# savefig("cross_section_spread_function.png")
-# savefig("cross_section_spread_function.pdf")
+# ax.text(0.5, 0.12, "\$\\frac{\\sigma_{\\mathrm{C1s}}(h\\nu,K_e)}{\\sigma_{\\mathrm{C1s}}(h\\nu)}\$", transform=ax.transAxes,fontsize=20)
+ax.text(0.5, 0.12, "\$\\tilde{\\sigma}_{\\mathrm{C1s}}^k(K_e)\$", transform=ax.transAxes,fontsize=20)
+# savefig("results/cross_section_spread_function.png")
+# savefig("results/cross_section_spread_function.pdf")
 
 
 

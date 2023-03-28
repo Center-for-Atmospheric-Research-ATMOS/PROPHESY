@@ -21,7 +21,7 @@ using StatsBase
 using Interpolations
 
 # implemented scientific packages
-using utilsFun  # for the softMax functions
+# using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack # experiment model (geometry factor and cross section estimation)
@@ -159,34 +159,50 @@ end
 # plot the alignments
 fileNamesC1sAll = filenames[match.(r"[cC]1[sS]",filenames).!=nothing]
 fileNamesO1sAll = filenames[match.(r"[oO]1[sS]",filenames).!=nothing]
-figure(figsize=[12, 5])
+TWO_COLUMN = true
+if TWO_COLUMN
+    FONTSIZE = 16
+else
+    FONTSIZE = 14
+end
+if TWO_COLUMN
+    LEGEND_FONTSIZE = 14
+else
+    LEGEND_FONTSIZE = 12
+end
+LINEWIDTH = 2.5
+if TWO_COLUMN
+    figure(figsize=[14, 5])
+else
+    figure(figsize=[12, 5])
+end
 ax1 = subplot(121)
-ax1.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*[1e-11; 3.0e-8],label="1:1")
+ax1.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*[1e-11; 3.0e-8],label="1:1",linewidth=LINEWIDTH)
 xlim(1.0e8*1e-11,1.0e8*3.0e-8)
 ylim(1.0e8*1e-11,1.0e8*3.0e-8)
 yscale("log")
 xscale("log")
-xlabel("alignment parameter GT [cm\$^{-2}\$]",fontsize=14); 
-ylabel("model estimation [cm\$^{-2}\$]",fontsize=14) 
-xticks(fontsize=14); yticks(fontsize=14); 
+xlabel("alignment parameter GT [cm\$^{-2}\$]",fontsize=FONTSIZE); 
+ylabel("model estimation [cm\$^{-2}\$]",fontsize=FONTSIZE) 
+xticks(fontsize=FONTSIZE); yticks(fontsize=FONTSIZE); 
 # ax1.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-ax1.yaxis.offsetText.set_size(14)
-ax1.xaxis.offsetText.set_size(14)
+ax1.yaxis.offsetText.set_size(FONTSIZE)
+ax1.xaxis.offsetText.set_size(FONTSIZE)
 ax2 = subplot(122)
-ax2.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*[1e-11; 3.0e-8],label="1:1")
-ax2.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*0.5*[1e-11; 3.0e-8],label="2:1")
+ax2.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*[1e-11; 3.0e-8],label="1:1",linewidth=LINEWIDTH)
+ax2.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*0.5*[1e-11; 3.0e-8],label="2:1",linewidth=LINEWIDTH)
 xlim(1.0e8*1e-11,1.0e8*3.0e-8)
 ylim(1.0e8*1e-11,1.0e8*3.0e-8)
 yscale("log")
 xscale("log")
 yscale("log")
 xscale("log")
-xlabel("alignment parameter GT [cm\$^{-2}\$]",fontsize=14); 
-ylabel("model estimation [cm\$^{-2}\$]",fontsize=14) 
-xticks(fontsize=14); yticks(fontsize=14); 
+xlabel("alignment parameter GT [cm\$^{-2}\$]",fontsize=FONTSIZE); 
+ylabel("model estimation [cm\$^{-2}\$]",fontsize=FONTSIZE) 
+xticks(fontsize=FONTSIZE); yticks(fontsize=FONTSIZE); 
 # ax2.ticklabel_format(axis="y",style="sci",scilimits=(-1,1),useOffset=true)
-ax2.yaxis.offsetText.set_size(14)
-ax2.xaxis.offsetText.set_size(14)
+ax2.yaxis.offsetText.set_size(FONTSIZE)
+ax2.xaxis.offsetText.set_size(FONTSIZE)
 for fileNameC1s in fileNamesC1sAll
     # get the data
     local α_GT         = zeros(Cdouble,length(dictAllAPE[fileNameC1s]))
@@ -223,8 +239,8 @@ for fileNameO1s in fileNamesO1sAll
     ax1.scatter(α_GT,α_APE,label=string("O1s \$x_c\$=",xc,"\$\\mu\$m"))
     ax2.scatter(α_GT,α_APE_approx,label=string("O1s \$x_c\$=",xc,"\$\\mu\$m"))
 end
-ax1.legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
-ax2.legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
+ax1.legend(fontsize=LEGEND_FONTSIZE,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
+ax2.legend(fontsize=LEGEND_FONTSIZE,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 tight_layout(pad=1.0, w_pad=0.2, h_pad=0.2)
 ax1.text(-0.1, 0.95, "a)", transform=ax1.transAxes,fontsize=16)
 ax2.text(-0.1, 0.95, "b)", transform=ax2.transAxes,fontsize=16)
@@ -233,7 +249,8 @@ ax2.text(0.5, 0.25, "\$\\rho\$ constant density", transform=ax2.transAxes,fontsi
 
 # savefig(string(data_folder,"APE_vs_alignment_parameter_units_gt_IGOR.png"))
 # savefig(string(data_folder,"APE_vs_alignment_parameter_units_gt_IGOR.pdf"))
-
+# savefig(string(data_folder,"two_col_APE_vs_alignment_parameter_units_gt_IGOR.png"))
+# savefig(string(data_folder,"two_col_APE_vs_alignment_parameter_units_gt_IGOR.pdf"))
 
 
 
@@ -281,25 +298,45 @@ tight_layout(pad=1.0, w_pad=0.4, h_pad=0.2)
 
 
 # plot background and noise removal
+
 sym_plot_bg = [:hν_650; :hν_958; :hν_1576; :hν_1884]
 panel_label = ["a)"; "b)"; "c)"; "d)"]
-panel_label_loc_x = [-0.09; -0.14; -0.09; -0.14]
+if TWO_COLUMN
+    panel_label_loc_x = [-0.09; -0.14; -0.09; -0.14].-0.01
+else
+    panel_label_loc_x = [-0.09; -0.14; -0.09; -0.14]
+end
 AX_vect = Array{PyPlot.PyObject,1}(undef,4)
-figure(figsize=[12, 10])
+if TWO_COLUMN
+    figure(figsize=[12, 8])
+else
+    figure(figsize=[12, 10])
+end
+if TWO_COLUMN
+    FONTSIZE = 16
+else
+    FONTSIZE = 14
+end
+if TWO_COLUMN
+    LEGEND_FONTSIZE = 14
+else
+    LEGEND_FONTSIZE = 12
+end
+LINEWIDTH = 2.5
 for i in 1:4
     AX_vect[i] = subplot(2,2,i)
     local Be     = dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["Be"];
     local BeIGOR = dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["Be"];
-    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"],label="background GT",color="darkblue")
-    AX_vect[i].scatter(BeIGOR,dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"],label="background IGOR",color="tab:blue")
+    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"],label="bg. GT",color="darkblue",linewidth=LINEWIDTH)
+    AX_vect[i].scatter(BeIGOR,dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"],label="bg. SPANCF",color="tab:blue")
     # AX_vect[i].scatter(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["S_noisy"],label="data",color="tab:red")
-    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"],label="SOI",color="darkgreen")
-    AX_vect[i].scatter(BeIGOR,dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"],label="SOI IGOR",color="tab:green")
+    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"],label="SOI GT",color="darkgreen",linewidth=LINEWIDTH)
+    AX_vect[i].scatter(BeIGOR,dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"],label="SOI SPANCF",color="tab:green")
 
     # plot the true noise, the estimated noise with the proposed method and the estimated noise with IGOR
-    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["S_noisy"]-dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"]-dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"],label="noise GT",color=color_array[5])
-    AX_vect[i].plot(BeIGOR,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["noise estimation"],label="noise estimation",color=color_array[6])
-    AX_vect[i].scatter(BeIGOR,dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["S_noisy"]-dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"]-dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"],label="noise IGOR",color=color_array[7])
+    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["S_noisy"]-dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"]-dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"],label="noise GT",color="cyan",linewidth=LINEWIDTH) # color_array[5]
+    AX_vect[i].plot(BeIGOR,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["noise estimation"],label="noise SVD-based",color=color_array[6],linewidth=LINEWIDTH-0.5)
+    AX_vect[i].scatter(BeIGOR,dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["S_noisy"]-dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"]-dictAllIGOR[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"],label="noise SPANCF",color=color_array[7])
 
     
     # plot(Be,dictAllData[plot_sym].Sbg+dictAllData[plot_sym].SpectrumA_1,label="fits GT"); 
@@ -307,36 +344,61 @@ for i in 1:4
     # scatter(Be,dictAllData[plot_sym].Snoisy,label="data")
     xlim(BeIGOR[end],BeIGOR[1])
     AX_vect[i].invert_xaxis();
-    xlabel("binding energy [eV]",fontsize=14); 
-    ylabel("spectrum [count]",fontsize=14) 
-    xticks(fontsize=14); yticks(fontsize=14); 
+    xlabel("binding energy [eV]",fontsize=FONTSIZE); 
+    ylabel("spectrum [count]",fontsize=FONTSIZE) 
+    xticks(fontsize=FONTSIZE); yticks(fontsize=FONTSIZE); 
     AX_vect[i].ticklabel_format(axis="y",style="sci",scilimits=(-1,2),useOffset=true)
-    AX_vect[i].yaxis.offsetText.set_size(14)
-    AX_vect[i].xaxis.offsetText.set_size(14)
-    AX_vect[i].text(0.33, 0.75, string("\$h\\nu\$=",convert(Int64,round(dictAllAPE[fileNamesC1sAll[3]][sym_plot_bg[i]]["hν"])),"[eV]"), transform=AX_vect[i].transAxes,fontsize=16)
+    AX_vect[i].yaxis.offsetText.set_size(FONTSIZE)
+    AX_vect[i].xaxis.offsetText.set_size(FONTSIZE)
+    if TWO_COLUMN
+        AX_vect[i].text(0.38, 0.85, string("\$h\\nu\$=",convert(Int64,round(dictAllAPE[fileNamesC1sAll[3]][sym_plot_bg[i]]["hν"])),"[eV]"), transform=AX_vect[i].transAxes,fontsize=16)
+    else
+        AX_vect[i].text(0.33, 0.75, string("\$h\\nu\$=",convert(Int64,round(dictAllAPE[fileNamesC1sAll[3]][sym_plot_bg[i]]["hν"])),"[eV]"), transform=AX_vect[i].transAxes,fontsize=16)
+    end
     AX_vect[i].text(panel_label_loc_x[i], 0.95, panel_label[i] , transform=AX_vect[i].transAxes,fontsize=16)
-    AX_vect[i].legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
+    AX_vect[i].legend(fontsize=LEGEND_FONTSIZE,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 end
 tight_layout(pad=1.0, w_pad=0.4, h_pad=0.2)
 
 
 # savefig(string(data_folder,"background_removal_peak_fit_and_noise_removal_IGOR.png"))
 # savefig(string(data_folder,"background_removal_peak_fit_and_noise_removal_IGOR.pdf"))
-
+# savefig(string(data_folder,"two_col_background_removal_peak_fit_and_noise_removal_IGOR.png"))
+# savefig(string(data_folder,"two_col_background_removal_peak_fit_and_noise_removal_IGOR.pdf"))
 
 
 # plot data
+
 sym_plot_bg = [:hν_650; :hν_958; :hν_1576; :hν_1884]
 panel_label = ["a)"; "b)"; "c)"; "d)"]
-panel_label_loc_x = [-0.11; -0.13; -0.11; -0.13]
+if TWO_COLUMN
+    panel_label_loc_x = [-0.11; -0.13; -0.11; -0.13].-0.01
+else
+    panel_label_loc_x = [-0.11; -0.13; -0.11; -0.13]
+end
 AX_vect = Array{PyPlot.PyObject,1}(undef,4)
-figure(figsize=[12, 10])
+if TWO_COLUMN
+    figure(figsize=[12, 8])
+else
+    figure(figsize=[12, 10])
+end
+if TWO_COLUMN
+    FONTSIZE = 16
+else
+    FONTSIZE = 14
+end
+if TWO_COLUMN
+    LEGEND_FONTSIZE = 14
+else
+    LEGEND_FONTSIZE = 12
+end
+LINEWIDTH = 2.5
 for i in 1:4
     AX_vect[i] = subplot(2,2,i)
     local Be     = dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["Be"];
-    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"],label="background",color="tab:blue")
+    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"],label="background",color="tab:blue",linewidth=LINEWIDTH)
     AX_vect[i].scatter(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["S_noisy"],label="data",color="tab:blue")
-    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"]+dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"],label="noise free spectrum",color="tab:orange")
+    AX_vect[i].plot(Be,dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["Spectrum_OI"]+dictAllPlot[fileNamesC1sAll[3]][sym_plot_bg[i]]["bg"],label="noise free spectrum",color="tab:orange",linewidth=LINEWIDTH)
     
     # plot(Be,dictAllData[plot_sym].Sbg+dictAllData[plot_sym].SpectrumA_1,label="fits GT"); 
     # plot(Be,dictAllData[plot_sym].Snoisy-(dictAllData[plot_sym].Sbg+dictAllData[plot_sym].SpectrumA_1),label="noise GT"); 
@@ -344,19 +406,21 @@ for i in 1:4
     # xlim(Be[end],Be[1])
     xlim(272.0,290.0)
     AX_vect[i].invert_xaxis();
-    xlabel("binding energy [eV]",fontsize=14); 
-    ylabel("spectrum [count]",fontsize=14) 
-    xticks(fontsize=14); yticks(fontsize=14); 
+    xlabel("binding energy [eV]",fontsize=FONTSIZE); 
+    ylabel("spectrum [count]",fontsize=FONTSIZE) 
+    xticks(fontsize=FONTSIZE); yticks(fontsize=FONTSIZE); 
     AX_vect[i].ticklabel_format(axis="y",style="sci",scilimits=(-1,2),useOffset=true)
-    AX_vect[i].yaxis.offsetText.set_size(14)
-    AX_vect[i].xaxis.offsetText.set_size(14)
+    AX_vect[i].yaxis.offsetText.set_size(FONTSIZE)
+    AX_vect[i].xaxis.offsetText.set_size(FONTSIZE)
     AX_vect[i].text(0.1, 0.5, string("\$h\\nu\$=",convert(Int64,round(dictAllAPE[fileNamesC1sAll[3]][sym_plot_bg[i]]["hν"])),"[eV]"), transform=AX_vect[i].transAxes,fontsize=16)
     AX_vect[i].text(panel_label_loc_x[i], 0.95, panel_label[i] , transform=AX_vect[i].transAxes,fontsize=16)
-    AX_vect[i].legend(fontsize=12,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
+    AX_vect[i].legend(fontsize=LEGEND_FONTSIZE,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 end
 tight_layout(pad=1.0, w_pad=0.4, h_pad=0.2)
 
 
 # savefig(string(data_folder,replace(fileNamesC1sAll[3], "xlsx"=>"png", "/"=>"_")))
 # savefig(string(data_folder,replace(fileNamesC1sAll[3], "xlsx"=>"pdf", "/"=>"_")))
+# savefig(string(data_folder,"two_col_",replace(fileNamesC1sAll[3], "xlsx"=>"png", "/"=>"_")))
+# savefig(string(data_folder,"two_col_",replace(fileNamesC1sAll[3], "xlsx"=>"pdf", "/"=>"_")))
 

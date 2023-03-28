@@ -14,7 +14,7 @@ data_filesC1s = folder_content[list_match.!=nothing]
 # idx_file = 2; # OK
 # idx_file = 3; # not OK
 # idx_file = 4; # OK
-idx_file = 5;
+# idx_file = 5;
 
 fileName = data_filesC1s[idx_file][1:end-5];
 
@@ -104,6 +104,15 @@ y_data_1 = y_peak_1./(α_al_noise.*T.*Fν.*σ_C1s.*ρC1s_bulk*κ_units)
 y_data_2 = y_peak_2./(α_al_noise.*T.*Fν.*σ_C1s.*ρC1s_bulk*κ_units)
 y_data_3 = y_peak_3./(α_al_noise.*T.*Fν.*σ_C1s.*ρC1s_bulk*κ_units)
 σ_noise  = σ_data./(α_al_noise.*T.*Fν.*σ_C1s.*ρC1s_bulk*κ_units)
+
+P1 = y_data_1./(y_data_1+y_data_2+y_data_3);
+P2 = y_data_2./(y_data_1+y_data_2+y_data_3);
+P3 = y_data_3./(y_data_1+y_data_2+y_data_3);
+
+y_data_1 = y_data_1./P1
+y_data_2 = y_data_2./P2
+y_data_3 = y_data_3./P3
+
 
 SNR_1 = (y_data_1./σ_noise).^2;
 SNR_2 = (y_data_2./σ_noise).^2;

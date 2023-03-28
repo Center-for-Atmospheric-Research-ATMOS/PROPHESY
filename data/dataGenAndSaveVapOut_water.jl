@@ -69,12 +69,14 @@ y_gas = y;
 ρ_vac = 0.0
 ρ_bulk = 55.49; # M (water concentration in liquid phase)
 
+#TODO: fix unit error (the value for ρ_gas_0 is good, but the units don't make sense)
 M_water = 18.02e-3 # kg/mol
-R_gas = 8.314   # J/(K*mol)
-T_gas = 280.0   # K
-P_gas = 1.0e-2*1.0e5   # Pa (0.5/760.0 =>0.5 Torr?)
-P_H2O = 0.025;
-ρ_gas = (P_H2O*P_gas*M_water/(R_gas*T_gas))*(μ0./r_gas); # assume that the gas concentration profile is decreasing inversly proportional to the distance to the sample (the amount of mater crossing the surface of the cylinder is the same that crossing a bigger virtual cylinder)
+R_gas   = 8.314   # J/(K*mol)
+T_gas   = 280.0   # K
+P_gas   = 1.0e-2*1.0e5   # Pa (0.5/760.0 =>0.5 Torr?)
+P_H2O   = 0.025;
+ρ_gas_0 = P_H2O*P_gas*M_water/(R_gas*T_gas); # 0.1935e-3 mol m^{-3}
+ρ_gas   = ρ_gas_0*(μ0./r_gas); # assume that the gas concentration profile is decreasing inversly proportional to the distance to the sample (the amount of mater crossing the surface of the cylinder is the same that crossing a bigger virtual cylinder)
 
 
 Δtr = 0.5 # 1.0; # 

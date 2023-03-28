@@ -21,30 +21,32 @@ l_finger,          = plot(r_surf,H_z/maximum(H_z), label="pointwise", color="tab
 # legend([l_cylinder_far,l_cylinder_near,l_sphere_near,l_sphere_far,l_finger],["cylinder: far \$\\lambda_e\$","cylinder: near \$\\lambda_e\$","sphere: far \$\\lambda_e\$","sphere: near \$\\lambda_e\$","pointwise"],fontsize=14)
 legend(fontsize=14,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 xlabel("radial distance [\$\\mu\$m]",fontsize=16)
-ylabel("normalized gain [a.u.]",fontsize=16)
+ylabel("normalized geometry factor [a.u.]",fontsize=16)
 xticks(fontsize=16)
 yticks(fontsize=16)
-ax1.xaxis.offsetText.set_size(12)
+ax1.xaxis.offsetText.set_size(14)
 
 ax2 = subplot(122)
-scatter(["\$\\rho_1\$"; "\$\\rho_2\$"; "\$\\rho_3\$"; "\$\\rho_4\$"],M_far./M_z, label="cylinder vs pointwise", color="tab:blue")
+scatter(["\$\\zeta_1\$"; "\$\\zeta_2\$"; "\$\\zeta_3\$"; "\$\\zeta_4\$"],M_far./M_z, label="cylinder vs pointwise", color="tab:blue")
+# scatter(["\$\\rho_1\$"; "\$\\rho_2\$"; "\$\\rho_3\$"; "\$\\rho_4\$"],M_far./M_z, label="cylinder vs pointwise", color="tab:blue")
 # scatter(["\$\\rho_1\$"; "\$\\rho_2\$"; "\$\\rho_3\$"; "\$\\rho_4\$"],M_near./M_z, label="cylinder near vs pointwise", color="tab:orange")
-scatter(["\$\\rho_1\$"; "\$\\rho_2\$"; "\$\\rho_3\$"; "\$\\rho_4\$"],M_far_sphere./M_z, label="sphere vs pointwise", color="tab:orange") # purple
+scatter(["\$\\zeta_1\$"; "\$\\zeta_2\$"; "\$\\zeta_3\$"; "\$\\zeta_4\$"],M_far_sphere./M_z, label="sphere vs pointwise", color="tab:orange") # purple
+# scatter(["\$\\rho_1\$"; "\$\\rho_2\$"; "\$\\rho_3\$"; "\$\\rho_4\$"],M_far_sphere./M_z, label="sphere vs pointwise", color="tab:orange") # purple
 # scatter(["\$\\rho_1\$"; "\$\\rho_2\$"; "\$\\rho_3\$"; "\$\\rho_4\$"],M_near_sphere./M_z, label="sphere near vs pointwise", color="tab:red")
-xlabel("concentration profiles",fontsize=16)
+xlabel("concentration profiles \$\\rho\\in\\{\\zeta_1,\\zeta_2,\\zeta_3,\\zeta_4\\}\$",fontsize=16)
 ylabel("relative acquisition",fontsize=16)
 xticks(fontsize=16)
 yticks(fontsize=16)
 ylim(0.0)
 legend(fontsize=14,borderpad=0.4,borderaxespad=0.2,handletextpad=0.5,handlelength=1.0,framealpha=0.4)
 ax2.ticklabel_format(axis="y",style="sci", scilimits=(-2, 2))
-ax2.yaxis.offsetText.set_size(12)
+ax2.yaxis.offsetText.set_size(16)
 
 tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 ax2.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-1.27-0.08-0.05, 0.99), textcoords="axes fraction", color="black",fontsize=16)
 ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.07-0.01-0.10, 0.99), textcoords="axes fraction", color="black",fontsize=16)
-ax1.text(0.25, 0.4, "\$\\lambda_e\$ = 2[nm]", transform=ax1.transAxes,fontsize=20)
-ax2.text(0.15, 0.6, "\$\\frac{H_{\\mathrm{cylinder}}(\\rho_i,\\lambda_e)}{H_{\\mathrm{pointwise}}(\\rho_i,\\lambda_e)}\$ and \$\\frac{H_{\\mathrm{sphere}}(\\rho_i,\\lambda_e)}{H_{\\mathrm{pointwise}}(\\rho_i,\\lambda_e)}\$", transform=ax2.transAxes,fontsize=20)
+ax1.text(0.25, 0.4, "\$\\lambda_e = 2\$ [nm]", transform=ax1.transAxes,fontsize=20)
+ax2.text(0.15, 0.6, "\$\\frac{H_{\\mathrm{cylinder}}(\\rho,\\lambda_e)}{H_{\\mathrm{pointwise}}(\\rho,\\lambda_e)}\$ and \$\\frac{H_{\\mathrm{sphere}}(\\rho,\\lambda_e)}{H_{\\mathrm{pointwise}}(\\rho,\\lambda_e)}\$", transform=ax2.transAxes,fontsize=20)
 
 
 # savefig("plans_vs_cylinder.png")

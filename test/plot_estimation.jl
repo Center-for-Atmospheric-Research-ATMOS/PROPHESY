@@ -54,8 +54,8 @@ tight_layout(pad=1.0, w_pad=0.5, h_pad=0.2)
 ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
 ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
 
-fig0.savefig(string(save_folder,"estimates_and_uncertainties.png"))
-fig0.savefig(string(save_folder,"estimates_and_uncertainties.pdf"))
+# fig0.savefig(string(save_folder,"estimates_and_uncertainties.png"))
+# fig0.savefig(string(save_folder,"estimates_and_uncertainties.pdf"))
 
 
 
@@ -86,5 +86,5 @@ ax1.annotate("a)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords
 ax2.annotate("b)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
 ax3.annotate("c)", xy=(3, 1),  xycoords="data", xytext=(-0.1, 0.975), textcoords="axes fraction", color="black",fontsize=14)
 
-fig.savefig(string(save_folder,"distribution_covariance.png"))
-fig.savefig(string(save_folder,"distribution_covariance.pdf"))
+# fig.savefig(string(save_folder,"distribution_covariance.png"))
+# fig.savefig(string(save_folder,"distribution_covariance.pdf"))

@@ -21,7 +21,7 @@ using XPSpack # experiment model (geometry factor and cross section estimation)
 
 
 # import functions for importing and formatting data
-include("loadFunctionXLSX2DataFrame.jl")
+# include("loadFunctionXLSX2DataFrame.jl")
 
 
 # folders where the data files are
