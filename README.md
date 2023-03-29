@@ -56,7 +56,7 @@ Julia can be downloaded from <https://julialang.org/downloads/>
 
 ## packages
 
-TODO
+For each package the instalation method is in their respective installation section ([XPSpack](packages/XPSpack/README.md), [XPSinv](packages/XPSinv/README.md), [XPSsampling](packages/XPSsampling/README.md) and [XPSfile](packages/XPSfile/README.md))
 
 ## tips
 
