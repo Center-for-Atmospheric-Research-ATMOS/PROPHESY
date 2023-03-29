@@ -42,7 +42,7 @@ You need to tell Julia where to find the packages by updating the env variable `
 
 `push!(LOAD_PATH,"/path/to/package/XPSpack/")`
 
-where `/path/to/package/` needs to be change to your configuration.
+where `/path/to/package/` needs to be changed to your configuration.
 
 
 On linux systems, the startup file is likely found at `~/.julia/config/startup.jl` or in the julia etc folder.

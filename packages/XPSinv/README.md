@@ -33,7 +33,7 @@ You need to tell Julia where to find the packages by updating the env variable `
 
 `push!(LOAD_PATH,"/path/to/package/XPSinv/")`
 
-where `/path/to/package/` needs to be change to your configuration.
+where `/path/to/package/` needs to be changed to your configuration.
 
 
 On linux systems, the startup file is likely found at `~/.julia/config/startup.jl` or in the julia etc folder.
@@ -44,9 +44,9 @@ On linux systems, the startup file is likely found at `~/.julia/config/startup.j
 
 In the [test](../../test/) folder, several examples of use of XPSpack are implemented:
 
- - [reconstruction/estimation.jl](../../test/reconstruction/estimation.jl): (requires [XPSsampling](../XPSsampling/))
- - [reconstruction/profileEstimation.jl](../../test/reconstruction/profileEstimation.jl): (requires [XPSsampling](../XPSsampling/))
- - [reconstruction/testTruncation.jl](../../test/reconstruction/testTruncation.jl): (requires [XPSsampling](../XPSsampling/) and [XPSpack](../XPSpack/))
+ - [reconstruction/estimation.jl](../../test/reconstruction/estimation.jl): concentration profile reconstruction from simulated data from different acquisition setup, e.g. number of photon energy acquisition (requires [XPSsampling](../XPSsampling/))
+ - [reconstruction/profileEstimation.jl](../../test/reconstruction/profileEstimation.jl): reconstruction for one acquisition setup (requires [XPSsampling](../XPSsampling/))
+ - [reconstruction/testTruncation.jl](../../test/reconstruction/testTruncation.jl): data simulation and reconstruction (requires [XPSsampling](../XPSsampling/) and [XPSpack](../XPSpack/))
 
 
 # Refs
