@@ -50,4 +50,4 @@ In the [test](../../test/) folder, several examples of use of XPSsampling are im
 
 - [1] N. Metropolis et S. Ulam, The Monte Carlo method,  Journal of the American Statistical Association, vol. 44, no 247, 1949, p. 335–341, [DOI: 10.2307/2280232](https://www.doi.org/10.2307/2280232)
 - [2] W.K. Hastings, Monte Carlo Sampling Methods Using Markov Chains and Their Applications, Biometrika, vol. 57, no 1, 1970, p. 97–109, [DOI: 10.2307/2334940](https://www.doi.org/10.2307/2334940)
-- [3]: M.Ozon, K. Tumashevich, J. J. Lin and N. L. Prisle , Inversion model for extracting chemically resolved depth profiles across liquid interfaces of various configurations from XPS data: PROPHESY, Journal of Synchrotron Radiation, 2023, Vol. -, p. - ([DOI: 10.1107/-](https://www.doi.org/10.1107/-))
+- [3]: M.Ozon, K. Tumashevich, J. J. Lin and N. L. Prisle , Inversion model for extracting chemically resolved depth profiles across liquid interfaces of various configurations from XPS data: PROPHESY, (submitted) Journal of Synchrotron Radiation, 2023, Vol. -, p. - ([DOI: 10.1107/-](https://www.doi.org/10.1107/-))
