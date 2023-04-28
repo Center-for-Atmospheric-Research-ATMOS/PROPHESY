@@ -5,8 +5,8 @@ on:
     branches:
       - beta
     paths:
-      - 'XPSpack/src/**'
-      - 'XPSpack/test/**'
+      - 'packages/XPSpack/src/**'
+      - 'packages/XPSpack/test/**'
 
 jobs:
   test:
@@ -25,4 +25,4 @@ jobs:
           - x64
     steps:
         - uses: actions/checkout@v3
-        - run: julia -e 'using Pkg; println(readdir()); Pkg.activate("XPSpack/"); Pkg.build("XPSpack"); Pkg.test("XPSpack"; coverage=true)'
+        - run: julia -e 'using Pkg; println(readdir()); Pkg.activate("packages/XPSpack/"); Pkg.build("XPSpack"); Pkg.test("XPSpack"; coverage=true)'
