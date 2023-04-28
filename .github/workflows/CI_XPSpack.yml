@@ -25,4 +25,5 @@ jobs:
           - x64
     steps:
         - uses: actions/checkout@v3
-        - run: julia -e 'using Pkg; Pkg.add(url="https://github.com/matthewozon/NMOpt"); using NMOpt; Pkg.activate("packages/XPSpack/"); Pkg.build("XPSpack")' #; Pkg.build("NMopt")' # ' #;  #; Pkg.test("XPSpack"; coverage=true)'
+        - run: julia -e 'using Pkg; Pkg.add(url="https://github.com/matthewozon/NMOpt"); Pkg.activate("packages/XPSpack/"); Pkg.resolve();' # Pkg.build("XPSpack")' #; Pkg.build("NMopt")' # ' #;  #; Pkg.test("XPSpack"; coverage=true)'
+        #- run: julia -e 'using Pkg; Pkg.add(url="https://github.com/matthewozon/NMOpt"); using NMOpt; Pkg.activate("packages/XPSpack/"); Pkg.build("XPSpack")' #; Pkg.build("NMopt")' # ' #;  #; Pkg.test("XPSpack"; coverage=true)'

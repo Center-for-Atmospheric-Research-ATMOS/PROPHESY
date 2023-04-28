@@ -3,18 +3,18 @@ uuid = "6c4b471a-7e4f-431d-94f9-34e8518294f6"
 version = "0.2.0"
 
 [deps]
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+NMOpt = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"  # for CI
-NMOpt = "ad0eafcd-0556-4673-9a02-4d69c7f573d5" # unregistered should be last (?)
-
-
-#unregistered packages
-[where]
-NMOpt = "https://github.com/matthewozon/NMOpt" # "/path/to/package/NMOpt/" 
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 julia = "1"
 
+[extras]
+NMOpt = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
+
+[where]
+NMOpt = "https://github.com/matthewozon/NMOpt"
