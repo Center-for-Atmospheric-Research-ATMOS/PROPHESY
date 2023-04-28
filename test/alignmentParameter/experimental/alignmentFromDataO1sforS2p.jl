@@ -40,6 +40,7 @@ for idx_file in 1:length(data_filesO1sS2p)
         local dKe      = median(abs.(Be[2:end]-Be[1:end-1]))
         local Npeaks, BePeak, σePeak, σePeakL, AePeak, σ_peak = curveFromFit(dictPeak[plot_sym],Be,false;bind_sym=bind_sym, shift_sym=shift_sym, gauss_sym=gauss_sym, area_sym=area_sym, loren_sym=loren_sym);
 
+        # local ΔtT = (dictPeak[plot_sym][!,8]./(dictPeak[plot_sym][!,9].*dictPeak[plot_sym][!,13].*dictPeak[plot_sym][!,12]))[1]
         # plot data and fits
         if FLAG_PLOT
             local ax = subplot(2,2,i)
@@ -68,7 +69,9 @@ for idx_file in 1:length(data_filesO1sS2p)
         ρ = ρO1s_bulk*ones(Cdouble,Nr)
         α_al_noise[idx],_    = noiseAndParameterEstimation(σ_all,H_geom,S_noisy,Sbg,ρ)
         # α_al_noise[idx]      = α_al_noise[idx]/(κ_units*dictPeak[plot_sym][!,Symbol("Sigma")][1]*dictPeak[plot_sym][!,Symbol("Photon flux")][1])
-        α_al_noise[idx]      = α_al_noise[idx]/(κ_units*σ_O1s_exp(convert(Cdouble,df_Eph[!,photon_sym][i]))*dictPeak[plot_sym][!,Symbol("Photon flux")][1])
+        α_al_noise[idx]      = α_al_noise[idx]/(κ_units*σ_O1s_exp(convert(Cdouble,df_Eph[!,photon_sym][i]))*dictPeak[plot_sym][!,Symbol("Photon flux")][1]*dKe)
+        # α_al_noise[idx]      = α_al_noise[idx]/(κ_units*σ_O1s_exp(convert(Cdouble,df_Eph[!,photon_sym][i]))*dictPeak[plot_sym][!,Symbol("Photon flux")][1])
+        # α_al_noise[idx]      = α_al_noise[idx]/(κ_units*σ_O1s_exp(convert(Cdouble,df_Eph[!,photon_sym][i]))*dictPeak[plot_sym][!,Symbol("Photon flux")][1]*ΔtT)
         α_al_ratio[idx]      = dictPeak[plot_sym][!,Symbol("Alignment")][1]
         global idx = idx + 1;
     end

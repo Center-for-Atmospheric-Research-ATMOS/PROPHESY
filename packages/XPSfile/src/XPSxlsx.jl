@@ -39,6 +39,55 @@ function dataAndFit_xlsx2df(fileName::String;
     dictAllData,df_fit,Ndata
 end
 
+function dataAndFit_xlsx2df_missing(fileName::String;
+    regData::Regex=r"Eph ?= ?",regFit::Regex=r"[Ff]itt?ing(_| )?results?",regEph::Regex=r"=[0-9]*eV",sortBy::Symbol=Symbol("Photon energy"),thenSortBy::Symbol=Symbol("Binding energy"))
+
+    local xf_data = XLSX.readxlsx(fileName);
+    local xf_data_sheet_names = XLSX.sheetnames(xf_data);
+    local list_match = match.(regData,xf_data_sheet_names); 
+    local list_match_fit = match.(regFit,xf_data_sheet_names);
+    local xf_raw_data_sheet_names = xf_data_sheet_names[list_match.!=nothing];
+    local xf_fit_data_sheet_names = xf_data_sheet_names[list_match_fit.!=nothing];
+
+    Ndata = length(xf_raw_data_sheet_names);
+    dictAllData = Dict();
+    for xf_name in xf_raw_data_sheet_names
+        local x = XLSX.getdata(xf_data[xf_name])[2:end,:]
+        local col_sym = string.(XLSX.gettable(xf_data[xf_name])[2])
+        local dataPairs = Array{Pair{String,Vector{Union{Missing, Float64}}}}(undef,length(col_sym))
+        for j in 1:length(col_sym)
+            local y = Array{Union{Missing, Float64}, 1}(undef,length(x[:,j]));
+            for i in 1:length(x[:,j])
+                if (typeof(x[i,j])!=Missing)
+                    if (typeof(x[i,j])<:AbstractString)
+                        y[i] = parse(Cdouble,x[i,j])
+                    else
+                        y[i] = convert(Cdouble,x[i,j])
+                    end
+                else
+                    y[i] = missing
+                end
+            end
+            dataPairs[j] = (col_sym[j] => y)
+        end
+        df = DataFrame(dataPairs);
+        dictAllData[Symbol(string("hν_",match.(regEph,xf_name).match[2:end-2]))] = df
+    end
+
+
+    x_fit = XLSX.getdata(xf_data[xf_fit_data_sheet_names[1]]);
+    # remove missing columns
+    x_fit = x_fit[:,broadcast(~,(ismissing.(x_fit[1, :])))]
+    df_fit = DataFrame([col for col in eachcol(x_fit[2:end, :])], Symbol.(x_fit[1, :]))
+    # remove missing rows
+    # df_fit = dropmissing(df_fit, disallowmissing=true)
+    filter!(x -> any(!ismissing, x), df_fit)
+    df_fit = df_fit |> @orderby(_[sortBy]) |> @thenby(_[thenSortBy]) |> DataFrame
+
+    # return
+    dictAllData,df_fit,Ndata
+end
+
 function curveFromFit(dfPeak::DataFrame,Be::Array{Cdouble,1},shiftPeaks::Bool;
     bind_sym::Symbol=Symbol("Binding energy"), shift_sym::Symbol=Symbol("Peak shift"), gauss_sym::Symbol=Symbol("FWHM(G)"), area_sym::Symbol=Symbol("Area"), loren_sym::Symbol=Symbol("FWHM(L)"))
     local Npeaks   = length(dfPeak[!,bind_sym]);

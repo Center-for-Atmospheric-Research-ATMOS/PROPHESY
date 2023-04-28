@@ -64,12 +64,21 @@ function APEsimu(dictAllData::Dict,dictAllGeom::Dict,dataIGOR::Dict,symbolDict::
     dictAllAPE  = Dict()
     dictAllPlot = Dict()
     dictAllIGOR = Dict()
+    # println(summary(keys(symbolDict)))
+    # println(keys(symbolDict))
+    # println(collect(keys(symbolDict))[1])
+    # plot_sym_cst = collect(keys(symbolDict))[1]
     for plot_sym in keys(symbolDict)
         local Beplot = dictAllData[plot_sym].Be;
         local dBe = abs(Beplot[2]-Beplot[1]);
         idx_1 = findfirst(abs.(Beplot.-dataIGOR[plot_sym].Be[1]).<0.001) 
         idx_2 = findfirst(abs.(Beplot.-dataIGOR[plot_sym].Be[end]).<0.001)
         local H_liq = dictAllGeom[symbolDict[plot_sym]][!,:H];
+        # local H_liq = dictAllGeom[symbolDict[plot_sym_cst]][!,:H];
+        #println(plot_sym," vs fixed ",plot_sym_cst)
+        #println(symbolDict[plot_sym]," vs fixed ",symbolDict[plot_sym_cst])
+        # println(max(parse(Float64,string(symbolDict[plot_sym])[5:end])/parse(Float64,string(symbolDict[plot_sym_cst])[5:end]),parse(Float64,string(symbolDict[plot_sym_cst])[5:end])/parse(Float64,string(symbolDict[plot_sym])[5:end])))
+        
         if FLAG_O1S
             local S_noisy_GT = Array{Cdouble,1}(dictAllData[plot_sym][!,:Snoisy]) - Array{Cdouble,1}(dictAllData[plot_sym][!,:SpectrumA_1_gas]);
             local S_noisy = dictAllData[plot_sym].Snoisy[idx_1:idx_2] - dataIGOR[plot_sym].Curve_2 # or 2 # # 
@@ -156,6 +165,9 @@ else
 end
 ax1 = subplot(121)
 ax1.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*[1e-11; 3.0e-8],label="1:1",linewidth=LINEWIDTH)
+# ax1.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*0.5*[1e-11; 3.0e-8],label="2:1",linewidth=LINEWIDTH)
+# ax1.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*(1.0/2.82)*[1e-11; 3.0e-8],label="2:1",linewidth=LINEWIDTH)
+# ax1.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*2.82*[1e-11; 3.0e-8],label="1:2",linewidth=LINEWIDTH)
 xlim(1.0e8*1e-11,1.0e8*3.0e-8)
 ylim(1.0e8*1e-11,1.0e8*3.0e-8)
 yscale("log")
@@ -171,8 +183,8 @@ ax2.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*[1e-11; 3.0e-8],label="1:1",linewidth=LINEW
 ax2.plot(1.0e8*[1e-11; 3.0e-8],1.0e8*0.5*[1e-11; 3.0e-8],label="2:1",linewidth=LINEWIDTH)
 xlim(1.0e8*1e-11,1.0e8*3.0e-8)
 ylim(1.0e8*1e-11,1.0e8*3.0e-8)
-yscale("log")
-xscale("log")
+# yscale("log")
+# xscale("log")
 yscale("log")
 xscale("log")
 xlabel("alignment parameter GT [cm\$^{-2}\$]",fontsize=FONTSIZE); 

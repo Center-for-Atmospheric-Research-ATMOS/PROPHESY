@@ -16,7 +16,7 @@ using DataValues
 export XLSX,DataFrames,Query,DataValues
 
 # importing and formatting data from xlsx files to dtaframes/dictionaries
-export dataAndFit_xlsx2df,curveFromFit
+export dataAndFit_xlsx2df, dataAndFit_xlsx2df_missing,curveFromFit
 
 export dataAndMeta_xlsx2df, model_xlsx2df
 
