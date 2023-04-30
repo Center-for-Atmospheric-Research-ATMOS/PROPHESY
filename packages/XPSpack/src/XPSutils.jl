@@ -19,15 +19,24 @@ function baseline_removal(y::Array{Cdouble,1},λ::Cdouble,κ::Cdouble,D::Array{C
    w = ones(Cdouble,Ny)
    W = Matrix{Cdouble}(I,Ny,Ny)
    z = zeros(Cdouble,Ny)
-   for t in 1:Nmax
+   for _ in 1:Nmax
       for i in 1:Ny
          W[i,i] = w[i]
       end
       z = inv(W+H)*W*y;
       d = y-z;
       dn = d[d.<0.0]
-      m = mean(dn)
-      s = std(dn)
+      # cases: no negative values and only one negative value (arbitrary values for the mean and std)
+      if (isempty(dn))
+         m = 0.0
+         s = 1.0
+      elseif (length(dn)==1)
+         m = dn[1];
+         s = 1.0;
+      else
+         m = mean(dn)
+         s = std(dn)
+      end
       wt = 1.0./(1.0 .+ exp.(2.0*(d.-(2.0s-m))/s))
       if ((norm(w-wt)/norm(w))<κ)
          break;

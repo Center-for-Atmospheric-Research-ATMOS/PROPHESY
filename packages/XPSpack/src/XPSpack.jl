@@ -7,8 +7,8 @@
 module XPSpack
 
 using Statistics
-using LinearAlgebra # for the definition of the I matrix in XPSutils... could be avoided, but the package is very common
-using Interpolations # used in XPSmeas.jl
+using LinearAlgebra # for the definition of the I matrix in XPSutils
+using Interpolations # used in penetration_depth.jl 
 using Printf
 using NMOpt # unregistered package at (https://github.com/matthewozon/NMOpt)  # used in XPSutils.jl
 
@@ -29,9 +29,10 @@ export cov_H_cylinder
 export sphere_gain_H,d_sphere_P,alignmentParameterSphere
 export beamProfile
 
+# deprecation before merging beta to main
 # objects modelling experiment and device
-export XPSacq # acquisition parameters
-export Ψ_lin_peaks # implemented in XPSmeas.jl
+# export XPSacq # acquisition parameters
+# export Ψ_lin_peaks # implemented in XPSmeas.jl # used in main branch in: data_gen_exp_5.jl, SDS_water.jl, data_generation_exp.jl 
 
 # function for noise estimation
 export noiseAndParameterEstimation

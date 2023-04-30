@@ -152,59 +152,59 @@ mutable struct cylinderGeom
     end
 end
 
-# acquisition struct: for each photon energy, this structure gather the information needed by the model. Create a dictionary of XPSacq that gathers all the photon energy to create the complete model
-"""
-    XPSacq is a mutable structure that gathers in one place the information of an XPS acquisition (from a model point of view)
+# # acquisition struct: for each photon energy, this structure gather the information needed by the model. Create a dictionary of XPSacq that gathers all the photon energy to create the complete model
+# """
+#     XPSacq is a mutable structure that gathers in one place the information of an XPS acquisition (from a model point of view)
 
-    - ħν: photon energy
-    - μKe: analyzer's reference kinetic energy
-    - α: apparent solid angle (analyzer's apperture from the sample)
-    - T: transmission factor (depends mostly on μKe)
-    - Fν: photon flux
-    - Ke: array of probed kinetic energies
-    - σν: kinetic-energy-density-differential cross-section dσ/dKe → σ_{nl}(ħν) = ∫ dσ/dKe dKe
-    - λe: attenuation length (electron in the sample: Beer-Lambert's law)
-    - nl: orbitale's name 
-"""
-mutable struct XPSacq
-    # main setup number
-    ħν::Cdouble                    # photon energy 
-    μKe::Cdouble                   # mean kinetic energies (where the anaylizer is measuring in the )
+#     - ħν: photon energy
+#     - μKe: analyzer's reference kinetic energy
+#     - α: apparent solid angle (analyzer's apperture from the sample)
+#     - T: transmission factor (depends mostly on μKe)
+#     - Fν: photon flux
+#     - Ke: array of probed kinetic energies
+#     - σν: kinetic-energy-density-differential cross-section dσ/dKe → σ_{nl}(ħν) = ∫ dσ/dKe dKe
+#     - λe: attenuation length (electron in the sample: Beer-Lambert's law)
+#     - nl: orbitale's name 
+# """
+# mutable struct XPSacq
+#     # main setup number
+#     ħν::Cdouble                    # photon energy 
+#     μKe::Cdouble                   # mean kinetic energies (where the anaylizer is measuring in the )
 
-    # analyzer
-    α::Cdouble                     # the apparent solid angle that the analyzer's apperture represents from the sample point of view
-    T::Cdouble                     # mystic gain of the analyzer TODO: demystify it (see robert's email)
+#     # analyzer
+#     α::Cdouble                     # the apparent solid angle that the analyzer's apperture represents from the sample point of view
+#     T::Cdouble                     # mystic gain of the analyzer TODO: demystify it (see robert's email)
 
-    # sampled kinetic energies
-    Fν::Cdouble                    # photon flux at the given photon energy
-    Ke::Array{Cdouble,1}           # kinetic-energy spectrum sampling points
-    σν::Array{Cdouble,1}           # kinetic-energy-density-differential cross-section dσ/dKe → σ_{nl}(ħν) = ∫ dσ/dKe dKe
+#     # sampled kinetic energies
+#     Fν::Cdouble                    # photon flux at the given photon energy
+#     Ke::Array{Cdouble,1}           # kinetic-energy spectrum sampling points
+#     σν::Array{Cdouble,1}           # kinetic-energy-density-differential cross-section dσ/dKe → σ_{nl}(ħν) = ∫ dσ/dKe dKe
 
-    # attenuation length
-    λe::Cdouble                    # 1D array for the electron attenuation length (w.r.t. K_e)
+#     # attenuation length
+#     λe::Cdouble                    # 1D array for the electron attenuation length (w.r.t. K_e)
 
-    # geometry structure (WARNING: does it make sense to have it in this structure knowing that it's gonna be shared across many instance of the XPSacq, maybe leave it for the global structure XPSexp)
-    # tag for the orbitale (the differential cross section should already contain the orbitale information: energy-and-angula spectrum)
-    nl::String                     # orbitale
+#     # geometry structure (WARNING: does it make sense to have it in this structure knowing that it's gonna be shared across many instance of the XPSacq, maybe leave it for the global structure XPSexp)
+#     # tag for the orbitale (the differential cross section should already contain the orbitale information: energy-and-angula spectrum)
+#     nl::String                     # orbitale
 
-    # default ctor (it is not really meaningful, it's more for the sake of having a default constructor)
-    function XPSacq() #
-        new(0.0,0.0,0.0,0.0,0.0,Array{Cdouble,1}(undef,0),Array{Cdouble,1}(undef,0),0.0,"C1s")
-    end
+#     # default ctor (it is not really meaningful, it's more for the sake of having a default constructor)
+#     function XPSacq() #
+#         new(0.0,0.0,0.0,0.0,0.0,Array{Cdouble,1}(undef,0),Array{Cdouble,1}(undef,0),0.0,"C1s")
+#     end
 
-    # ctor: this is physically relevant (as much as the meaning of the parameters used for the model)
-    function XPSacq(ħν_::Cdouble,μKe_::Cdouble,α_::Cdouble,T_::Cdouble,Fν_::Cdouble,Ke_::Array{Cdouble,1},σν_::Array{Cdouble,1},λe_::Cdouble;nl_::String="C1s")
-        if (length(Ke_)!=length(σν_))
-            throw("XPSacq: kinetic energy array and cross section array are not of the same length")
-        end
-        new(ħν_,μKe_,α_,T_,Fν_,Ke_,σν_,λe_,nl_)
-    end
+#     # ctor: this is physically relevant (as much as the meaning of the parameters used for the model)
+#     function XPSacq(ħν_::Cdouble,μKe_::Cdouble,α_::Cdouble,T_::Cdouble,Fν_::Cdouble,Ke_::Array{Cdouble,1},σν_::Array{Cdouble,1},λe_::Cdouble;nl_::String="C1s")
+#         if (length(Ke_)!=length(σν_))
+#             throw("XPSacq: kinetic energy array and cross section array are not of the same length")
+#         end
+#         new(ħν_,μKe_,α_,T_,Fν_,Ke_,σν_,λe_,nl_)
+#     end
 
-    # cptor
-    function XPSacq(ws::XPSacq) #
-        new(ws.ħν,ws.μKe,ws.α,ws.T,ws.Fν,ws.Ke,ws.σν,ws.λe,ws.nl)
-    end
-end
+#     # cptor
+#     function XPSacq(ws::XPSacq) #
+#         new(ws.ħν,ws.μKe,ws.α,ws.T,ws.Fν,ws.Ke,ws.σν,ws.λe,ws.nl)
+#     end
+# end
 
 
 ##
@@ -603,34 +603,34 @@ function alignmentParameterSphere(bp::beamProfile,r::Array{Cdouble,1},φ::Array{
 end
 
 
-"""
-    Ψ_lin_peak(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+# """
+#     Ψ_lin_peak(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
 
-    returns the measurement operator for a cylindrical geometry
-    - wsGeom: cylinderGeom
-    - wsAcq:  XPSacq
-    - κ_cs:   relative bias in the cross section values
-    - κ_eal:  relative bias in the attenuation length values
-"""
-function Ψ_lin_peak(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
-    Hr,_,_,_,_ = cylinder_gain_H(wsGeom.r,wsGeom.θ,wsGeom.y,wsGeom.x0,wsGeom.y0,wsGeom.z0,wsGeom.μ0,(1.0+κ_eal)*wsAcq.λe);
-    wsAcq.T*wsAcq.α*wsAcq.Fν*((1.0+κ_cs)*wsAcq.σν)*Hr'
-end
+#     returns the measurement operator for a cylindrical geometry
+#     - wsGeom: cylinderGeom
+#     - wsAcq:  XPSacq
+#     - κ_cs:   relative bias in the cross section values
+#     - κ_eal:  relative bias in the attenuation length values
+# """
+# function Ψ_lin_peak(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+#     Hr,_,_,_,_ = cylinder_gain_H(wsGeom.r,wsGeom.θ,wsGeom.y,wsGeom.x0,wsGeom.y0,wsGeom.z0,wsGeom.μ0,(1.0+κ_eal)*wsAcq.λe);
+#     wsAcq.T*wsAcq.α*wsAcq.Fν*((1.0+κ_cs)*wsAcq.σν)*Hr'
+# end
 
-"""
-    Ψ_lin_peak_area(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+# """
+#     Ψ_lin_peak_area(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
 
-    returns the peak area operator for a cylindrical geometry
-    - wsGeom: cylinderGeom
-    - wsAcq:  XPSacq
-    - κ_cs:   relative bias in the cross section values
-    - κ_eal:  relative bias in the attenuation length values
-"""
-function Ψ_lin_peak_area(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
-    H_peak = Ψ_lin_peak(wsGeom,wsAcq;κ_cs=κ_cs,κ_eal=κ_eal)
-    AKe = 0.5*[wsAcq.Ke[2]-wsAcq.Ke[1]; wsAcq.Ke[3:end]-wsAcq.Ke[1:end-2]; wsAcq.Ke[end]-wsAcq.Ke[end-1]];    # dθ
-    AKe'*H_peak # A = dropdims(sum(H,dims=1),dims=1)*abs(peak.Ke[2]-peak.Ke[1])
-end
+#     returns the peak area operator for a cylindrical geometry
+#     - wsGeom: cylinderGeom
+#     - wsAcq:  XPSacq
+#     - κ_cs:   relative bias in the cross section values
+#     - κ_eal:  relative bias in the attenuation length values
+# """
+# function Ψ_lin_peak_area(wsGeom::cylinderGeom,wsAcq::XPSacq;κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+#     H_peak = Ψ_lin_peak(wsGeom,wsAcq;κ_cs=κ_cs,κ_eal=κ_eal)
+#     AKe = 0.5*[wsAcq.Ke[2]-wsAcq.Ke[1]; wsAcq.Ke[3:end]-wsAcq.Ke[1:end-2]; wsAcq.Ke[end]-wsAcq.Ke[end-1]];    # dθ
+#     AKe'*H_peak # A = dropdims(sum(H,dims=1),dims=1)*abs(peak.Ke[2]-peak.Ke[1])
+# end
 
 
 """
@@ -710,23 +710,23 @@ end
 #  end
 
 
- """
-    Ψ_lin_peaks(wsGeom::cylinderGeom,XPS_peak::Dict{Int64,XPSacq};κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+#  """
+#     Ψ_lin_peaks(wsGeom::cylinderGeom,XPS_peak::Dict{Int64,XPSacq};κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
 
-    return a dictionary of measurement operators corresponding to the peaks listed in the argument
+#     return a dictionary of measurement operators corresponding to the peaks listed in the argument
 
-    - wsGeom::cylinderGeom    
-    - XPS_peak: dictionary of peaks (different acquisition setups)
-    - κ_cs:   relative bias in the cross section values
-    - κ_eal:  relative bias in the attenuation length values
- """
-function Ψ_lin_peaks(wsGeom::cylinderGeom,XPS_peak::Dict{Int64,XPSacq};κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
-    H_dict     = Dict{Int64,Array{Cdouble,2}}();
+#     - wsGeom::cylinderGeom    
+#     - XPS_peak: dictionary of peaks (different acquisition setups)
+#     - κ_cs:   relative bias in the cross section values
+#     - κ_eal:  relative bias in the attenuation length values
+#  """
+# function Ψ_lin_peaks(wsGeom::cylinderGeom,XPS_peak::Dict{Int64,XPSacq};κ_cs::Cdouble=0.0,κ_eal::Cdouble=0.0)
+#     H_dict     = Dict{Int64,Array{Cdouble,2}}();
     
-    for (i,peak) in XPS_peak
-       # create the measurement model
-       setindex!(H_dict,Ψ_lin_peak(wsGeom,peak;κ_cs=κ_cs,κ_eal=κ_eal),i);
-    end
-    H_dict
-end
+#     for (i,peak) in XPS_peak
+#        # create the measurement model
+#        setindex!(H_dict,Ψ_lin_peak(wsGeom,peak;κ_cs=κ_cs,κ_eal=κ_eal),i);
+#     end
+#     H_dict
+# end
 
