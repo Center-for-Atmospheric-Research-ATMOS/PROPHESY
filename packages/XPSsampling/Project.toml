@@ -1,0 +1,8 @@
+name = "XPSsampling"
+uuid = "e92e2d5c-d94f-4810-ae91-c240d775e9e5"
+version = "0.2.0"
+
+
+[compat]
+julia = "1"
+

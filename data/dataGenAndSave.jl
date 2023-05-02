@@ -1,7 +1,6 @@
 ## load the packages used in the estimation
 # plotting
 using PyPlot
-fm = PyPlot.matplotlib.font_manager.json_load("/home/matthew/.cache/matplotlib/fontlist-v310.json") # TODO: look for the path automatically
 rc("text", usetex=true)
 rc("figure",max_open_warning=50)
 using myPlot
@@ -20,21 +19,20 @@ using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack
-using XPSinv
 
 # tags
 LOW_RES   = true               # set to true for computing the low resolution measurement models
 MARG_UN   = (false & LOW_RES)    # set to true for computing the mean measurement operator as well as the covarainces
 SHORT_RANGE = false              # select either wide range of attenuation lengths (false) or a restricted range more similar to experimental setup (true)
-SIMULATE_DATA = false            # set true for simulating some data (several nose level)
+SIMULATE_DATA = true            # set true for simulating some data (several nose level)
 SAVE_DATA = (false & SIMULATE_DATA)                # set to true for saving the generated variables
-SAVE_MODEL = true               # set to true to save the models
+SAVE_MODEL = false               # set to true to save the models
 
 MODEL_5   = false               # select the number of attenuation lengths probed
 MODEL_10  = false
 MODEL_20  = true
 
-SAMPLE_MODEL = (true & LOW_RES) # if set to true, generate plenty of models by drawing attenuation lengths (only in low resolution, and does not compute the marginalization)
+SAMPLE_MODEL = (false & LOW_RES) # if set to true, generate plenty of models by drawing attenuation lengths (only in low resolution, and does not compute the marginalization)
 N_model_sample = 100;           # 100 should be more than enough for 5 attenuation length, but maybe not for 20
 
 FLAG_0001 = (false & SIMULATE_DATA)               # selection of the profile (one must be true and the others false)

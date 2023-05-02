@@ -1,0 +1,11 @@
+name = "XPSinv"
+uuid = "32bb31b3-aa52-4332-b092-395b2906367a"
+version = "0.2.0"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[compat]
+julia = "1"
+
