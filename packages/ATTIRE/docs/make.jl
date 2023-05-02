@@ -4,7 +4,14 @@ using ATTIRE
 makedocs(
     sitename = "ATTIRE",
     format = Documenter.HTML(),
-    modules = [ATTIRE]
+    modules = [ATTIRE],
+    pages = [
+    "Home" => "index.md",
+    "Manual" => Any[
+        "Guide" => "man/guide.md",
+        "man/syntax.md",
+    ],
+    ]
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.
@@ -13,3 +20,4 @@ makedocs(
 #=deploydocs(
     repo = "<repository url>"
 )=#
+
