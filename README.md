@@ -2,6 +2,7 @@
 <!--[![XPSpack CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml/badge.svg?branch=beta)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml)-->
 
 [![XPSpack CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml)
+[![ATTIRE CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_ATTIRE.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_ATTIRE.yml)
 
 # XPS data simulation and inversion: PROPHESY
   this suite of packages should contain tools for the estimation of the concentration profiles of a  chemical species across a microjet (i.e. a very small stream) probed with X-rays. The data are the spectra of the emitted photoelectrons from the core subshell in the ground state (i.e. 1s orbital).
@@ -12,6 +13,7 @@ The suite is divided into four package for specific tasks:
 - [XPSinv](packages/XPSinv/):           inversion methods from convex optimzation framework [6]
 - [XPSsampling](packages/XPSsampling/): sampling methods for estimating the covariance of the posterior distribution and other distributions
 - [XPSfile](packages/XPSfile/):         tools for loading data files
+- [ATTIRE](packages/ATTIRE/):           light model of the acquisition device (kinetic energy analyzer and light)
 
 
 
@@ -21,11 +23,12 @@ In the Project.toml files you'll find the dependences list hereafter
 
 ## XPSpack
 
-- LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-- Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+- LinearAlgebra  = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+- Statistics     = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 - Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
-- Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-- NMOpt = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
+- Printf         = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+- Test           = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+- NMOpt          = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
 
 The package is an unregistered package that can be intalled from the github repository. In Julia RPEL, type:
 
@@ -34,14 +37,20 @@ The package is an unregistered package that can be intalled from the github repo
 ## XPSinv
 
 - LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-- Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+- Statistics    = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 ## XPSfile
 
-- XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
+- XLSX       = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 - DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-- Query = "1a8c2f83-1ff3-5112-b086-8aa67b057ba1"
+- Query      = "1a8c2f83-1ff3-5112-b086-8aa67b057ba1"
 - DataValues = "e7dc6d0d-1eca-5fa6-8ad6-5aecde8b7ea5"
+
+## ATTIRE
+
+ - Distributions  = "31c24e10-a181-5473-b8eb-7969acd0382f"
+ - Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+ - Test           = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 # Installation
 
@@ -51,7 +60,7 @@ Julia can be downloaded from <https://julialang.org/downloads/>
 
 ## packages
 
-For each package the instalation method is in their respective installation section ([XPSpack](packages/XPSpack/README.md), [XPSinv](packages/XPSinv/README.md), [XPSsampling](packages/XPSsampling/README.md) and [XPSfile](packages/XPSfile/README.md))
+For each package the instalation method is in their respective installation section ([XPSpack](packages/XPSpack/README.md), [XPSinv](packages/XPSinv/README.md), [XPSsampling](packages/XPSsampling/README.md), [XPSfile](packages/XPSfile/README.md), and [ATTIRE](packages/ATTIRE/README.md))
 
 ## tips
 
