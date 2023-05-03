@@ -308,9 +308,6 @@ function d_sphere_P(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Array{Cdouble,1
                         cosω = (x0 - xm) / sqrt((x0-xm)^2 + (y0-ym)^2); # azimuthal angle of the direction MP
                         sinω = (y0 - ym) / sqrt((x0-xm)^2 + (y0-ym)^2);
 
-                        # cosβ = (z0 - zm) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2); # polar angle of the direction MP is π/2-β
-                        # sinβ = sqrt((x0-xm)^2 + (y0-ym)^2) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2);
-
                         # debugging
                         sinβ= (z0 - zm) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2); # polar angle of the direction MP is π/2-β
                         cosβ = sqrt((x0-xm)^2 + (y0-ym)^2) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2);
@@ -368,8 +365,6 @@ function d_sphere_P(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Cdouble,x0::Cdo
         ## compute all cos/sin
         cosω = (x0 .- xm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2); # azimuthal angle of the direction MP
         sinω = (y0 .- ym) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2)
-        # cosβ = (z0 .- zm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2); # polar angle of the direction MP is π/2-β
-        # sinβ = sqrt.((x0.-xm).^2 .+ (y0.-ym).^2) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2);
 
         # debugging
         sinβ = (z0 .- zm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2); # polar angle of the direction MP is π/2-β

@@ -6,17 +6,6 @@ using Distributions
 using XPSpack
 
 
-#=
-remaining functions to be tested
-
-# possible geometry of the sample
-fingerGeom, planeGeom, cylinderGeom
-
-# distance and geometry factors
-
-
-=#
-
 ############################################################################################
 # intrinsic properties of the sample: photoionization cross-section and attenuation length #
 ############################################################################################
@@ -280,8 +269,8 @@ function test_finger_gain()
   H_z,Azn = finger_gain_H(x,y,z,x0,y0,z0,λ_meas);
 
   # conditions
-  cond1 = (Nz==length(H_z)) & (!isnan(H_z)) & (!isinf(H_z)) & (all(H_z.>=0.0))
-  cond2 = (Nz==length(Azn)) & (!isnan(Azn)) & (!isinf(Azn))
+  cond1 = (Nz==length(H_z)) & (!isnan(sum(H_z))) & (!isinf(sum(H_z))) & (all(H_z.>=0.0))
+  cond2 = (Nz==length(Azn)) & (!isnan(sum(Azn))) & (!isinf(sum(Azn)))
 
   # results
   cond1 & cond2
@@ -395,33 +384,23 @@ end
 function test_sphere_gain()
   # point location of the analyzer aperture
   x0 = -50000.0
-  y0 = 0.0*5000.0
-  z0 = -50000.0
+  y0 = 5000.0
+  z0 = 50000.0
   # sample characteristic values
   λ_meas = 1.5e-3; # attenuation length
   μ0 = 10.0;       # cylinder diameter
   # spatial discretization
   Nr = 101;
-  Nθ = 51;
-  Nφ = 52;
-  θ0 = atan(x0,z0)
-  φ0 = atan(sqrt(x0^2+z0^2),y0)
-  r = collect(LinRange(μ0-5λ_meas,μ0+2λ_meas,Nr)); # radial coordinates
-  φ = collect(LinRange(φ0-π/2.0,φ0+π/2.0,Nφ));     # polar angles (∈[0,π])
-  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # azimuth angles (∈[0,2π])
-
-  # # point location of the analyzer aperture
-  # x0 = 5000.0
-  # y0 = 0.0*5000.0
-  # z0 = 0.0
-
-  Nθ = 151;
+  Nθ = 251;
   Nφ = 152;
-  θ0 = atan(y0,x0)
-  φ0 = atan(sqrt(x0^2+y0^2),z0)
-  r = collect(LinRange(μ0-5λ_meas,μ0+2.0λ_meas,Nr)); # radial coordinates
-  φ = collect(LinRange(φ0-π/2.0,φ0+π/2.0,Nφ));     # polar angles
-  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # azimuth angles
+  r = collect(LinRange(μ0-5λ_meas,μ0+2λ_meas,Nr)); # radial coordinates
+  φ = collect(LinRange(0.0,π,Nφ));     # polar angles (∈[0,π])
+  θ = collect(LinRange(0.0,2π,Nθ));     # azimuth angles (∈[0,2π])
+  # the restriction cut out some signal
+  # θ0 = atan(y0,x0)
+  # φ0 = atan(sqrt(x0^2+y0^2),z0)
+  # φ = collect(LinRange(φ0-π/2.0,φ0+π/2.0,Nφ));     # polar angles
+  # θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # azimuth angles
 
   # geometry factors and integrals discretization: signal coming from the part of the sample facing the aperture of the kinetic energy analyzer
   H_r,H_rφθ,Arn,Aφj,Aθk = sphere_gain_H(r,φ,θ,x0,y0,z0,μ0,λ_meas);
@@ -435,6 +414,14 @@ function test_sphere_gain()
 
   # results 
   cond1 & cond2 & cond3 & cond4 & cond5
+end
+
+@testset "Geometry factors" begin
+  @test test_finger_gain()
+  @test test_plane_gain()
+  @test test_cylinder_gain()
+  @test test_cov_model()
+  @test test_sphere_gain()
 end
 
 
