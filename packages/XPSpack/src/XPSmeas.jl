@@ -281,49 +281,112 @@ end
 """
 function d_sphere_P(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
     dp = zeros(Cdouble,length(r),length(φ),length(θ)); # create matrix of disctances
-    for i in 1:length(r)
-        for j in 1:length(φ)
-            for k in 1:length(θ)
-                ## M coordinates, spherical --> cartesian
-                xm = r[i]*cos(θ[k])*sin(φ[j]);
-                ym = r[i]*sin(θ[k])*sin(φ[j]);
-                zm = r[i]*cos(φ[j]);
+    if (sqrt(x0^2+y0^2)>maximum(r))
+        for i in 1:length(r)
+            # only if the emission is coming from inside the sample (for sharp edge)
+            if (r[i]<μ0) 
+                for j in 1:length(φ)
+                    for k in 1:length(θ)
+                        # check that the coordinates are in the adequate ranges
+                        if (φ[j]<0.0)
+                            φj = -φ[j]
+                            θk = θ[k] + π
+                        elseif (φ[j]>π)
+                            φj = 2π - φ[j]
+                            θk = θ[k] + π
+                        else
+                            φj = φ[j]
+                            θk = θ[k]
+                        end
+                        θk = θk %2π
+                        ## M coordinates, spherical --> cartesian
+                        xm = r[i]*cos(θk)*sin(φj);
+                        ym = r[i]*sin(θk)*sin(φj);
+                        zm = r[i]*cos(φj);
 
-                ## compute all cos/sin
-                cosω = (x0 - xm) / sqrt((x0-xm)^2 + (y0-ym)^2); # azimuthal angle of the direction MP
-                sinω = (y0 - ym) / sqrt((x0-xm)^2 + (y0-ym)^2);
+                        ## compute all cos/sin
+                        cosω = (x0 - xm) / sqrt((x0-xm)^2 + (y0-ym)^2); # azimuthal angle of the direction MP
+                        sinω = (y0 - ym) / sqrt((x0-xm)^2 + (y0-ym)^2);
 
-                cosβ = (z0 - zm) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2); # polar angle of the direction MP is π/2-β
-                sinβ = sqrt((x0-xm)^2 + (y0-ym)^2) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2);
+                        # cosβ = (z0 - zm) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2); # polar angle of the direction MP is π/2-β
+                        # sinβ = sqrt((x0-xm)^2 + (y0-ym)^2) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2);
 
-                cosα = sin(φ[j]) * cosβ * (cos(θ[k]) * cosω + sin(θ[k]) * sinω) + cos(φ[j]) * sinβ;
+                        # debugging
+                        sinβ= (z0 - zm) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2); # polar angle of the direction MP is π/2-β
+                        cosβ = sqrt((x0-xm)^2 + (y0-ym)^2) / sqrt((x0-xm)^2 + (y0-ym)^2 + (z0-zm)^2);
 
-                dp[i,j,k] = -r[i] * cosα + sqrt(μ0^2 - r[i]^2 * (1 - cosα^2)); # distance from intersection to P
+                        # cosα = sin(φ[j]) * cosβ * (cos(θ[k]) * cosω + sin(θ[k]) * sinω) + cos(φ[j]) * sinβ;
+                        cosα = sin(φj) * cosβ * (cos(θk) * cosω + sin(θk) * sinω) + cos(φj) * sinβ;
+                        
+                        #if ((μ0^2)>=(r[i]^2 * (1 - cosα^2)))
+                        dp[i,j,k] = -r[i] * cosα + sqrt(μ0^2 - r[i]^2 * (1 - cosα^2)); # distance from intersection to P
+                        #end
+                    end
+                end
+            else
+                # no electron emitted from the shadow of the sample will reach the kinetic energy analyzer: set the distance to μ0 
+                for j in 1:length(φ)
+                    for k in 1:length(θ)
+                        # check that the coordinates are in the adequate ranges
+                        if (φ[j]<0.0)
+                            φj = -φ[j]
+                            θk = θ[k] + π
+                        elseif (φ[j]>π)
+                            φj = 2π - φ[j]
+                            θk = θ[k] + π
+                        else
+                            φj = φ[j]
+                            θk = θ[k]
+                        end
+                        θk = θk %2π
+                        ## M coordinates, spherical --> cartesian
+                        xm = r[i]*cos(θk)*sin(φj);
+                        ym = r[i]*sin(θk)*sin(φj);
+                        zm = r[i]*cos(φj);
+                        
+                        cosθ = (xm*x0 + ym*y0 + zm*z0)/(sqrt(xm^2+ym^2+zm^2)*sqrt(x0^2+y0^2+z0^2))
+                        if cosθ<0.0
+                            dp[i,j,k] = μ0
+                        end
+                    end
+                end
             end
         end
+    else
+        throw("Not a good place for the analyzer: in the middle of the stream of droplets")
     end
     dp[dp.<0.0] .= 0.0;
     dp
 end
 function d_sphere_P(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Cdouble,x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
     dp = zeros(Cdouble,length(r),length(φ)); # create matrix of disctances
-    ## M coordinates, spherical --> cartesian
-    xm = cos(θ)*r*sin.(φ')
-    ym = sin(θ)*r*sin.(φ')
-    zm = r*cos.(φ')
-    ## compute all cos/sin
-    cosω = (x0 .- xm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2); # azimuthal angle of the direction MP
-    sinω = (y0 .- ym) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2)
-    cosβ = (z0 .- zm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2); # polar angle of the direction MP is π/2-β
-    sinβ = sqrt.((x0.-xm).^2 .+ (y0.-ym).^2) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2);
-    
-    cosα =  cosβ .* (cos(θ)*cosω+sin(θ)*sinω) .* sin.(φ')  +  sinβ .* cos.(φ') ;
+    if (sqrt(x0^2+y0^2)>maximum(r))
+        ## M coordinates, spherical --> cartesian
+        xm = cos(θ)*r*sin.(φ')
+        ym = sin(θ)*r*sin.(φ')
+        zm = r*cos.(φ')
+        ## compute all cos/sin
+        cosω = (x0 .- xm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2); # azimuthal angle of the direction MP
+        sinω = (y0 .- ym) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2)
+        # cosβ = (z0 .- zm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2); # polar angle of the direction MP is π/2-β
+        # sinβ = sqrt.((x0.-xm).^2 .+ (y0.-ym).^2) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2);
 
-    A = -r.*cosα
-    B = μ0^2 .- r.^2 .* (1.0 .- cosα.^2)
-    A[r.>μ0,:] .= 0.0
-    B[r.>μ0,:] .= 0.0
-    dp = A+sqrt.(B);
+        # debugging
+        sinβ = (z0 .- zm) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2); # polar angle of the direction MP is π/2-β
+        cosβ = sqrt.((x0.-xm).^2 .+ (y0.-ym).^2) ./ sqrt.((x0.-xm).^2 .+ (y0.-ym).^2 .+ (z0.-zm).^2);
+        
+        cosα =  cosβ .* (cos(θ)*cosω+sin(θ)*sinω) .* sin.(φ')  +  sinβ .* cos.(φ') ;
+
+        A = -r.*cosα
+        B = μ0^2 .- r.^2 .* (1.0 .- cosα.^2)
+        A[r.>μ0,:] .= 0.0
+        B[r.>μ0,:] .= 0.0
+        dp = A+sqrt.(B);
+        cosθ = (xm*x0 .+ ym*y0 .+ zm*z0)./(sqrt.(xm.^2+ym.^2+zm.^2)*sqrt(x0^2+y0^2+z0^2))
+        dp[cosθ.<0.0] .= μ0
+    else
+        throw("Not a good place for the analyzer: in the middle of the stream of droplets")
+    end
     dp[dp.<0.0] .= 0.0;
     dp
 end

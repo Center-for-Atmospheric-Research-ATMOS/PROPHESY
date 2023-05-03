@@ -13,10 +13,7 @@ remaining functions to be tested
 fingerGeom, planeGeom, cylinderGeom
 
 # distance and geometry factors
-d_plane_P, d_sphere_P, plane_gain_H, finger_gain_H
-cylinder_gain_H, d_cylinder_P, d_cylinder_P_simple
-cov_H_cylinder
-sphere_gain_H,d_sphere_P
+
 
 =#
 
@@ -162,14 +159,284 @@ end
 ############################################################################################
 #                          electron travel distance                                        #
 ############################################################################################
-# function test_distance_plane()
-#   d_plane_P(x::Cdouble,y::Cdouble,z::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble)
-# end
+function test_distance_plane()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0
+  z0 = 5000.0
+  # attenuation length
+  λ_meas = 1.5e-3;
+  # spatial discretization
+  Nz = 101;
+  x = 0.0;
+  y = 0.0
+  z = collect(LinRange(-5λ_meas,2λ_meas,Nz)); # depth 
+
+  # travelling distance in the sample
+  dP = d_plane_P(x,y,z,x0,y0,z0);
+
+  # results
+  (Nz==length(dP)) & (!isnan(sum(dP))) & (!isinf(sum(dP))) & (all(dP.>=0.0))
+end
+
+function test_distance_cylinder()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0
+  z0 = 5000.0
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0 = 10.0;       # cylinder diameter
+  # spatial discretization
+  Nr = 101;
+  Nθ = 51;
+  θ0 = atan(x0,z0)
+  r = collect(LinRange(μ0-5λ_meas,μ0+2λ_meas,Nr)); # radial coordinates
+  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # polar angles
+  y = 0.0;                                         # axial coordinates
+  
+  # travelling distance in the sample
+  dP = d_cylinder_P(r,θ,y,x0,y0,z0,μ0);
+
+  # results
+  (Nr==size(dP,1)) & (Nθ==size(dP,2)) & (!isnan(sum(dP))) & (!isinf(sum(dP))) & (all(dP.>=0.0))
+end
+
+function test_distance_cylinder_simplification()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0
+  z0 = 5000.0
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0 = 10.0;       # cylinder diameter
+  # spatial discretization
+  Nr = 101;
+  Nθ = 51;
+  θ0 = atan(x0,z0)
+  r = collect(LinRange(μ0-5λ_meas,μ0+2λ_meas,Nr)); # radial coordinates
+  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # polar angles
+  y = 0.0;                                         # axial coordinates
+  
+  # travelling distance in the sample
+  # dP = d_cylinder_P(r,θ,y,x0,y0,z0,μ0);
+  dP = d_cylinder_P_simple(r,θ,y,x0,y0,z0,μ0)
+
+  # results
+  (Nr==size(dP,1)) & (Nθ==size(dP,2)) & (!isnan(sum(dP))) & (!isinf(sum(dP))) & (all(dP.>=0.0))
+end
+
+function test_distance_sphere()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0*5000.0
+  z0 = 0.0
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0 = 10.0;       # cylinder diameter
+  # spatial discretization
+  Nr = 101;
+  Nθ = 51;
+  Nφ = 52;
+  θ0 = atan(y0,x0)
+  φ0 = atan(sqrt(x0^2+y0^2),z0)
+  r = collect(LinRange(μ0-5λ_meas,μ0+2λ_meas,Nr)); # radial coordinates
+  φ = collect(LinRange(φ0-π/2.0,φ0+π/2.0,Nφ));     # polar angles
+  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # azimuth angles
+
+  # travelling distance in the sample
+  dP = d_sphere_P(r,φ,θ,x0,y0,z0,μ0);
+
+  # results
+  (Nr==size(dP,1)) & (Nφ==size(dP,2)) & (Nθ==size(dP,3)) & (!isnan(sum(dP))) & (!isinf(sum(dP))) & (all(dP.>=0.0))
+end
 
 
-# d_cylinder_P(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Cdouble,x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
-# d_cylinder_P_simple(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Cdouble,x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
-# d_sphere_P(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
+@testset "photo-electron travelling distance in the sample" begin
+  @test test_distance_plane()
+  @test test_distance_cylinder()
+  @test test_distance_cylinder_simplification()
+  @test test_distance_sphere()
+end
+
+############################################################################################
+#                       geometry factor discretization                                     #
+############################################################################################
+
+function test_finger_gain()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0
+  z0 = 5000.0
+  # attenuation length
+  λ_meas = 1.5e-3;
+  # spatial discretization
+  Nz = 101;
+  x = 0.0;
+  y = 0.0
+  z = collect(LinRange(-5λ_meas,2λ_meas,Nz)); # depth 
+
+  # geometry factor and integral discretization: signal coming from along a line orthogonal to a plane surface
+  H_z,Azn = finger_gain_H(x,y,z,x0,y0,z0,λ_meas);
+
+  # conditions
+  cond1 = (Nz==length(H_z)) & (!isnan(H_z)) & (!isinf(H_z)) & (all(H_z.>=0.0))
+  cond2 = (Nz==length(Azn)) & (!isnan(Azn)) & (!isinf(Azn))
+
+  # results
+  cond1 & cond2
+end
+
+function test_plane_gain()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0
+  z0 = 5000.0
+  # attenuation length
+  λ_meas = 1.5e-3;
+  # spatial discretization
+  Nx = 51;
+  Ny = 53;
+  Nz = 101;
+  x = collect(LinRange(-5.0,5.0,Nx));
+  y = collect(LinRange(-5.1,5.1,Ny));
+  z = collect(LinRange(-5λ_meas,2λ_meas,Nz)); # depth 
+
+  # geometry factors and integrals discretization: signal coming from the depth under a patch of coordinates (x,y)
+  H_z,H_zxy,Azn,Axj,Ayk = plane_gain_H(x,y,z,x0,y0,z0,λ_meas);
+
+  # conditions
+  cond1 = (Nz==length(H_z)) & (!isnan(sum(H_z))) & (!isinf(sum(H_z))) & (all(H_z.>=0.0))
+  cond2 = (Nz==size(H_zxy,1)) & (Nx==size(H_zxy,2)) & (Ny==size(H_zxy,3)) & (!isnan(sum(H_zxy))) & (!isinf(sum(H_zxy))) & (all(H_zxy.>=0.0))
+  cond3 = (Nx==length(Axj)) & (!isnan(sum(Axj))) & (!isinf(sum(Axj)))
+  cond4 = (Ny==length(Ayk)) & (!isnan(sum(Ayk))) & (!isinf(sum(Ayk)))
+  cond5 = (Nz==length(Azn)) & (!isnan(sum(Azn))) & (!isinf(sum(Azn)))
+
+  # results
+  cond1 & cond2 & cond3 & cond4 & cond5
+end
+
+function test_cylinder_gain()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0
+  z0 = 5000.0
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0 = 10.0;       # cylinder diameter
+  # spatial discretization
+  Nr = 101;
+  Nθ = 51;
+  Ny = 21;
+  θ0 = atan(x0,z0)
+  L = 50.0 
+  r = collect(LinRange(μ0-5λ_meas,μ0+2λ_meas,Nr)); # radial coordinates
+  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # polar angles
+  y = collect(LinRange(-L/2.0,L/2.0,Ny));          # axial coordinates
+
+  # geometry factors and integrals discretization: signal coming from the part of the sample facing the aperture of the kinetic energy analyzer
+  H_r,H_rθy,Arn,Aθj,Ayk = cylinder_gain_H(r,θ,y,x0,y0,z0,μ0,λ_meas);
+
+  # conditions 
+  cond1 = (Nr==length(H_r)) & (!isnan(sum(H_r))) & (!isinf(sum(H_r))) & (all(H_r.>=0.0))
+  cond2 = (Nr==size(H_rθy,1)) & (Nθ==size(H_rθy,2)) & (Ny==size(H_rθy,3)) & (!isnan(sum(H_rθy))) & (!isinf(sum(H_rθy))) & (all(H_rθy.>=0.0))
+  cond3 = (Nr==length(Arn)) & (!isnan(sum(Arn))) & (!isinf(sum(Arn)))
+  cond4 = (Nθ==length(Aθj)) & (!isnan(sum(Aθj))) & (!isinf(sum(Aθj)))
+  cond5 = (Ny==length(Ayk)) & (!isnan(sum(Ayk))) & (!isinf(sum(Ayk)))
+
+  # results
+  cond1 & cond2 & cond3 & cond4 & cond5
+end
+
+function test_cov_model()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0
+  z0 = 5000.0
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0 = 10.0;       # cylinder diameter
+  # spatial discretization
+  Nr = 101;
+  Nθ = 51;
+  Ny = 21;
+  θ0 = atan(x0,z0)
+  L = 50.0 
+  r = collect(LinRange(μ0-5λ_meas,μ0+2λ_meas,Nr)); # radial coordinates
+  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # polar angles
+  y = collect(LinRange(-L/2.0,L/2.0,Ny));          # axial coordinates
+
+  # attenuation length probability distribution
+  Nλ = 25;
+  λ = collect(LinRange(0.75λ_meas,1.25λ_meas,Nλ))
+  σλ2 = (0.075λ_meas)^2;
+  Pλ = (1.0/sqrt(2π*σλ2))*exp.(-((λ.-λ_meas).^2)./(2σλ2))
+
+  # compute mean and covariance of the model with respect to the probability distribution of attenuation length
+  ΓH, μH = cov_H_cylinder(r,θ,y,x0,y0,z0,μ0,λ,Pλ);
+
+  # conditions 
+  cond1 = (Nr==length(μH)) & (!isnan(sum(μH))) & (!isinf(sum(μH))) & (all(μH.>=0.0))
+  cond2 = ((Nr,Nr)==size(ΓH)) & (!isnan(sum(ΓH))) & (!isinf(sum(ΓH)))
+  λH = eigvals(ΓH) # all eigen values should be positive for a covariance matrix (but it's a numerical approximation)
+  cond3 = (all(λH.>=0.0))
+  if (!cond3)
+    # maybe it is only computational approximation problem
+    λmin,λmax = extrema(λH)
+    if (abs(λmin/λmax)<1.0e-10)
+      cond3 = true
+    end
+  end
+
+  # results
+  cond1 & cond2 & cond3
+end
+
+function test_sphere_gain()
+  # point location of the analyzer aperture
+  x0 = -50000.0
+  y0 = 0.0*5000.0
+  z0 = -50000.0
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0 = 10.0;       # cylinder diameter
+  # spatial discretization
+  Nr = 101;
+  Nθ = 51;
+  Nφ = 52;
+  θ0 = atan(x0,z0)
+  φ0 = atan(sqrt(x0^2+z0^2),y0)
+  r = collect(LinRange(μ0-5λ_meas,μ0+2λ_meas,Nr)); # radial coordinates
+  φ = collect(LinRange(φ0-π/2.0,φ0+π/2.0,Nφ));     # polar angles (∈[0,π])
+  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # azimuth angles (∈[0,2π])
+
+  # # point location of the analyzer aperture
+  # x0 = 5000.0
+  # y0 = 0.0*5000.0
+  # z0 = 0.0
+
+  Nθ = 151;
+  Nφ = 152;
+  θ0 = atan(y0,x0)
+  φ0 = atan(sqrt(x0^2+y0^2),z0)
+  r = collect(LinRange(μ0-5λ_meas,μ0+2.0λ_meas,Nr)); # radial coordinates
+  φ = collect(LinRange(φ0-π/2.0,φ0+π/2.0,Nφ));     # polar angles
+  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));     # azimuth angles
+
+  # geometry factors and integrals discretization: signal coming from the part of the sample facing the aperture of the kinetic energy analyzer
+  H_r,H_rφθ,Arn,Aφj,Aθk = sphere_gain_H(r,φ,θ,x0,y0,z0,μ0,λ_meas);
+
+  # conditions
+  cond1 = (Nr==length(H_r)) & (!isnan(sum(H_r))) & (!isinf(sum(H_r))) & (all(H_r.>=0.0))
+  cond2 = ((Nr,Nφ,Nθ)==size(H_rφθ)) & (!isnan(sum(H_rφθ))) & (!isinf(sum(H_rφθ))) & (all(H_rφθ.>=0.0))
+  cond3 = (Nr==length(Arn)) & (!isnan(sum(Arn))) & (!isinf(sum(Arn)))
+  cond4 = (Nφ==length(Aφj)) & (!isnan(sum(Aφj))) & (!isinf(sum(Aφj)))
+  cond5 = (Nθ==length(Aθk)) & (!isnan(sum(Aθk))) & (!isinf(sum(Aθk)))
+
+  # results 
+  cond1 & cond2 & cond3 & cond4 & cond5
+end
+
 
 ############################################################################################
 #                       alignment parameter estimation                                     #
