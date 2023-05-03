@@ -274,9 +274,9 @@ end
     point M:(r,θ,φ) in the sample to the surface in direction to some point P:(x0,y0,z0).
     Note: M is given in spherical coordinates and P in Cartesian coordinates.
 
-    The geometry of the sample is so that Oy is the symmetry axis (along the droplet stream direction),
-    Oz is along the photon beam and Ox is the remaining axis in the orthogonal basis.
-    θ is taken between Oz and the project of M onto the plane xOz, φ between M and Oy, and r = √(x^2+y^2+z^2)
+    The geometry of the sample is so that Oz is the symmetry axis (along the droplet stream direction),
+    Ox is along the photon beam and Oy is the remaining axis in the orthogonal basis.
+    θ is taken between Ox and the projection of M onto the plane xOy, φ between M and Oz, and r = √(x^2+y^2+z^2)
     μ0 is the radius of the cylinder
 """
 function d_sphere_P(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble)
@@ -494,11 +494,11 @@ sphere_gain_H(r::Array{Cdouble,1},θ::Array{Cdouble,1},φ::Array{Cdouble,1},x0::
 
     H_{n,j,k} = ∭ e_n(r)e_j(θ)e_k(φ) e^{-d_P(M)/λe} r^2sin(φ)drdφdθ
 
-    The geometry of the sample is so that Oy is the symmetry axis (along the droplet stream direction),
-    Oz is along the photon beam and Ox is the remaining axis in the orthogonal basis.
+    The geometry of the sample is so that Oz is the symmetry axis (along the droplet stream direction),
+    Ox is along the photon beam and Oy is the remaining axis in the orthogonal basis.
 
     The arrays r, φ and θ are the discretization subdivisions (r: radial distance, φ polar angle, and θ azimuthal angle).
-    The polar axis is Oy, φ is the polar angle between M and Oy, θ is taken between Oz and the project of M onto the plane xOz, and r = √(x^2+y^2+z^2)
+    The polar axis is Oz, φ is the polar angle between M and Oz, θ is taken between Ox and the projection of M onto the plane xOy, and r = √(x^2+y^2+z^2)
 
     P:(x0,y0,z0) is the point in Cartesian coordinates used for the computation of the distance d_P
     μ0 is the radius of the sphere
