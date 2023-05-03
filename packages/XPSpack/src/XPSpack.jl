@@ -3,7 +3,31 @@
 # or nano ~/.julia/julia-1.8.0/etc/julia/startup.jl
 # or nano ~/.julia/config/startup.jl
 
-
+"""
+This is the [`XPSpack`](@ref), which contains
+* [`XPSpack.σ_bg`](@ref)
+* [`XPSpack.σ_bg_density`](@ref)
+* [`XPSpack.fingerGeom`](@ref)
+* [`XPSpack.planeGeom`](@ref)
+* [`XPSpack.cylinderGeom`](@ref)
+* [`XPSpack.d_plane_P`](@ref)
+* [`XPSpack.d_cylinder_P`](@ref)
+* [`XPSpack.d_cylinder_P_simple`](@ref)
+* [`XPSpack.d_sphere_P`](@ref)
+* [`XPSpack.plane_gain_H`](@ref)
+* [`XPSpack.finger_gain_H`](@ref)
+* [`XPSpack.cylinder_gain_H`](@ref)
+* [`XPSpack.sphere_gain_H`](@ref)
+* [`XPSpack.beamProfile`](@ref)
+* [`XPSpack.alignmentParameter`](@ref)
+* [`XPSpack.alignmentParameterSphere`](@ref)
+* [`XPSpack.cov_H_cylinder`](@ref)
+* [`XPSpack.baseline_removal`](@ref)
+* [`XPSpack.EM_peaks`](@ref)
+* [`XPSpack.cross_section_spread_function`](@ref)
+* [`XPSpack.cross_section_spread_function_sample`](@ref)
+* [`XPSpack.noiseAndParameterEstimation`](@ref)
+"""
 module XPSpack
 
 using Statistics

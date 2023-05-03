@@ -38,7 +38,15 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+"""
+This is the [`ATTIRE`](@ref), which contains
+* [`ATTIRE.T_r4000`](@ref)
+* [`ATTIRE.simulateSpectrum`](@ref)
+* [`ATTIRE.φi`](@ref)
+* [`ATTIRE.Φi`](@ref)
+* [`ATTIRE.sourceSpread`](@ref)
+* [`ATTIRE.countElectrons`](@ref)
+"""
 module ATTIRE
     # using or import what needs to be import
     using Interpolations

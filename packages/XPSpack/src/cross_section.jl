@@ -67,9 +67,6 @@ end
    simulated total cross section of the background of an acquisition involving inelastic electron interaction
    Ke is the kinetic energy of the incoming eletron
 """
-# function σ_bg(Ke::Cdouble)
-#    0.05*Ke
-# end
 function σ_bg(Ke::Cdouble)
    10.0exp(-Ke/1000.0)
 end

@@ -1,36 +1,36 @@
 
-```@docs
+"""
 Transmission function for the scienta R4000 kinetic enegy analyzer
 
-T_r4000"("Ke::Cdouble,E_pass::Cdouble")"
+T_r4000(Ke::Cdouble,E_pass::Cdouble)
 
 Ke:     kinetic energy
 E_pass: pass energy
 
-formula from https://www.helmholtz-berlin.de/pubbin/igama_output"?"modus=datei"&"did=147
-```
+formula from https://www.helmholtz-berlin.de/pubbin/igama_output?modus=datei&did=147
+"""
 function T_r4000(Ke::Cdouble,E_pass::Cdouble)
 1 .-0.041*(Ke/E_pass) .+9.4e-4*(Ke/E_pass).^2 .-1.0e-5*(Ke/E_pass).^3 .+3.9e-8*(Ke/E_pass).^4
 end
 
- ```@docs
+"""
 
-    simulateSpectrum"("Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,Ki::Array"{"Cdouble,1"}",ΔKi::Cdouble,T::Cdouble,Kdisc::Array"{"Cdouble,1"}",Be0::Array"{"Cdouble,1"}",σ_cs_fg::Array"{"Cdouble,1"}",σ_bg_vec::Array"{"Cdouble,1"}"")"
+    simulateSpectrum(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble,Kdisc::Array{Cdouble,1},Be0::Array{Cdouble,1},σ_cs_fg::Array{Cdouble,1},σ_bg_vec::Array{Cdouble,1})
 
     this function simulates the acquisition of a photo-electron spectrum with the parameters:
 
-    "("Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble")": photon beam parameters
+    (Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble): photon beam parameters
 
-    "("Ki::Array"{"Cdouble,1"}",ΔKi::Cdouble,T::Cdouble")": analyzer parameters
+    (Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble): analyzer parameters
 
-    Kdisc::Array"{"Cdouble,1"}": kinetic energy discretization 
+    Kdisc::Array{Cdouble,1}: kinetic energy discretization 
 
-    "("Be0::Array"{"Cdouble,1"}",σ_cs_fg::Array"{"Cdouble,1"}",σ_bg_vec::Array"{"Cdouble,1"}"")": cross section
+    (Be0::Array{Cdouble,1},σ_cs_fg::Array{Cdouble,1},σ_bg_vec::Array{Cdouble,1}): cross section
 
     and then returns 
-    Sj,Sj_bg: the expected spectrum for the kinetic energies Ki with the signal of interest "("Sj")" and the background "("Sj_bg")"
+    Sj,Sj_bg: the expected spectrum for the kinetic energies Ki with the signal of interest (Sj) and the background (Sj_bg)
     Gm,Fl:    the discretization of the integrals over the kinetic energy and the photon energy respectively
-```
+"""
 function simulateSpectrum(Fνj::Cdouble,hνj::Cdouble,Δνj::Cdouble,
 Ki::Array{Cdouble,1},ΔKi::Cdouble,T::Cdouble,Kdisc::Array{Cdouble,1},
 Be0::Array{Cdouble,1},σ_cs_fg::Array{Cdouble,1},σ_bg_vec::Array{Cdouble,1})
