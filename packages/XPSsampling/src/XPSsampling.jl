@@ -7,6 +7,8 @@
 
 module XPSsampling
 
+    using LinearAlgebra
+
     # covariance
     export smoothnessCovariance, corrCovariance
 

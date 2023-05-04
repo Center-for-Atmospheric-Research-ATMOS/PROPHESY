@@ -18,7 +18,8 @@ function smoothnessCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
     Nr = length(w);
 
     Γprior = zeros(Cdouble,Nr,Nr);
-    Dprior = D2nd(Nr+2)[:,2:end-1];
+    # Dprior = D2nd(Nr+2)[:,2:end-1];
+    Dprior = diagm(Nr,Nr+2,1 => 2ones(Cdouble,Nr), 0 => -ones(Cdouble,Nr) ,2 => -ones(Cdouble,Nr))[:,2:end-1]
 
     for i in 1:Nr
         Γprior[i,i] = w[i]^2;
