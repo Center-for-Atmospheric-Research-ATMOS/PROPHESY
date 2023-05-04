@@ -3,15 +3,6 @@ using Test
 using LinearAlgebra
 using XPSsampling
 
-#=Functions to be tested 
-
-    # sampling
-    export samplePosterior, acceptSample, samplePosteriorMeanAndCov
-    export samplePosteriorModelMargin, acceptSampleModelMargin # marginalization over the measurement operator space (or some approximation of it)
-    export samplePosteriorMargin, acceptSampleMargin
-
-=#
-
 function test_corrCovariance()
     w = ones(Cdouble,10);
     cor_len = 3.0;
@@ -61,4 +52,63 @@ end
 
 @testset "Communication mechanism" begin
     @test test_comMec()
-  end
+end
+
+
+function test_acceptSample()
+    Nr = 10;
+    ρ_cur  = 10ones(Cdouble,Nr);
+    ρ_prop = 9ones(Cdouble,Nr);
+    H = diagm(0 => ones(Cdouble,Nr) ,1 => 0.5ones(Cdouble,Nr-1));
+    y = H*ρ_cur + randn(Nr);
+    ΓIinv = diagm(ones(Cdouble,Nr));
+    D = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
+    yd = zeros(Cdouble,Nr-2);
+    Γdinv = diagm(ones(Cdouble,Nr-2));
+
+    # test the propsed sample 
+    ρ_new,r_cp  = acceptSample(ρ_cur,ρ_prop,y,yd,ΓIinv,Γdinv,H,D);
+
+    # results 
+    ((ρ_new==ρ_cur) | (ρ_new==ρ_prop)) & (!isnan(r_cp)) & (!isinf(r_cp))
+end
+
+
+#TODO
+function test_samplePosterior()
+    true
+end
+
+function test_samplePosteriorMeanAndCov()
+    true
+end
+
+function test_samplePosteriorModelMargin()
+    true
+end
+
+function test_acceptSampleModelMargin()
+    true
+end
+
+
+function test_samplePosteriorMargin()
+    true
+end
+
+function test_acceptSampleMargin()
+    true
+end
+
+
+@testset "Sampling" begin
+    @test test_acceptSample()
+    @test test_samplePosterior()
+    @test test_samplePosteriorMeanAndCov()
+
+    @test test_samplePosteriorModelMargin()
+    @test test_acceptSampleModelMargin()
+
+    @test test_samplePosteriorMargin()
+    @test test_acceptSampleMargin()
+end
