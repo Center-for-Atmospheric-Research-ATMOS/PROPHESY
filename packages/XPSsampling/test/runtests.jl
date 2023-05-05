@@ -250,11 +250,67 @@ function test_samplePosteriorModelMargin()
     w = 0.25*0.1*ones(Cdouble,Nr); 
     Γsqrt = real(sqrt(corrCovariance(w;cor_len=5.0)));
 
+    # generate the chain of samples
     ρ_all = samplePosteriorModelMargin(ρ_GT,Γsqrt,y,ΓIinv,H,ΓH,DΓinvD,ρB,σB;Ns=Ns,psmooth=0.99);
 
     #results
     (((Ns+1,Nr)==size(ρ_all)) & (!isnan(sum(ρ_all))) & (!isinf(sum(ρ_all))))
 end
+
+
+function test_acceptSampleBoundary()
+    Nr = 10;
+    ρ_cur  = 10ones(Cdouble,Nr);
+    ρ_prop = 9ones(Cdouble,Nr);
+    H = diagm(0 => ones(Cdouble,Nr) ,1 => 0.5ones(Cdouble,Nr-1));
+    ΓH = zeros(Cdouble,Nr,Nr,Nr);
+    [ΓH[i,i,i] = 0.01 for i in 1:Nr]
+    y = H*ρ_cur + randn(Nr);
+    ΓIinv = diagm(ones(Cdouble,Nr));
+    D = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
+    DΓinvD = D'diagm(ones(Cdouble,Nr-2))*D;
+    ρB = [10.0; 10.0];
+    σB = [0.1; 0.1];
+
+    # check out proposed sample
+    ρ_new,r_cp = acceptSampleBoundary(ρ_cur,ρ_prop,y,ΓIinv,H,DΓinvD,ρB,σB);
+    
+    # results 
+    ((ρ_new==ρ_cur) | (ρ_new==ρ_prop)) & (!isnan(r_cp)) & (!isinf(r_cp))
+end
+
+function test_samplePosteriorBoundary()
+    # number of sample
+    Ns = 5000;
+    # dimension of each sample
+    Nr = 10;
+    ρ_GT  = 10ones(Cdouble,Nr);
+    # measurement model
+    H = diagm(0 => ones(Cdouble,Nr) ,1 => 0.5ones(Cdouble,Nr-1));
+    # data
+    y = H*ρ_GT + randn(Nr);
+    # inverse covariance of the data noise
+    ΓIinv = diagm(ones(Cdouble,Nr));
+    # covariance matrixes of the error in the measurement model
+    ΓH = zeros(Cdouble,Nr,Nr,Nr);
+    [ΓH[i,i,i] = 0.01 for i in 1:Nr]
+    # regularization operator
+    D = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2));
+    DΓinvD = D'diagm(ones(Cdouble,Nr-2))*D;
+    # boundary values
+    ρB = [10.0; 10.0];
+    σB = [0.1; 0.1];
+    # sampling covariance matrix (used for generating samples in the communication mechanism)
+    w = 0.25*0.1*ones(Cdouble,Nr); 
+    Γsqrt = real(sqrt(corrCovariance(w;cor_len=5.0)));
+
+    # generate the chain of sample
+    ρ_all = samplePosteriorBoundary(ρ_GT,Γsqrt,y,ΓIinv,H,DΓinvD,ρB,σB;Ns=Ns,psmooth=0.99);
+
+    #results
+    (((Ns+1,Nr)==size(ρ_all)) & (!isnan(sum(ρ_all))) & (!isinf(sum(ρ_all))))
+end
+
 
 
 
@@ -269,4 +325,7 @@ end
 
     @test test_samplePosteriorMargin()
     @test test_acceptSampleMargin()
+
+    @test test_acceptSampleBoundary()
+    @test test_samplePosteriorBoundary()
 end
