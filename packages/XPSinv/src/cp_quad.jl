@@ -171,7 +171,7 @@ end
 
 
 """
-    alg2_cp_quad(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
+    alg2_cp_quad_LM(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
 
     run the algorithm 2 described in [1] for the minimization problem
         min {F(A*x) + G(x)}
