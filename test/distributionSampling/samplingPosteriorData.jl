@@ -14,7 +14,6 @@ using StatsBase
 
 # modeling XPS
 using XPSpack
-using XPSinv
 using XPSsampling
 
 
@@ -32,7 +31,6 @@ dKe = Ke[2]-Ke[1]
 σν = σν0*((0.7/sqrt(2π*0.2^2))*exp.(-0.5*(Ke.-(μKe-0.5)).^2/0.2^2) .+ (0.3/sqrt(2π*0.5^2))*exp.(-0.5*(Ke.-(μKe+0.5)).^2/0.5^2));
 λe0 = 0.002;
 
-wsAcq = XPSacq(ħν,μKe,α,T,Fν,Ke,σν,λe0);
 
 ## geometry setup
 k0 = 5;
@@ -77,7 +75,7 @@ end
 figure(); imshow(Γprior); colorbar()
 
 
-Dprior = D2nd(Nr) # D2nd(Nr+2)[:,2:end-1];
+Dprior = diagm(Nr-2,Nr,1 => 2ones(Cdouble,Nr-2), 0 => -ones(Cdouble,Nr-2) ,2 => -ones(Cdouble,Nr-2))
 # Bprior = 1.0e8Dprior'*inv(Γprior[2:end-1,2:end-1])*Dprior; # 1.0e-8
 Bprior = 1.0e-16Dprior'*inv(Γprior[2:end-1,2:end-1])*Dprior; # 1.0e-8
 Cprior = inv(Bprior);
