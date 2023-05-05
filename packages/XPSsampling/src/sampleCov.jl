@@ -1,3 +1,17 @@
+"""
+    corrCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
+
+    creates a matrix with elements: ``\\Gamma_{i,j} = w_i e^{\\frac{(i-j)^2}{0.5 cor\\_len^2}}``
+
+    input: 
+
+      - w: diagonal elements
+      - cor_len: correlation length
+
+    output:
+
+      - ``\\Gamma``
+"""
 function corrCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
     Nr = length(w);
 
@@ -14,6 +28,28 @@ function corrCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
     Γprior
 end
 
+
+"""
+    smoothnessCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
+
+    computes three matrices 
+      - symmetric matrix ``\\Gamma`` with elements ``\\Gamma_{i,j} = w_i e^{\\frac{(i-j)^2}{0.5 cor\\_len^2}}``
+      - second order difference matrix ``D`` with elements ``D_{i,i} = 2, D_{i,i+1}=D_{i,i-1} = -1``
+      - product matrix ``\\sqrt{\\left(D^T\\Gamma^{-1}D\\right)^{-1}}``
+    
+    Note: low to medium matrix size
+
+    input: 
+
+      - w: diagonal elements
+      - cor_len: correlation length
+
+    output:
+
+      - ``\\sqrt{\\left(D^T\\Gamma^{-1}D\\right)^{-1}}``
+      - ``\\Gamma``
+      - ``D``
+"""
 function smoothnessCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
     Nr = length(w);
 

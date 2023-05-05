@@ -140,7 +140,7 @@ PLOT_FIG = (true & (Threads.nthreads()==1)) # to much mess if more than one thre
 
 Threads.@threads  for k in 1:Nnoise
     # actually run the sampling
-    local ρ_all = samplePosterior(zeros(Cdouble,Nr),Γsqrt,y_data[k,:],ΓIinv[:,:,k],H_better,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
+    local ρ_all = samplePosteriorBoundary(zeros(Cdouble,Nr),Γsqrt,y_data[k,:],ΓIinv[:,:,k],H_better,Bprior,ρB,σB;Ns=Ns,psmooth=1.999);
 
     # compute a covariance matrix from the samples 
     global μρ_IG[:,k] = dropdims(mean(ρ_all,dims=1),dims=1);

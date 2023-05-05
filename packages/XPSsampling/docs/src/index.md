@@ -1,0 +1,19 @@
+# XPSsampling
+
+Documentation for XPSsampling
+
+```@docs
+XPSsampling.XPSsampling
+XPSsampling.smoothnessCovariance
+XPSsampling.corrCovariance
+XPSsampling.transmissionMechanism
+XPSsampling.samplePosterior
+XPSsampling.acceptSample
+XPSsampling.samplePosteriorMeanAndCov
+XPSsampling.samplePosteriorMargin
+XPSsampling.acceptSampleMargin
+XPSsampling.samplePosteriorBoundary
+XPSsampling.acceptSampleBoundary
+XPSsampling.samplePosteriorModelMargin
+XPSsampling.acceptSampleModelMargin
+```

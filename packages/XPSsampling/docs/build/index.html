@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · XPSsampling</title><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>XPSsampling</a></span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/main/packages/XPSsampling/docs/src/index.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="XPSsampling"><a class="docs-heading-anchor" href="#XPSsampling">XPSsampling</a><a id="XPSsampling-1"></a><a class="docs-heading-anchor-permalink" href="#XPSsampling" title="Permalink"></a></h1><p>Documentation for XPSsampling</p><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.XPSsampling" href="#XPSsampling.XPSsampling"><code>XPSsampling.XPSsampling</code></a> — <span class="docstring-category">Module</span></header><section><div><p>This is the <a href="#XPSsampling.XPSsampling"><code>XPSsampling</code></a>, which contains</p><ul><li><a href="#XPSsampling.smoothnessCovariance"><code>XPSsampling.smoothnessCovariance</code></a></li><li><a href="#XPSsampling.corrCovariance"><code>XPSsampling.corrCovariance</code></a></li><li><a href="#XPSsampling.transmissionMechanism"><code>XPSsampling.transmissionMechanism</code></a></li><li><a href="#XPSsampling.samplePosterior"><code>XPSsampling.samplePosterior</code></a></li><li><a href="#XPSsampling.acceptSample"><code>XPSsampling.acceptSample</code></a></li><li><a href="#XPSsampling.samplePosteriorMeanAndCov"><code>XPSsampling.samplePosteriorMeanAndCov</code></a></li><li><a href="#XPSsampling.samplePosteriorMargin"><code>XPSsampling.samplePosteriorMargin</code></a></li><li><a href="#XPSsampling.acceptSampleMargin"><code>XPSsampling.acceptSampleMargin</code></a></li><li><a href="#XPSsampling.samplePosteriorBoundary"><code>XPSsampling.samplePosteriorBoundary</code></a></li><li><a href="#XPSsampling.acceptSampleBoundary"><code>XPSsampling.acceptSampleBoundary</code></a></li><li><a href="#XPSsampling.samplePosteriorModelMargin"><code>XPSsampling.samplePosteriorModelMargin</code></a></li><li><a href="#XPSsampling.acceptSampleModelMargin"><code>XPSsampling.acceptSampleModelMargin</code></a></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/XPSsampling.jl#L6-L20">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.smoothnessCovariance" href="#XPSsampling.smoothnessCovariance"><code>XPSsampling.smoothnessCovariance</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">smoothnessCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
+
+computes three matrices 
+  - symmetric matrix ``\Gamma`` with elements ``\Gamma_{i,j} = w_i e^{\frac{(i-j)^2}{0.5 cor\_len^2}}``
+  - second order difference matrix ``D`` with elements ``D_{i,i} = 2, D_{i,i+1}=D_{i,i-1} = -1``
+  - product matrix ``\sqrt{\left(D^T\Gamma^{-1}D\right)^{-1}}``
+
+Note: low to medium matrix size
+
+input: 
+
+  - w: diagonal elements
+  - cor_len: correlation length
+
+output:
+
+  - ``\sqrt{\left(D^T\Gamma^{-1}D\right)^{-1}}``
+  - ``\Gamma``
+  - ``D``</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/sampleCov.jl#L32-L52">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.corrCovariance" href="#XPSsampling.corrCovariance"><code>XPSsampling.corrCovariance</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">corrCovariance(w::Array{Cdouble,1};cor_len::Cdouble=5.0)
+
+creates a matrix with elements: ``\Gamma_{i,j} = w_i e^{\frac{(i-j)^2}{0.5 cor\_len^2}}``
+
+input: 
+
+  - w: diagonal elements
+  - cor_len: correlation length
+
+output:
+
+  - ``\Gamma``</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/sampleCov.jl#L1-L14">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.transmissionMechanism" href="#XPSsampling.transmissionMechanism"><code>XPSsampling.transmissionMechanism</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">transmissionMechanism(x_curr::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},σB::Array{Cdouble,1};psmooth::Cdouble=0.99)    
+
+The transmission mechanism samples the proposal density which is defined by two mechanisms:
+  
+  - smooth: acting over all the elements of the state vector
+  - boundary: acting only on the first and last element of the state vector
+
+The first mechanism ``q_{\text{smooth}}`` is described by the Gaussian distribution ``\mathcal{N}\left(x_{\text{curr}},\Gamma_{\text{sqrt}}^2\right)``,centered on the current state ``x_{\text{curr}}`` and whose covariance matrix is ``\Gamma_{\text{sqrt}}^2``.
+The second mechanism ``q_{\text{boundary}}`` is also decribed by Gaussian distributions acting either on the first ``x^{\text{first}}`` or the last element ``x^{\text{last}}``.
+The proposed samples have all their entries positive.
+
+The overall mechanism is 
+```math
+\begin{equation}
+    q(x_{\text{prop}},x_{\text{curr}}) = p_{\text{smooth}} q_{\text{smooth}}(\bullet|x_{\text{curr}}) + (1-p_{\text{smooth}}) (\frac{1}{2} q_{\text{boundary}}^{\text{first}} + \frac{1}{2} q_{\text{boundary}}^{\text{last}})
+\end{equation}
+```
+where ``p_{\text{smooth}}`` is the probability of choosing the mechanism 
+
+input: 
+
+  - ``x_{\text{curr}}`` current state
+  - ``\Gamma_{\text{sqrt}}`` square root matrix of the covariance of the smooth mechanism ``q_{\text{smooth}}``
+  - ``\sigma_B`` standard deviation of the boundary mechanism ``q_{\text{boundary}}``
+  - ``p_{	ext{smooth}}`` probability of the smooth mechanism
+
+output:
+
+  - new state</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/communicationMechanism.jl#L15-L46">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.samplePosterior" href="#XPSsampling.samplePosterior"><code>XPSsampling.samplePosterior</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">samplePosterior(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},yd::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2},H::Array{Cdouble,2},D::Array{Cdouble,2};Ns::Int64=10000)
+
+computes a series of samples ``(\rho_i)_i`` drawn from the generative communication mechanism ``q(\rho_{\text{prop}},\rho_{\text{curr}})`` and the cost function variations ``(\Delta_{i})_{i}`` associated with each move.
+The cost function is 
+```math
+    \begin{equation}
+        U(\rho) = ||y-H\rho||_{\Gamma_I}^2 + ||y_d-D\rho||_{\Gamma_D}^2
+    \end{equation}
+```
+where ``\|y-Hho\|_{\Gamma_I}^2`` is the data fidelity term with ``y`` the vector of measurement data, ``H`` the measurement operator and ``\Gamma_I`` the noise covariance matrix.
+The term ``\|y_d-Dho\|_{\Gamma_D}^2`` is the regularizer of the inverse problem associated to the cost function ``U`` with ``D`` the regularization operator (e.g. second order difference), ``y_d`` a vector of expected values of the regularization and ``\Gamma_D`` the covariance matrix of the regularization (strength and correlation)
+
+At each step, a state is proposed ``\rho_{\text{prop}} \sim q(\rho_{\bullet,\rho_{\text{curr}})`` and the state is accepted with probability ``\masthsf{P}(\rho_i) = \min(1,e^{-\Delta_{i}})``
+
+input:
+
+  - ``\rho_{\test{start}}``: initial state of the chain of states
+  - ``\Gamma_{\text{sqrt}}``: square root matrix of the covariance of the smooth mechanism ``q_{\text{smooth}}``
+  - ``y``: measurement vector
+  - ``y_d``: regularization expected values
+  - ``\Gamma_I^{-1}``: inverse covariance matrix of the measurement
+  - ``\Gamma_D^{-1}``: inverse covariance matrix of the regularization
+  - ``H``: measurement operator
+  - ``D``: regularization operator
+  - ``N_s``: chain length
+
+output: 
+
+  - ``(\rho_i)_i``: chain of states
+  - ``(\Delta_{i})_{i}``: cost function variation associated to the chain of states</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/MHquad.jl#L55-L86">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.acceptSample" href="#XPSsampling.acceptSample"><code>XPSsampling.acceptSample</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">acceptSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},y::Array{Cdouble,1},yd::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2},H::Array{Cdouble,2},D::Array{Cdouble,2})
+
+Checks out the proposed state ``\rho_{\text{prop}}`` compared with the current state ``\rho_{\text{curr}}`` in terms of the energy function ``U`` to decide which state to accept.
+The proposed state is accepted with probability ``\masthsf{P}(\rho_{\text{prop}}) = \min(1,e^{-\Delta})`` where ``\Delta = U(\rho_{\text{prop}}) - U(\rho_{\text{curr}})``
+
+The cost function ``U`` is 
+```math
+    \begin{equation}
+        U(\rho) = ||y-H\rho||_{\Gamma_I}^2 + ||y_d-D\rho||_{\Gamma_D}^2
+    \end{equation}
+```
+where ``\|y-H\rho\|_{\Gamma_I}^2`` is the data fidelity term with ``y`` the vector of measurement data, ``H`` the measurement operator and ``\Gamma_I`` the noise covariance matrix.
+The term ``\|y_d-D\rho\|_{\Gamma_D}^2`` is the regularizer of the inverse problem associated to the cost function ``U`` with ``D`` the regularization operator (e.g. second order difference), ``y_d`` a vector of expected values of the regularization and ``\Gamma_D`` the covariance matrix of the regularization (strength and correlation)
+
+input:
+
+  - ``\rho_{\test{cur}}`` and ``\rho_{\test{prop}}``: current and proposed states
+  - ``y``: measurement vector
+  - ``y_d``: regularization expected values
+  - ``\Gamma_I^{-1}``: inverse covariance matrix of the measurement
+  - ``\Gamma_D^{-1}``: inverse covariance matrix of the regularization
+  - ``H``: measurement operator
+  - ``D``: regularization operator
+
+output: 
+
+  - ``\rho_{\text{new}}``: the new state
+  - ``-\Delta``: the cost function variation</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/MHquad.jl#L1-L30">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.samplePosteriorMeanAndCov" href="#XPSsampling.samplePosteriorMeanAndCov"><code>XPSsampling.samplePosteriorMeanAndCov</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">samplePosteriorMeanAndCov(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},yd::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2},H::Array{Cdouble,2},D::Array{Cdouble,2};Ns::Int64=10000,Nburn::Int64=1000)
+
+computes the mean and covariance matrix from a series of samples ``(\rho_i)_i`` drawn from the generative communication mechanism ``q(\rho_{\text{prop}},\rho_{\text{curr}})`` and the cost function variations ``(\Delta_{i})_{i}`` associated with each move.
+The cost function is 
+```math
+    \begin{equation}
+        U(\rho) = ||y-H\rho||_{\Gamma_I}^2 + ||y_d-D\rho||_{\Gamma_D}^2
+    \end{equation}
+```
+where ``\|y-Hho\|_{\Gamma_I}^2`` is the data fidelity term with ``y`` the vector of measurement data, ``H`` the measurement operator and ``\Gamma_I`` the noise covariance matrix.
+The term ``\|y_d-Dho\|_{\Gamma_D}^2`` is the regularizer of the inverse problem associated to the cost function ``U`` with ``D`` the regularization operator (e.g. second order difference), ``y_d`` a vector of expected values of the regularization and ``\Gamma_D`` the covariance matrix of the regularization (strength and correlation)
+
+At each step, a state is proposed ``\rho_{\text{prop}} \sim q(\rho_{\bullet,\rho_{\text{curr}})`` and the state is accepted with probability ``\masthsf{P}(\rho_i) = \min(1,e^{-\Delta_{i}})``
+
+input:
+
+  - ``\rho_{\test{start}}``: initial state of the chain of states
+  - ``\Gamma_{\text{sqrt}}``: square root matrix of the covariance of the smooth mechanism ``q_{\text{smooth}}``
+  - ``y``: measurement vector
+  - ``y_d``: regularization expected values
+  - ``\Gamma_I^{-1}``: inverse covariance matrix of the measurement
+  - ``\Gamma_D^{-1}``: inverse covariance matrix of the regularization
+  - ``H``: measurement operator
+  - ``D``: regularization operator
+  - ``N_s``: chain length
+  - ``N_{\text{burn}}``: burn in period length
+
+output: 
+
+  - ``\mu_{\rho|H,y}`` and ``\Gamma_{\rho|H,y}``: estimated mean state and covariance matrix from the samples `(\rho_i)_{N_{\text{burn}}&lt;i&lt;N_{s}}``
+  - ``(\Delta_{i})_{i}``: cost function variation associated to the chain of states ``(\rho_i)_i``</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/MHquad.jl#L103-L135">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.samplePosteriorMargin" href="#XPSsampling.samplePosteriorMargin"><code>XPSsampling.samplePosteriorMargin</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">samplePosteriorMargin(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},yd::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2},H::Array{Cdouble,2},D::Array{Cdouble,2},ΓHΓyinv::Array{Cdouble,2};Ns::Int64=10000)
+
+computes a series of samples ``(\rho_i)_i`` drawn from the generative communication mechanism ``q(\rho_{\text{prop}},\rho_{\text{curr}})`` and the cost function variations ``(\Delta_{i})_{i}`` associated with each move.
+The cost function is 
+```math
+    \begin{equation}
+        U(\rho) = ||y-H\rho||_{\Gamma_I}^2 + ||y_d-D\rho||_{\Gamma_D}^2
+    \end{equation}
+```
+where ``\|y-H\rho\|_{\Gamma_I}^2`` is the data fidelity term with ``y`` the vector of measurement data, ``H`` the measurement operator and ``\Gamma_I`` the noise covariance matrix.
+The term ``\|y_d-D\rho\|_{\Gamma_D}^2`` is the regularizer of the inverse problem associated to the cost function ``U`` with ``D`` the regularization operator (e.g. second order difference), ``y_d`` a vector of expected values of the regularization and ``\Gamma_D`` the covariance matrix of the regularization (strength and correlation)
+The last term is related to the modelling uncertainties, i.e. errors in the measurement operator. The covaraince matrix ``\Gamma_{H,y}`` is defined as the sum of the contribution of the error for each measurement normalized by the noise variance.
+Formaly, 
+```math
+    \begin{equation}
+        \Gamma_{H,y} = \underset{k}{\sum} \frac{1}{\sigma_k^2} \Gamma_{H_k}
+    \end{equation}
+```
+where ``\sigma_k^2`` is the variance of the ``k^{\text{th}}`` measurement and ``\Gamma_{H_k}`` is the covariance matrix of the measurement model the same measurement.
+
+At each step, a state is proposed ``\rho_{\text{prop}} \sim q(\rho_{\bullet,\rho_{\text{curr}})`` and the state is accepted with probability ``\mathsf{P}(\rho_i) = \min(1,e^{-\Delta_{i}})``
+
+input:
+
+  - ``\rho_{\test{start}}``: initial state of the chain of states
+  - ``\Gamma_{\text{sqrt}}``: square root matrix of the covariance of the smooth mechanism ``q_{\text{smooth}}``
+  - ``y``: measurement vector
+  - ``y_d``: regularization expected values
+  - ``\Gamma_I^{-1}``: inverse covariance matrix of the measurement
+  - ``\Gamma_D^{-1}``: inverse covariance matrix of the regularization
+  - ``H``: measurement operator
+  - ``D``: regularization operator
+  - ``N_s``: chain length
+  - ``\Gamma_{H,y}``: operator-to-noise covariance matrix
+
+output: 
+
+  - ``(\rho_i)_i``: chain of states
+  - ``(\Delta_{i})_{i}``: cost function variation associated to the chain of states</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/MHquad.jl#L231-L271">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.acceptSampleMargin" href="#XPSsampling.acceptSampleMargin"><code>XPSsampling.acceptSampleMargin</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">acceptSampleMargin(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},y::Array{Cdouble,1},yd::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2},H::Array{Cdouble,2},D::Array{Cdouble,2},ΓHΓyinv::Array{Cdouble,2})
+
+Checks out the proposed state ``\rho_{\text{prop}}`` compared with the current state ``\rho_{\text{curr}}`` in terms of the energy function ``U`` to decide which state to accept.
+The proposed state is accepted with probability ``\masthsf{P}(\rho_{\text{prop}}) = \min(1,e^{-\Delta})`` where ``\Delta = U(\rho_{\text{prop}}) - U(\rho_{\text{curr}})``
+
+The cost function ``U`` is 
+```math
+    \begin{equation}
+        U(\rho) = ||y-H\rho||_{\Gamma_I}^2 + ||y_d-D\rho||_{\Gamma_D}^2 + \rho^T\Gamma_{H,y}\rho
+    \end{equation}
+```
+where ``\|y-H\rho\|_{\Gamma_I}^2`` is the data fidelity term with ``y`` the vector of measurement data, ``H`` the measurement operator and ``\Gamma_I`` the noise covariance matrix.
+The term ``\|y_d-D\rho\|_{\Gamma_D}^2`` is the regularizer of the inverse problem associated to the cost function ``U`` with ``D`` the regularization operator (e.g. second order difference), ``y_d`` a vector of expected values of the regularization and ``\Gamma_D`` the covariance matrix of the regularization (strength and correlation)
+The last term is related to the modelling uncertainties, i.e. errors in the measurement operator. The covaraince matrix ``\Gamma_{H,y}`` is defined as the sum of the contribution of the error for each measurement normalized by the noise variance.
+Formaly, 
+```math
+    \begin{equation}
+        \Gamma_{H,y} = \underset{k}{\sum} \frac{1}{\sigma_k^2} \Gamma_{H_k}
+    \end{equation}
+```
+where ``\sigma_k^2`` is the variance of the ``k^{\text{th}}`` measurement and ``\Gamma_{H_k}`` is the covariance matrix of the measurement model the same measurement.
+
+input:
+
+  - ``\rho_{\test{cur}}`` and ``\rho_{\test{prop}}``: current and proposed states
+  - ``y``: measurement vector
+  - ``y_d``: regularization expected values
+  - ``\Gamma_I^{-1}``: inverse covariance matrix of the measurement
+  - ``\Gamma_D^{-1}``: inverse covariance matrix of the regularization
+  - ``H``: measurement operator
+  - ``D``: regularization operator
+  - ``\Gamma_{H,y}``: operator-to-noise covariance matrix
+
+output: 
+
+  - ``\rho_{\text{new}}``: the new state
+  - ``-\Delta``: the cost function variation</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/MHquad.jl#L165-L203">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.samplePosteriorBoundary" href="#XPSsampling.samplePosteriorBoundary"><code>XPSsampling.samplePosteriorBoundary</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">samplePosteriorBoundary(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},Dprior::Array{Cdouble,2},ρB::Array{Cdouble,1},σB::Array{Cdouble,1};Ns::Int64=10000,psmooth::Cdouble=0.99)
+
+computes a series of samples ``(\rho_i)_i`` drawn from the generative communication mechanism ``q(\rho_{\text{prop}},\rho_{\text{curr}})`` and the cost function variations ``(\Delta_{i})_{i}`` associated with each move.
+The cost function ``U`` is 
+```math
+    \begin{equation}
+        U(\rho) = ||y-H\rho||_{\Gamma_I}^2 + ||y_d-D\rho||_{\Gamma_D}^2 + \frac{1}{\sigma_B^2} (\rho^1-\rho_B^1)^2 + \frac{1}{\sigma_B^2} (\rho^N-\rho_B^N)^2
+    \end{equation}
+```
+where ``\|y-H\rho\|_{\Gamma_I}^2`` is the data fidelity term with ``y`` the vector of measurement data, ``H`` the measurement operator and ``\Gamma_I`` the noise covariance matrix.
+The term ``\|y_d-D\rho\|_{\Gamma_D}^2`` is the regularizer of the inverse problem associated to the cost function ``U`` with ``D`` the regularization operator (e.g. second order difference), ``y_d`` a vector of expected values of the regularization and ``\Gamma_D`` the covariance matrix of the regularization (strength and correlation)
+The last two terms force the estimate ``\rho`` to the predefined values ``\rho_B``.
+
+At each step, a state is proposed ``\rho_{\text{prop}} \sim q(\rho_{\bullet,\rho_{\text{curr}})`` and the state is accepted with probability ``\masthsf{P}(\rho_i) = \min(1,e^{-\Delta_{i}})``
+
+input:
+
+  - ``\rho_{\test{start}}``: initial state of the chain of states
+  - ``\Gamma_{\text{sqrt}}``: square root matrix of the covariance of the smooth mechanism ``q_{\text{smooth}}``
+  - ``y``: measurement vector
+  - ``\Gamma_I^{-1}``: inverse covariance matrix of the measurement
+  - ``D^T\Gamma_D^{-1}D``: product of the regularization opertor and inverse covariance matrix of the regularization
+  - ``H``: measurement operator
+  - ``\rho_B``: boundary values
+  - ``\sigma_B``: variances of the boundary values
+  - ``N_s``: chain length
+  - ``p_{\text{smooth}}``: the probability of choosing the smooth mechanism 
+
+output: 
+
+  - ``(\rho_i)_i``: chain of states</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/MHquadBoundary.jl#L132-L164">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.acceptSampleBoundary" href="#XPSsampling.acceptSampleBoundary"><code>XPSsampling.acceptSampleBoundary</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">acceptSampleBoundary(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},Dprior::Array{Cdouble,2},ρB::Array{Cdouble,1},σB::Array{Cdouble,1})
+
+Checks out the proposed state ``\rho_{\text{prop}}`` compared with the current state ``\rho_{\text{curr}}`` in terms of the energy function ``U`` to decide which state to accept.
+The proposed state is accepted with probability ``\masthsf{P}(\rho_{\text{prop}}) = \min(1,e^{-\Delta})`` where ``\Delta = U(\rho_{\text{prop}}) - U(\rho_{\text{curr}})``
+
+The cost function ``U`` is 
+```math
+    \begin{equation}
+        U(\rho) = ||y-H\rho||_{\Gamma_I}^2 + ||y_d-D\rho||_{\Gamma_D}^2 + \frac{1}{\sigma_B^2} (\rho^1-\rho_B^1)^2 + \frac{1}{\sigma_B^2} (\rho^N-\rho_B^N)^2
+    \end{equation}
+```
+where ``\|y-H\rho\|_{\Gamma_I}^2`` is the data fidelity term with ``y`` the vector of measurement data, ``H`` the measurement operator and ``\Gamma_I`` the noise covariance matrix.
+The term ``\|y_d-D\rho\|_{\Gamma_D}^2`` is the regularizer of the inverse problem associated to the cost function ``U`` with ``D`` the regularization operator (e.g. second order difference), ``y_d`` a vector of expected values of the regularization and ``\Gamma_D`` the covariance matrix of the regularization (strength and correlation)
+The last two terms force the estimate ``\rho`` to the predefined values ``\rho_B``.
+
+input:
+
+  - ``\rho_{\test{cur}}`` and ``\rho_{\test{prop}}``: current and proposed states
+  - ``y``: measurement vector
+  - ``\Gamma_I^{-1}``: inverse covariance matrix of the measurement
+  - ``D^T\Gamma_D^{-1}D``: product of the regularization opertor and inverse covariance matrix of the regularization
+  - ``H``: measurement operator
+  - ``D``: regularization operator
+  - ``\rho_B``: boundary values
+  - ``\sigma_B``: variances of the boundary values
+
+output: 
+
+  - ``\rho_{\text{new}}``: the new state
+  - ``-\Delta``: the cost function variation</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/MHquadBoundary.jl#L1-L32">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.samplePosteriorModelMargin" href="#XPSsampling.samplePosteriorModelMargin"><code>XPSsampling.samplePosteriorModelMargin</code></a> — <span class="docstring-category">Function</span></header><section><div><p>samplePosteriorModelMargin(ρ_start::Array{Cdouble,1},Γsqrt::Array{Cdouble,2},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ΓH::Array{Cdouble,3},Dprior::Array{Cdouble,2},ρB::Array{Cdouble,1},σB::Array{Cdouble,1};Ns::Int64=10000,psmooth::Cdouble=0.99)</p><pre><code class="nohighlight hljs">computes a series of samples ``(\rho_i)_i`` drawn from the generative communication mechanism ``q(\rho_{\text{prop}},\rho_{\text{curr}})`` and the cost function variations ``(\Delta_{i})_{i}`` associated with each move.
+The cost function ``U`` is 
+```math
+    \begin{equation}
+        U(\rho) = ||y-H\rho||_{\Gamma_I}^2 + ||y_d-D\rho||_{\Gamma_D}^2 + \frac{1}{\sigma_B^2} (\rho^1-\rho_B^1)^2 + \frac{1}{\sigma_B^2} (\rho^N-\rho_B^N)^2 + \underset{k}{\sum} \frac{\rho^T \Gamma_{H_k}\rho}{\sigma_k^2}     
+    \end{equation}
+```
+where ``\|y-H\rho\|_{\Gamma_I}^2`` is the data fidelity term with ``y`` the vector of measurement data, ``H`` the measurement operator and ``\Gamma_I`` the noise covariance matrix.
+The term ``\|y_d-D\rho\|_{\Gamma_D}^2`` is the regularizer of the inverse problem associated to the cost function ``U`` with ``D`` the regularization operator (e.g. second order difference), ``y_d`` a vector of expected values of the regularization and ``\Gamma_D`` the covariance matrix of the regularization (strength and correlation)
+The two terms ``\frac{1}{\sigma_B}(\rho^i-\rho_B^i)^2`` force the estimate ``\rho`` to the predefined values ``\rho_B``.
+The last term ``\underset{k}{\sum} \frac{\rho^T \Gamma_{H_k}\rho}{\sigma_k^2}`` is the approximation of the marginalization of errors in the measurement model (the noise variance of the channel ``k`` is ``\sigma_k^2`` and the covariance matrix of the corresponding channel is ``\Gamma_{H_k}``)
+
+At each step, a state is proposed ``\rho_{\text{prop}} \sim q(\rho_{\bullet,\rho_{\text{curr}})`` and the state is accepted with probability ``\masthsf{P}(\rho_i) = \min(1,e^{-\Delta_{i}})``
+
+input:
+
+  - ``\rho_{\test{start}}``: initial state of the chain of states
+  - ``\Gamma_{\text{sqrt}}``: square root matrix of the covariance of the smooth mechanism ``q_{\text{smooth}}``
+  - ``y``: measurement vector
+  - ``\Gamma_I^{-1}``: inverse covariance matrix of the measurement
+  - ``(\Gamma_{H_k})_k``: covariance matrixes of the measurement operator (one for each channel)
+  - ``D^T\Gamma_D^{-1}D``: product of the regularization opertor and inverse covariance matrix of the regularization
+  - ``H``: measurement operator
+  - ``\rho_B``: boundary values
+  - ``\sigma_B``: variances of the boundary values
+  - ``N_s``: chain length
+  - ``p_{\text{smooth}}``: the probability of choosing the smooth mechanism 
+
+output: 
+
+  - ``(\rho_i)_i``: chain of states</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/MHquadBoundary.jl#L181-L215">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSsampling.acceptSampleModelMargin" href="#XPSsampling.acceptSampleModelMargin"><code>XPSsampling.acceptSampleModelMargin</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">acceptSampleModelMargin(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},y::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},H::Array{Cdouble,2},ΓH::Array{Cdouble,3},Dprior::Array{Cdouble,2},ρB::Array{Cdouble,1},σB::Array{Cdouble,1})
+
+Checks out the proposed state ``\rho_{\text{prop}}`` compared with the current state ``\rho_{\text{curr}}`` in terms of the energy function ``U`` to decide which state to accept.
+The proposed state is accepted with probability ``\masthsf{P}(\rho_{\text{prop}}) = \min(1,e^{-\Delta})`` where ``\Delta = U(\rho_{\text{prop}}) - U(\rho_{\text{curr}})``
+
+The cost function ``U`` is 
+```math
+    \begin{equation}
+        U(\rho) = ||y-H\rho||_{\Gamma_I}^2 + ||y_d-D\rho||_{\Gamma_D}^2 + \frac{1}{\sigma_B^2} (\rho^1-\rho_B^1)^2 + \frac{1}{\sigma_B^2} (\rho^N-\rho_B^N)^2 + \underset{k}{\sum} \frac{\rho^T \Gamma_{H_k}\rho}{\sigma_k^2}     
+    \end{equation}
+```
+where ``\|y-H\rho\|_{\Gamma_I}^2`` is the data fidelity term with ``y`` the vector of measurement data, ``H`` the measurement operator and ``\Gamma_I`` the noise covariance matrix.
+The term ``\|y_d-D\rho\|_{\Gamma_D}^2`` is the regularizer of the inverse problem associated to the cost function ``U`` with ``D`` the regularization operator (e.g. second order difference), ``y_d`` a vector of expected values of the regularization and ``\Gamma_D`` the covariance matrix of the regularization (strength and correlation)
+The two terms ``\frac{1}{\sigma_B}(\rho^i-\rho_B^i)^2`` force the estimate ``\rho`` to the predefined values ``\rho_B``.
+The last term ``\underset{k}{\sum} \frac{\rho^T \Gamma_{H_k}\rho}{\sigma_k^2}`` is the approximation of the marginalization of errors in the measurement model (the noise variance of the channel ``k`` is ``\sigma_k^2`` and the covariance matrix of the corresponding channel is ``\Gamma_{H_k}``)
+
+input:
+
+  - ``\rho_{\test{cur}}`` and ``\rho_{\test{prop}}``: current and proposed states
+  - ``y``: measurement vector
+  - ``\Gamma_I^{-1}``: inverse covariance matrix of the measurement
+  - ``(\Gamma_{H_k})_k``: covariance matrixes of the measurement operator (one for each channel)
+  - ``D^T\Gamma_D^{-1}D``: product of the regularization opertor and inverse covariance matrix of the regularization
+  - ``H``: measurement operator
+  - ``D``: regularization operator
+  - ``\rho_B``: boundary values
+  - ``\sigma_B``: variances of the boundary values
+
+output: 
+
+  - ``\rho_{\text{new}}``: the new state
+  - ``-\Delta``: the cost function variation</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/0c9f5b6bea45301e60af1391464858187d6df121/packages/XPSsampling/src/MHquadBoundary.jl#L63-L96">source</a></section></article></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 5 May 2023 20:13">Friday 5 May 2023</span>. Using Julia version 1.8.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
