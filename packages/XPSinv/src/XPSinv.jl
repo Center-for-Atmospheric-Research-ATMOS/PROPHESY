@@ -2,18 +2,17 @@
 # sudo nano /opt/julias/julia-1.3.1/etc/julia/startup.jl
 
 """
-
-    This is the [`XPSinv`](@ref), which contains
-    * [`XPSinv.D0th`](@ref)
-    * [`XPSinv.D1st`](@ref)
-    * [`XPSinv.D2nd`](@ref)
-    * [`XPSinv.D3rd`](@ref)
-    * [`XPSinv.D4th`](@ref)
-    * [`XPSinv.reg_inv`](@ref)
-    * [`XPSinv.pseudo_inv`](@ref)
-    * [`XPSinv.alg2_cp_quad`](@ref) /
-    * [`XPSinv.alg2_cp_quad_un`](@ref) /
-    * [`XPSinv.alg2_cp_quad_LM`](@ref) /
+This is the [`XPSinv`](@ref), which contains
+* [`XPSinv.D0th`](@ref)
+* [`XPSinv.D1st`](@ref)
+* [`XPSinv.D2nd`](@ref)
+* [`XPSinv.D3rd`](@ref)
+* [`XPSinv.D4th`](@ref)
+* [`XPSinv.reg_inv`](@ref)
+* [`XPSinv.pseudo_inv`](@ref)
+* [`XPSinv.alg2_cp_quad`](@ref)
+* [`XPSinv.alg2_cp_quad_un`](@ref)
+* [`XPSinv.alg2_cp_quad_LM`](@ref)
 
     Derivation of a primal-dual optimization problem: implementation of ALG2, a.k.a. CP, in [1]
     [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
