@@ -4,6 +4,7 @@
 [![XPSpack CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml)
 [![ATTIRE CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_ATTIRE.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_ATTIRE.yml)
 [![XPSsampling CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSsampling.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSsampling.yml)
+[![XPSinv CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSinv.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSinv.yml)
 
 # XPS data simulation and inversion: PROPHESY
   this suite of packages should contain tools for the estimation of the concentration profiles of a  chemical species across a microjet (i.e. a very small stream) probed with X-rays. The data are the spectra of the emitted photoelectrons from the core subshell in the ground state (i.e. 1s orbital).
