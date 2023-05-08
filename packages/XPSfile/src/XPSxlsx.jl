@@ -11,14 +11,23 @@ function dataAndFit_xlsx2df(fileName::String;
     Ndata = length(xf_raw_data_sheet_names);
     dictAllData = Dict();
     for xf_name in xf_raw_data_sheet_names
-        local x = XLSX.getdata(xf_data[xf_name])[2:end,:]
-        local col_sym = string.(XLSX.gettable(xf_data[xf_name])[2])
-        local dataPairs = Array{Pair{String,Vector{Cdouble}}}(undef,length(col_sym));
-        for j in 1:length(col_sym)
-            if (typeof(x[1,j])<:AbstractString)
-                dataPairs[j] = (col_sym[j] => parse.(Cdouble,x[:,j]))
+        # local x = XLSX.getdata(xf_data[xf_name])[2:end,:]
+        # local col_sym = string.(XLSX.gettable(xf_data[xf_name])[2]) # valid for XLSX@v0.7.10 and under
+        # local dataPairs = Array{Pair{String,Vector{Cdouble}}}(undef,length(col_sym));
+        # for j in eachindex(col_sym)
+        #     if (typeof(x[1,j])<:AbstractString)
+        #         dataPairs[j] = (col_sym[j] => parse.(Cdouble,x[:,j]))
+        #     else
+        #         dataPairs[j] = (col_sym[j] => convert(Array{Cdouble,1},x[:,j]))
+        #     end
+        # end
+        local G = DataFrame(XLSX.gettable(xf_data[xf_name]))
+        local dataPairs = Array{Pair{String,Vector{Cdouble}}}(undef,ncol(G));
+        for j in 1:ncol(G)
+            if ((typeof(G[!,Symbol(names(G)[j])][1]))<:AbstractString)
+                dataPairs[j] = (names(G)[j] => parse.(Cdouble,G[!,Symbol(names(G)[j])]))
             else
-                dataPairs[j] = (col_sym[j] => convert(Array{Cdouble,1},x[:,j]))
+                dataPairs[j] = (names(G)[j] => convert(Array{Cdouble,1},G[!,Symbol(names(G)[j])]))
             end
         end
         df = DataFrame(dataPairs);

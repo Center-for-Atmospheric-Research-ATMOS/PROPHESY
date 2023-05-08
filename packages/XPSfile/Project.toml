@@ -10,4 +10,4 @@ DataValues = "e7dc6d0d-1eca-5fa6-8ad6-5aecde8b7ea5"
 
 [compat]
 julia = "1"
-
+XLSX = ">= 0.8.0"
