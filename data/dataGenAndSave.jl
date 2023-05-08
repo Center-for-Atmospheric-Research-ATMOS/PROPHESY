@@ -15,7 +15,7 @@ using LinearAlgebra
 using StatsBase
 
 # implemented scientific packages
-using utilsFun  # for the softMax functions
+# using utilsFun  # for the softMax functions
 
 # modeling XPS
 using XPSpack
@@ -117,7 +117,7 @@ if LOW_RES
     if SAMPLE_MODEL
         for m in 1:min(N_model_sample,999)
             println(m,"/",min(N_model_sample,999)," model sample")
-            for k in 1:length(δκ) # for each uncertainty level in the measurement model
+            for k in eachindex(δκ) # for each uncertainty level in the measurement model
                 println(k,"/",length(δκ)," model uncertainty")
                 for i in 1:Ndata
                     # draw the relative error 
@@ -146,7 +146,7 @@ if LOW_RES
         Nλ = 21;                                               # number of discretization point for the distribution of each attenuation length
         μH = Array{Cdouble}(undef,Nr_lowres,Ndata);            # mean value operator (w.r.t. λe distribution)
         ΓH = Array{Cdouble}(undef,Nr_lowres,Nr_lowres,Ndata);  # covariance of the corrupted measurement operator (w.r.t. λe distribution)
-        for k in 1:length(δκ) # for each uncertainty level in the measurement model
+        for k in eachindex(δκ) # for each uncertainty level in the measurement model
             for i in 1:Ndata
                 # draw the relative error 
                 κ = δκ[k]*(2.0*rand()-1.0);
@@ -203,7 +203,7 @@ if SIMULATE_DATA
     Nnoise = 200;
     σ_level = [0.001; 0.005; 0.01; 0.05; 0.1; 0.5];
 
-    for k in 1:length(σ_level)
+    for k in eachindex(σ_level)
         y_data = zeros(Cdouble,Nnoise,Ndata);
         ΓIsqrt = σ_level[k]*diagm(ones(Cdouble,Ndata)); # iid data noise
         y_data[1,:] = H_highres*ρA_1;
