@@ -1,6 +1,11 @@
 # push!(LOAD_PATH,"/home/mattoz/Dev/XPSinv.jl/src/")
 # sudo nano /opt/julias/julia-1.3.1/etc/julia/startup.jl
 
+# Null Space optimization
+#     [2] D. Stolzenburg, M. Ozon, M.  Kulmala, K. Lehtinen, K. Lehtipalo and J. Kangasluoma, 2022, Combining instrument inversions for sub-10 nm aerosol number size-distribution measurements
+#     Journal of Aerosol Science, Vol. 159, p. 105862
+#     DOI: 10.1016/j.jaerosci.2021.105862
+
 """
 This is the [`XPSinv`](@ref), which contains
 * [`XPSinv.D0th`](@ref)
@@ -13,16 +18,21 @@ This is the [`XPSinv`](@ref), which contains
 * [`XPSinv.alg2_cp_quad`](@ref)
 * [`XPSinv.alg2_cp_quad_un`](@ref)
 * [`XPSinv.alg2_cp_quad_LM`](@ref)
+* [`XPSinv.F_quad`](@ref)
+* [`XPSinv.G_quad`](@ref)
+* [`XPSinv.F_convex_conjugate_quad`](@ref)
+* [`XPSinv.prox_F_conj_quad`](@ref)
+* [`XPSinv.prox_G_quad`](@ref)
+* [`XPSinv.F_quad_un`](@ref)
+* [`XPSinv.G_quad_un`](@ref)
+* [`XPSinv.F_convex_conjugate_quad_un`](@ref)
+* [`XPSinv.prox_F_conj_quad_un`](@ref)
+* [`XPSinv.prox_G_quad_un`](@ref)
 
     Derivation of a primal-dual optimization problem: implementation of ALG2, a.k.a. CP, in [1]
     [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
     Journal of mathematical imaging and vision, 40(1), pp.120-145.
     DOI: 10.1007/s10851-010-0251-1
-
-    Null Space optimization
-    [2] D. Stolzenburg, M. Ozon, M.  Kulmala, K. Lehtinen, K. Lehtipalo and J. Kangasluoma, 2022, Combining instrument inversions for sub-10 nm aerosol number size-distribution measurements
-    Journal of Aerosol Science, Vol. 159, p. 105862
-    DOI: 10.1016/j.jaerosci.2021.105862
 
 """
 module XPSinv

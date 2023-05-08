@@ -8,10 +8,24 @@
     F_quad(z::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},Γinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2})
 
     Computes the value of the cost function for a quadratically-regularized gaussian cost
-    function. The M(=length(yy)) first elements of the array z are the expectations of the
-    Gaussian distribution. The rest of the array z contains the regularization entries,
-    e.g. z[M+1:end] = R*n, to be quadratically penalized. The overall cost is:
-        F(z) = (yy-z[1:M])^T Γy^{-1} (yy-z[1:M]) + (yd-z[M+1:end])^T Γd^{-1} (yd-z[M+1:end]) 
+    function. The M first elements of the array z are the expectations of the
+    Gaussian distribution. The rest of the array z contains the ``N_d`` regularization entries,
+    e.g. z[M+1:M+N_d] = R*n, to be quadratically penalized. The overall cost is:
+        ```math
+        F(z) = (yy-z_{1:M})^T \\Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \\Gamma_d^{-1} (yd-z_{M+1:M+N_d}) 
+        ```
+
+    input:
+
+        - z:       dual state
+        - yy:      measurement data (length(yy)=``M``)
+        - yd:      regularization data (length(yd)=``N_d``)
+        - Γyinv:   inverse of the measurement data covariance matrix
+        - Γdinv:   inverse of the covariance matrix of the regularization
+  
+      output:
+  
+        - evaluation of F(z)
 """
 function F_quad(z::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},Γyinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2})
     M = length(yy)
@@ -21,8 +35,12 @@ end
 """
     G_quad(x::Array{Cdouble,1})
 
-    computes the indicator function of the positive quadrant (R^+)^N. It returns
-    0 if x is in the positive quadrant and +∞ otherwise
+    computes the indicator function of the positive quadrant ``(\\mathbb{R}^+)^N``. It returns
+    0 if x is in the positive quadrant and ``\\infty`` otherwise
+
+    input:
+
+        - x: primal state vector
 """
 function G_quad(x::Array{Cdouble,1})
     val = 0.0
@@ -36,21 +54,40 @@ end
 # u: argument of the convex conjugate of the cost function
 # y: Gaussian distributed data
 """
-    F_convex_conjugate_quad(u::Array{Cdouble,1},y::Array{Cdouble,1})
+    F_convex_conjugate_quad(u::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2})
 
     Computes the convex conjugate of
-        F(z) = (yy-z[1:M])^T Γy^{-1} (yy-z[1:M]) + (yd-z[M+1:end])^T Γd^{-1} (yd-z[M+1:end]) 
+        ```math
+        F(z) = (yy-z_{1:M})^T \\Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \\Gamma_d^{-1} (yd-z_{M+1:M+N_d})
+        ```
     defined by:
-        F⋆(u) = sup_{z} ∑_i u[i]*z[i] - F(z)
+        ```math
+        F_{\\star}(u) = \\sup_z u^Tz - F(z)
+        ```
     which, in the quadratically-regularized Gaussian case is given by:
-        ∑_{i=1}^{end} u[i]y[i] + (1/4)*u[1:M]'*Γy*u[1:M] + u[M+1:end]'*Γd*u[M+1:end]
+        ```math
+        \\sum_{i=1}^{M+N_d} u_i y_i + \\frac{1}{4} u_{1:M}^T \\Gamma_y u_{1:M} + \\frac{1}{4} u_{M+1:M+N_d}^T \\Gamma_d u_{M+1:M+N_d}
+        ```
+    where M (length(yy)) the dimension of the measurment data and N_d (length(yd)) the dimension of the regularization data
+
+    input:
+
+        - u:       dual state
+        - yy:      measurement data (length(yy)=``M``)
+        - yd:      regularization data (length(yy)=``N_d``)
+        - Γy:      measurement data covariance matrix
+        - Γd:      covariance matrix of the regularization
+  
+      output:
+  
+        - evaluation of the convex conjugate of F⋆ in u
 """
 function F_convex_conjugate_quad(u::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2})
     M=length(yy)
     u[1:M]'*(yy + 0.25*Γy*u[1:M]) + u[M+1:end]'*(yd + 0.25*Γd*u[M+1:end])
 end
 
-## proximal of the convex conjugate of F
+## proximal of the convex conjugate of F: prox_{σF⋆}(x) = argmin_u {σF⋆(u) + (1/2)*||u-x||^2}
 """
     prox_F_conj_quad(x::Array{Cdouble},yy::Array{Cdouble,1},yd::Array{Cdouble,1},σ::Cdouble,Py::Array{Cdouble,2},Dy::Array{Cdouble,1},Pd::Array{Cdouble,2},Dd::Array{Cdouble,1})
 
@@ -58,9 +95,28 @@ end
     Γd = Pd*diagm(Dd)*Pd'
 
     computes the proximal of σF⋆ evaluated in x, with F being defined by:
-        F(z) = (yy-z[1:M])^T Γy^{-1} (yy-z[1:M]) + (yd-z[M+1:end])^T Γd^{-1} (yd-z[M+1:end]) 
+        ```math
+        F(z) = (yy-z_{1:M})^T \\Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \\Gamma_d^{-1} (yd-z_{M+1:M+N_d})
+        ```
     and the proximal by:
-        prox_{σF⋆}(x) = argmin_u {σF⋆(u) + (1/2)*||u-x||^2}
+        ```math
+        \\text{prox}_{\\sigma F_{\\star}}(x) = \\arg\\min_u {\\sigma F_{\\star}(u) + \\frac{1}{2}*||u-x||^2}
+        ```
+    M (length(yy)) the dimension of the measurment data and N_d (length(yd)) the dimension of the regularization data.
+
+    input:
+
+        - x:       dual state (length(x)=``M+N_d``)
+        - yy:      measurement data (length(yy)=``M``)
+        - yd:      regularization data (length(yd)=``N_d``)
+        - ``\\sigma``: proximal parameter
+        - Py,Dy:   eigen decomposition matrices of the measurement data covariance matrix (``\\Gamma_y`` = Py*diagm(Dy)*Py')
+        - Pd,Dd:   eigen decomposition matrices of the covariance matrix of the regularization (``\\Gamma_d`` = Pd*diagm(Dd)*Pd')
+    
+        output:
+    
+          - proximal of the convex conjugate of the cost function F
+    
 """
 function prox_F_conj_quad(x::Array{Cdouble},yy::Array{Cdouble,1},yd::Array{Cdouble,1},σ::Cdouble,Py::Array{Cdouble,2},Dy::Array{Cdouble,1},Pd::Array{Cdouble,2},Dd::Array{Cdouble,1})
     M = length(yy)
@@ -69,10 +125,15 @@ function prox_F_conj_quad(x::Array{Cdouble},yy::Array{Cdouble,1},yd::Array{Cdoub
     [u_data; u_reg]
 end
 
-# proximal operator of the indicator function
+# proximal operator of the indicator function prox_{G}(x) = argmin_u {G(u) + (1/2)*||u-x||^2}
 """
     computes the proximal of G, the positive quadrant indicator function,
-        prox_{G}(x) = argmin_u {G(u) + (1/2)*||u-x||^2}
+        ```math
+        \\text{prox}_G(x) = \\arg\\min_u {G(u) + \\frac{1}{2}*||u-x||^2}
+        ```
+    input:
+
+      - x: primal state vector
 """
 function prox_G_quad(x::Array{Cdouble})
     x.*(x.>=0.0) # can't get any simpler
@@ -81,15 +142,46 @@ end
 # x0:    initial point
 # y:     data
 # tau0:  initial value of τ in Alg2 chambolle2011first "A first-order primal-dual algorithm for convex problems with applications to imaging"
-# Niter: number of iterations TODO: change the stopping criteria to a better one, maybe the relative variation between two steps or the distance between primal and dual
+# Niter: number of iterations 
 """
-    alg2_cp_quad(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
+    alg2_cp_quad(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},A::Array{Cdouble,2},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2},W_stop::Array{Cdouble,1};τ0::Cdouble=1.0,Niter::Int64=100,r_n_tol::Cdouble=1.0e-6,r_y_tol::Cdouble=0.5)
 
     run the algorithm 2 described in [1] for the minimization problem
-        min {F(A*x) + G(x)}
+        ```math
+        \\min\\{F(Ax) + G(x)\\}
+        ```
     with:
-        F(z) = (yy-z[1:M])^T Γy^{-1} (yy-z[1:M]) + (yd-z[M+1:end])^T Γd^{-1} (yd-z[M+1:end]) 
-    and G the indicator function of the positive quadrant (R^+)^N.
+        ```math
+        F(z) = (yy-z_{1:M})^T \\Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \\Gamma_d^{-1} (yd-z_{M+1:M+N_d}) 
+        ```
+    and G the indicator function of the positive quadrant ``(\\mathbb{R}^+)^N``.
+
+    input:
+
+      - ``x_0``:              initial point (length(x0)=``N``)
+      - ``y``:                measurement data vector (length(yy)=``M``)
+      - ``y_d``:              vector of expected value of the regularization (length(yd)=``N_d``)
+      - ``A``:                augmented measurement operator (measurement operator and regularization operator)
+      - ``\\Gamma_y``:        covariance matrix of the measurement data
+      - ``\\Gamma_d``:        covariance matrix of the regularization (strength and correlation)
+      - ``W_{\\text{stop}}``: weights used for the stopping criteria in the primal space
+    
+    optional input:
+
+      - ``\\tau_0``:          initial value of algorithm parameter τ (see Pock and Chambolle [1]), default value ``\\tau_0=1``
+      - ``N_{\\text{iter}}``: maximum number of iteration, default value ``N_{\\text{iter}}=100``
+      - r_n_tol:              relative stopping criteria in the primal space, default value r_n_tol=1.0e-6
+      - r_y_tol:              relative stopping criteria in the data space, default value r_y_tol=0.5
+
+    output:
+
+      - xn:                   final primal state 
+      - sn:                   final dual state
+      - τn:                   final value of the parameter ``\\tau``
+      - X_ALL:                all primal states along the iterations
+      - S_ALL:                all dual states along the iterations
+      - T_ALL:                all values of ``\\tau`` along the iterations
+      - N_last:               number of iteration computed (the algorithm stops either because it reached the maximum number of iteration or because a stopping criteria is met)
 
     [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
     Journal of mathematical imaging and vision, 40(1), pp.120-145.
@@ -98,7 +190,19 @@ function alg2_cp_quad(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdoubl
     # init algorithm's parameters
     N = length(x0);
     if (N!=size(A,2))
-        throw("alg2_chpo: operator A and state x0 do not have compatible dimensions")
+        throw("alg2_cp_quad: operator A and state x0 do not have compatible dimensions")
+    end
+    if ((length(yy)+length(yd))!=size(A,1))
+        throw("alg2_cp_quad: operator A does not have the right number of rows")
+    end
+    if (N!=length(W_stop))
+        throw("alg2_cp_quad: stopping criteria dimension")
+    end
+    if ((length(yy)!=size(Γy,1)) | (length(yy)!=size(Γy,2)))
+        throw("alg2_cp_quad: measurement data and covariance matrix dimension")
+    end
+    if ((length(yd)!=size(Γd,1)) | (length(yd)!=size(Γd,2)))
+        throw("alg2_cp_quad: regularization data and covariance matrix dimension")
     end
     L = opnorm(A,2); # spectral norm of the operator A (if it's a matrix, it is the Lipschitz constant)
     σ0 = 1.0/(τ0*L^2);
@@ -171,13 +275,41 @@ end
 
 
 """
-    alg2_cp_quad_LM(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
+    alg2_cp_quad_LM(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},A::Array{Cdouble,2},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2},W_stop::Array{Cdouble,1};τ0::Cdouble=1.0,Niter::Int64=100,r_n_tol::Cdouble=1.0e-6,r_y_tol::Cdouble=0.5)
 
     run the algorithm 2 described in [1] for the minimization problem
-        min {F(A*x) + G(x)}
+        ```math
+        \\min\\{F(Ax) + G(x)\\}
+        ```
     with:
-        F(z) = (yy-z[1:M])^T Γy^{-1} (yy-z[1:M]) + (yd-z[M+1:end])^T Γd^{-1} (yd-z[M+1:end]) 
-    and G the indicator function of the positive quadrant (R^+)^N.
+        ```math
+        F(z) = (yy-z_{1:M})^T \\Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \\Gamma_d^{-1} (yd-z_{M+1:M+N_d}) 
+        ```
+    and G the indicator function of the positive quadrant ``(\\mathbb{R}^+)^N``.
+
+    input:
+
+        - ``x_0``:              initial point (length(x0)=``N``)
+        - ``y``:                measurement data vector (length(yy)=``M``)
+        - ``y_d``:              vector of expected value of the regularization (length(yd)=``N_d``)
+        - ``A``:                augmented measurement operator (measurement operator and regularization operator)
+        - ``\\Gamma_y``:        covariance matrix of the measurement data
+        - ``\\Gamma_d``:        covariance matrix of the regularization (strength and correlation)
+        - ``W_{\\text{stop}}``: weights used for the stopping criteria in the primal space
+      
+    optional input:
+  
+        - ``\\tau_0``:          initial value of algorithm parameter τ (see Pock and Chambolle [1]), default value ``\\tau_0=1``
+        - ``N_{\\text{iter}}``: maximum number of iteration, default value ``N_{\\text{iter}}=100``
+        - r_n_tol:              relative stopping criteria in the primal space, default value r_n_tol=1.0e-6
+        - r_y_tol:              relative stopping criteria in the data space, default value r_y_tol=0.5
+  
+    output:
+  
+        - xn:                   final primal state 
+        - sn:                   final dual state
+        - N_last:               number of iteration computed (the algorithm stops either because it reached the maximum number of iteration or because a stopping criteria is met)
+  
 
     [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
     Journal of mathematical imaging and vision, 40(1), pp.120-145.
@@ -186,7 +318,19 @@ function alg2_cp_quad_LM(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdo
     # init algorithm's parameters
     N = length(x0);
     if (N!=size(A,2))
-        throw("alg2_chpo: operator A and state x0 do not have compatible dimensions")
+        throw("alg2_cp_quad_LM: operator A and state x0 do not have compatible dimensions")
+    end
+    if ((length(yy)+length(yd))!=size(A,1))
+        throw("alg2_cp_quad_LM: operator A does not have the right number of rows")
+    end
+    if (N!=length(W_stop))
+        throw("alg2_cp_quad_LM: stopping criteria dimension")
+    end
+    if ((length(yy)!=size(Γy,1)) | (length(yy)!=size(Γy,2)))
+        throw("alg2_cp_quad_LM: measurement data and covariance matrix dimension")
+    end
+    if ((length(yd)!=size(Γd,1)) | (length(yd)!=size(Γd,2)))
+        throw("alg2_cp_quad_LM: regularization data and covariance matrix dimension")
     end
     L = opnorm(A,2); # spectral norm of the operator A (if it's a matrix, it is the Lipschitz constant)
     σ0 = 1.0/(τ0*L^2);
