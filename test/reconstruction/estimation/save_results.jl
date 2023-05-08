@@ -1,3 +1,6 @@
+# [336ed68f] CSV v0.10.9  from CSV v0.10.4 (if CSV version<v0.10.9, use string.(DataFrame()) instead of DataFrame())
+# [a93c6f00] DataFrames v1.3.6
+
 CSV.write(string(save_folder,"depth.csv"),DataFrame(r',:auto);header=true)
 CSV.write(string(save_folder,"concentration_profile.csv"),DataFrame(ρA_1',:auto);header=true)
 CSV.write(string(save_folder,"depth_lowres.csv"),DataFrame(r_lowres',:auto);header=true)
