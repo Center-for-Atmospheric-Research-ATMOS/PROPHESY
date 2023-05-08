@@ -1,49 +1,347 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · XPSinv</title><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>XPSinv</a></span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/main/packages/XPSinv/docs/src/index.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="XPSinv"><a class="docs-heading-anchor" href="#XPSinv">XPSinv</a><a id="XPSinv-1"></a><a class="docs-heading-anchor-permalink" href="#XPSinv" title="Permalink"></a></h1><p>Documentation for XPSinv</p><article class="docstring"><header><a class="docstring-binding" id="XPSinv.XPSinv" href="#XPSinv.XPSinv"><code>XPSinv.XPSinv</code></a> — <span class="docstring-category">Module</span></header><section><div><pre><code class="language-julia hljs">This is the [`XPSinv`](@ref), which contains
-* [`XPSinv.D0th`](@ref)
-* [`XPSinv.D1st`](@ref)
-* [`XPSinv.D2nd`](@ref)
-* [`XPSinv.D3rd`](@ref)
-* [`XPSinv.D4th`](@ref)
-* [`XPSinv.reg_inv`](@ref)
-* [`XPSinv.pseudo_inv`](@ref)
-* [`XPSinv.alg2_cp_quad`](@ref)
-* [`XPSinv.alg2_cp_quad_un`](@ref)
-* [`XPSinv.alg2_cp_quad_LM`](@ref)
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · XPSinv</title><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>XPSinv</a></span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/main/packages/XPSinv/docs/src/index.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="XPSinv"><a class="docs-heading-anchor" href="#XPSinv">XPSinv</a><a id="XPSinv-1"></a><a class="docs-heading-anchor-permalink" href="#XPSinv" title="Permalink"></a></h1><p>Documentation for XPSinv</p><article class="docstring"><header><a class="docstring-binding" id="XPSinv.XPSinv" href="#XPSinv.XPSinv"><code>XPSinv.XPSinv</code></a> — <span class="docstring-category">Module</span></header><section><div><p>This is the <a href="#XPSinv.XPSinv"><code>XPSinv</code></a>, which contains</p><ul><li><p><a href="#XPSinv.D0th"><code>XPSinv.D0th</code></a></p></li><li><p><a href="#XPSinv.D1st"><code>XPSinv.D1st</code></a></p></li><li><p><a href="#XPSinv.D2nd"><code>XPSinv.D2nd</code></a></p></li><li><p><a href="#XPSinv.D3rd"><code>XPSinv.D3rd</code></a></p></li><li><p><a href="#XPSinv.D4th"><code>XPSinv.D4th</code></a></p></li><li><p><a href="#XPSinv.reg_inv"><code>XPSinv.reg_inv</code></a></p></li><li><p><a href="#XPSinv.pseudo_inv"><code>XPSinv.pseudo_inv</code></a></p></li><li><p><a href="#XPSinv.alg2_cp_quad"><code>XPSinv.alg2_cp_quad</code></a></p></li><li><p><a href="#XPSinv.alg2_cp_quad_un"><code>XPSinv.alg2_cp_quad_un</code></a></p></li><li><p><a href="#XPSinv.alg2_cp_quad_LM"><code>XPSinv.alg2_cp_quad_LM</code></a></p></li><li><p><a href="#XPSinv.F_quad"><code>XPSinv.F_quad</code></a></p></li><li><p><a href="#XPSinv.G_quad"><code>XPSinv.G_quad</code></a></p></li><li><p><a href="#XPSinv.F_convex_conjugate_quad"><code>XPSinv.F_convex_conjugate_quad</code></a></p></li><li><p><a href="#XPSinv.prox_F_conj_quad"><code>XPSinv.prox_F_conj_quad</code></a></p></li><li><p><a href="#XPSinv.prox_G_quad"><code>XPSinv.prox_G_quad</code></a></p></li><li><p><a href="#XPSinv.F_quad_un"><code>XPSinv.F_quad_un</code></a></p></li><li><p><a href="#XPSinv.G_quad_un"><code>XPSinv.G_quad_un</code></a></p></li><li><p><a href="#XPSinv.F_convex_conjugate_quad_un"><code>XPSinv.F_convex_conjugate_quad_un</code></a></p></li><li><p><a href="#XPSinv.prox_F_conj_quad_un"><code>XPSinv.prox_F_conj_quad_un</code></a></p></li><li><p><a href="#XPSinv.prox_G_quad_un"><code>XPSinv.prox_G_quad_un</code></a></p><p>Derivation of a primal-dual optimization problem: implementation of ALG2, a.k.a. CP, in [1]   [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.   Journal of mathematical imaging and vision, 40(1), pp.120-145.   DOI: 10.1007/s10851-010-0251-1</p></li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/XPSinv.jl#L9-L37">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D0th" href="#XPSinv.D0th"><code>XPSinv.D0th</code></a> — <span class="docstring-category">Function</span></header><section><div><p>0th order sparsity (meaning that a priori the signal should be 0 everywhere) </p><p>input:</p><ul><li>N: matrix dimension</li></ul><p>output:</p><ul><li>identity matrix</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/usualFun.jl#L1-L12">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D1st" href="#XPSinv.D1st"><code>XPSinv.D1st</code></a> — <span class="docstring-category">Function</span></header><section><div><p>first order sparsity: a priori constant </p><p class="math-container">\[D_{i,j} = \begin{cases}
+1 &amp; j=i\\
+-1 &amp; j=i+1\\
+0 &amp; \text{otherwise}
+\end{cases}\]</p><p>input:</p><ul><li>N: matrix dimension</li></ul><p>output:</p><ul><li><span>$N-1\times N$</span> matrix</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/usualFun.jl#L16-L35">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D2nd" href="#XPSinv.D2nd"><code>XPSinv.D2nd</code></a> — <span class="docstring-category">Function</span></header><section><div><p>second order sparsity: a priori linear </p><p class="math-container">\[D_{i,j} = \begin{cases}
+-1 &amp; j=i,\,j=i+2\\
+2 &amp; j=i+1\\
+0 &amp; \text{otherwise}
+\end{cases}\]</p><p>input:</p><ul><li>N: matrix dimension</li></ul><p>output:</p><ul><li><span>$N-2\times N$</span> matrix</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/usualFun.jl#L39-L59">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D3rd" href="#XPSinv.D3rd"><code>XPSinv.D3rd</code></a> — <span class="docstring-category">Function</span></header><section><div><p>third order sparsity: a priori quadratic </p><p class="math-container">\[D_{i,j} = \begin{cases}
+-1 &amp; j=i\\
+3 &amp; j=i\pm 1\\
+-3 &amp; j=i\pm 2\\
+1 &amp; j=i\pm 3\\
+0 &amp; \text{otherwise}
+\end{cases}\]</p><p>input:</p><ul><li>N: matrix dimension</li></ul><p>output:</p><ul><li><span>$N-3\times N$</span> matrix</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/usualFun.jl#L63-L85">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D4th" href="#XPSinv.D4th"><code>XPSinv.D4th</code></a> — <span class="docstring-category">Function</span></header><section><div><p>forth order sparsity: a priori cubic </p><p class="math-container">\[D_{i,j} = \begin{cases}
+-1 &amp; j=i\\
+4 &amp; j=i\pm 1\\
+-6 &amp; j=i\pm 2\\
+4 &amp; j=i\pm 3\\
+-1 &amp; j=i\pm 4\\
+0 &amp; \text{otherwise}
+\end{cases}\]</p><p>input:</p><ul><li>N: matrix dimension</li></ul><p>output:</p><ul><li><span>$N-4\times N$</span> matrix</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/usualFun.jl#L89-L112">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.reg_inv" href="#XPSinv.reg_inv"><code>XPSinv.reg_inv</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">reg_inv(H::Array{Cdouble,2},D::Array{Cdouble,2};τ::Cdouble=1.0)
 
-Derivation of a primal-dual optimization problem: implementation of ALG2, a.k.a. CP, in [1]
-[1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
-Journal of mathematical imaging and vision, 40(1), pp.120-145.
-DOI: 10.1007/s10851-010-0251-1
+computes a regularized pseudo inverse of the matrix H based on the optimization problem
+```math
+\min_x ||Hx-y||^2 + \tau||Dx||^2 
+```
 
-Null Space optimization
-[2] D. Stolzenburg, M. Ozon, M.  Kulmala, K. Lehtinen, K. Lehtipalo and J. Kangasluoma, 2022, Combining instrument inversions for sub-10 nm aerosol number size-distribution measurements
-Journal of Aerosol Science, Vol. 159, p. 105862
-DOI: 10.1016/j.jaerosci.2021.105862</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/XPSinv.jl#L4-L28">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D0th" href="#XPSinv.D0th"><code>XPSinv.D0th</code></a> — <span class="docstring-category">Function</span></header><section><div><p>0th order sparsity (meaning that a priori the signal should be 0 everywhere) </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/usualFun.jl#L1">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D1st" href="#XPSinv.D1st"><code>XPSinv.D1st</code></a> — <span class="docstring-category">Function</span></header><section><div><p>first order sparsity: a priori constant </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/usualFun.jl#L6">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D2nd" href="#XPSinv.D2nd"><code>XPSinv.D2nd</code></a> — <span class="docstring-category">Function</span></header><section><div><p>second order sparsity: a priori linear </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/usualFun.jl#L11">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D3rd" href="#XPSinv.D3rd"><code>XPSinv.D3rd</code></a> — <span class="docstring-category">Function</span></header><section><div><p>third order sparsity: a priori quadratic </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/usualFun.jl#L16">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.D4th" href="#XPSinv.D4th"><code>XPSinv.D4th</code></a> — <span class="docstring-category">Function</span></header><section><div><p>forth order sparsity: a priori cubic </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/usualFun.jl#L21">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.reg_inv" href="#XPSinv.reg_inv"><code>XPSinv.reg_inv</code></a> — <span class="docstring-category">Function</span></header><section><div><p>min<em>x ||Hx-y||^2 + τ||Dx||^2 =&gt; x</em>opt =  (H^t H + τ D^t D)̂{-1} H^t y </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/usualFun.jl#L32">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.pseudo_inv" href="#XPSinv.pseudo_inv"><code>XPSinv.pseudo_inv</code></a> — <span class="docstring-category">Function</span></header><section><div><p>pseudo inverse </p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/usualFun.jl#L37">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.alg2_cp_quad" href="#XPSinv.alg2_cp_quad"><code>XPSinv.alg2_cp_quad</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">alg2_cp_quad(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
+whose solution is formally defined by
+
+```math
+\hat{x} =  (H^T H + \tau D^T D)̂^{-1} H^T y 
+```
+
+input:
+
+  - H: measurement operator
+  - D: regularization operator
+  - ``\tau``: regularization strength
+
+output:
+
+  - pseudo inverse matrix ``(H^T H + \tau D^T D)̂^{-1} H^T``</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/usualFun.jl#L123-L148">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.pseudo_inv" href="#XPSinv.pseudo_inv"><code>XPSinv.pseudo_inv</code></a> — <span class="docstring-category">Function</span></header><section><div><p>pseudo inverse </p><p>pseudo<em>inv(H::Array{Cdouble,2},n</em>singular::Int64;th_singular::Cdouble=0.0)</p><p>computes the an approximation of the matrix H using the singular value decomposition <span>$H = U\text{diagm}(S)V^T$</span></p><p class="math-container">\[H_{\text{approx}} = U \text{diagm}(\tilde{S})V^t ,\,
+\tilde{S}_{i} = \begin{cases}
+\max(S_i,th_{\text{singular}}\max(S)) &amp; i\leqslant n_{\text{singular}}\\
+0 &amp; \text{otherwise}
+\end{cases}\]</p><p>and </p><p class="math-container">\[H_{\text{approx}}^{\dagger} = (U \text{diagm}(\tilde{S}^{-1})V^t)^T ,\,
+\tilde{S}_{i}^{-1} = \begin{cases}
+\frac{1}{\max(S_i,th_{\text{singular}}\max(S))} &amp; i\leqslant n_{\text{singular}}\\
+0 &amp; \text{otherwise}
+\end{cases}\]</p><p>input:</p><ul><li>H: measurement operator</li><li>n_singular: number of singular values kept in the spectral truncation</li><li>th_singular: relative threshold of the singular values</li></ul><p>output:</p><ul><li>approximation of the matrix H with n<em>singular non-zero singular values and a spectral threshold set to th</em>singular*maximum(singular value)</li><li>pseudo inverse with the same characteristic as the approximation</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/usualFun.jl#L152-L188">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.alg2_cp_quad" href="#XPSinv.alg2_cp_quad"><code>XPSinv.alg2_cp_quad</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">alg2_cp_quad(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},A::Array{Cdouble,2},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2},W_stop::Array{Cdouble,1};τ0::Cdouble=1.0,Niter::Int64=100,r_n_tol::Cdouble=1.0e-6,r_y_tol::Cdouble=0.5)
 
 run the algorithm 2 described in [1] for the minimization problem
-    min {F(A*x) + G(x)}
+    ```math
+    \min\{F(Ax) + G(x)\}
+    ```
 with:
-    F(z) = (yy-z[1:M])^T Γy^{-1} (yy-z[1:M]) + (yd-z[M+1:end])^T Γd^{-1} (yd-z[M+1:end]) 
-and G the indicator function of the positive quadrant (R^+)^N.
+    ```math
+    F(z) = (yy-z_{1:M})^T \Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \Gamma_d^{-1} (yd-z_{M+1:M+N_d}) 
+    ```
+and G the indicator function of the positive quadrant ``(\mathbb{R}^+)^N``.
+
+input:
+
+  - ``x_0``:              initial point (length(x0)=``N``)
+  - ``y``:                measurement data vector (length(yy)=``M``)
+  - ``y_d``:              vector of expected value of the regularization (length(yd)=``N_d``)
+  - ``A``:                augmented measurement operator (measurement operator and regularization operator)
+  - ``\Gamma_y``:        covariance matrix of the measurement data
+  - ``\Gamma_d``:        covariance matrix of the regularization (strength and correlation)
+  - ``W_{\text{stop}}``: weights used for the stopping criteria in the primal space
+
+optional input:
+
+  - ``\tau_0``:          initial value of algorithm parameter τ (see Pock and Chambolle [1]), default value ``\tau_0=1``
+  - ``N_{\text{iter}}``: maximum number of iteration, default value ``N_{\text{iter}}=100``
+  - r_n_tol:              relative stopping criteria in the primal space, default value r_n_tol=1.0e-6
+  - r_y_tol:              relative stopping criteria in the data space, default value r_y_tol=0.5
+
+output:
+
+  - xn:                   final primal state 
+  - sn:                   final dual state
+  - τn:                   final value of the parameter ``\tau``
+  - X_ALL:                all primal states along the iterations
+  - S_ALL:                all dual states along the iterations
+  - T_ALL:                all values of ``\tau`` along the iterations
+  - N_last:               number of iteration computed (the algorithm stops either because it reached the maximum number of iteration or because a stopping criteria is met)
 
 [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
-Journal of mathematical imaging and vision, 40(1), pp.120-145.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/cp_quad.jl#L85-L96">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.alg2_cp_quad_un" href="#XPSinv.alg2_cp_quad_un"><code>XPSinv.alg2_cp_quad_un</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">alg2_cp_gaussian(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
+Journal of mathematical imaging and vision, 40(1), pp.120-145.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad.jl#L146-L188">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.alg2_cp_quad_un" href="#XPSinv.alg2_cp_quad_un"><code>XPSinv.alg2_cp_quad_un</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">alg2_cp_quad_un(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},A::Array{Cdouble,2},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2},ΓHΓyinv::Array{Cdouble,2},W_stop::Array{Cdouble,1};τ0::Cdouble=1.0,Niter::Int64=100,r_n_tol::Cdouble=1.0e-6,r_y_tol::Cdouble=0.5)
 
 run the algorithm 2 described in [1] for the minimization problem
-    min {F(A*x) + G(x)}
+    ```math
+    \min\{F(Ax) + G(x)\}
+    ```
 with:
-    F(z) = (yy-z[1:M])&#39;*Γy^{-1}*(yy-z[1:M]) + (yd-z[M+1:M+N])&#39;*Γd^{-1}*(yd-z[M+1:M+N]) + z[M+N+1:end]&#39;*ΓHΓyinv*z[M+N+1:end]
-and G the indicator function of the positive quadrant (R^+)^N.
+    ```math
+    F(z) = (yy-z_{1:M})^T \Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \Gamma_d^{-1} (yd-z_{M+1:M+N_d}) + z_{M+N_d+1:M+N_d+N}^T \Gamma_{H,y} z_{M+N_d+1:M+N_d+N}
+    ```
+and G the indicator function of the positive quadrant ``(\mathbb{R}^+)^N``.
+N is the dimension of the primal space, M (length(yy)) the dimension of the measurment data and N_d (length(yd)) the dimension of the regularization data.
+
+input:
+
+    - ``x_0``:              initial point (length(x0)=``N``)
+    - ``y``:                measurement data vector (length(yy)=``M``)
+    - ``y_d``:              vector of expected value of the regularization (length(yd)=``N_d``)
+    - ``A``:                augmented measurement operator (measurement operator H, regularization operator D, and identity I, A=[H;D;I])
+    - ``\Gamma_y``:        covariance matrix of the measurement data
+    - ``\Gamma_d``:        covariance matrix of the regularization (strength and correlation)
+    - ``\Gamma_{H,y}``:    operator-to-noise covariance matrix
+    - ``W_{\text{stop}}``: weights used for the stopping criteria in the primal space
+  
+  optional input:
+
+    - ``\tau_0``:          initial value of algorithm parameter τ (see Pock and Chambolle [1]), default value ``\tau_0=1``
+    - ``N_{\text{iter}}``: maximum number of iteration, default value ``N_{\text{iter}}=100``
+    - r_n_tol:              relative stopping criteria in the primal space, default value r_n_tol=1.0e-6
+    - r_y_tol:              relative stopping criteria in the data space, default value r_y_tol=0.5
+
+  output:
+
+    - xn:                   final primal state 
+    - sn:                   final dual state
+    - τn:                   final value of the parameter ``\tau``
+    - X_ALL:                all primal states along the iterations
+    - S_ALL:                all dual states along the iterations
+    - T_ALL:                all values of ``\tau`` along the iterations
+    - N_last:               number of iteration computed (the algorithm stops either because it reached the maximum number of iteration or because a stopping criteria is met)
+
 
 [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
-Journal of mathematical imaging and vision, 40(1), pp.120-145.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/cp_quad_uncertainty.jl#L91-L102">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.alg2_cp_quad_LM" href="#XPSinv.alg2_cp_quad_LM"><code>XPSinv.alg2_cp_quad_LM</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">alg2_cp_quad_LM(x0::Array{Cdouble,1},y::Array{Cdouble,1},A::Array{Cdouble,2};tau0::Cdouble=1.0,Niter::Int64=100)
+Journal of mathematical imaging and vision, 40(1), pp.120-145.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad_uncertainty.jl#L158-L203">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.alg2_cp_quad_LM" href="#XPSinv.alg2_cp_quad_LM"><code>XPSinv.alg2_cp_quad_LM</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">alg2_cp_quad_LM(x0::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},A::Array{Cdouble,2},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2},W_stop::Array{Cdouble,1};τ0::Cdouble=1.0,Niter::Int64=100,r_n_tol::Cdouble=1.0e-6,r_y_tol::Cdouble=0.5)
 
 run the algorithm 2 described in [1] for the minimization problem
-    min {F(A*x) + G(x)}
+    ```math
+    \min\{F(Ax) + G(x)\}
+    ```
 with:
-    F(z) = (yy-z[1:M])^T Γy^{-1} (yy-z[1:M]) + (yd-z[M+1:end])^T Γd^{-1} (yd-z[M+1:end]) 
-and G the indicator function of the positive quadrant (R^+)^N.
+    ```math
+    F(z) = (yy-z_{1:M})^T \Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \Gamma_d^{-1} (yd-z_{M+1:M+N_d}) 
+    ```
+and G the indicator function of the positive quadrant ``(\mathbb{R}^+)^N``.
+
+input:
+
+    - ``x_0``:              initial point (length(x0)=``N``)
+    - ``y``:                measurement data vector (length(yy)=``M``)
+    - ``y_d``:              vector of expected value of the regularization (length(yd)=``N_d``)
+    - ``A``:                augmented measurement operator (measurement operator and regularization operator)
+    - ``\Gamma_y``:        covariance matrix of the measurement data
+    - ``\Gamma_d``:        covariance matrix of the regularization (strength and correlation)
+    - ``W_{\text{stop}}``: weights used for the stopping criteria in the primal space
+  
+optional input:
+
+    - ``\tau_0``:          initial value of algorithm parameter τ (see Pock and Chambolle [1]), default value ``\tau_0=1``
+    - ``N_{\text{iter}}``: maximum number of iteration, default value ``N_{\text{iter}}=100``
+    - r_n_tol:              relative stopping criteria in the primal space, default value r_n_tol=1.0e-6
+    - r_y_tol:              relative stopping criteria in the data space, default value r_y_tol=0.5
+
+output:
+
+    - xn:                   final primal state 
+    - sn:                   final dual state
+    - N_last:               number of iteration computed (the algorithm stops either because it reached the maximum number of iteration or because a stopping criteria is met)
+
 
 [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
-Journal of mathematical imaging and vision, 40(1), pp.120-145.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/2d68a40dbffd52edbe7971ffd59e2a258d93b059/packages/XPSinv/src/cp_quad.jl#L173-L184">source</a></section></article></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 5 May 2023 22:09">Friday 5 May 2023</span>. Using Julia version 1.8.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Journal of mathematical imaging and vision, 40(1), pp.120-145.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad.jl#L277-L316">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.F_quad" href="#XPSinv.F_quad"><code>XPSinv.F_quad</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">F_quad(z::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},Γinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2})
+
+Computes the value of the cost function for a quadratically-regularized gaussian cost
+function. The M first elements of the array z are the expectations of the
+Gaussian distribution. The rest of the array z contains the ``N_d`` regularization entries,
+e.g. z[M+1:M+N_d] = R*n, to be quadratically penalized. The overall cost is:
+    ```math
+    F(z) = (yy-z_{1:M})^T \Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \Gamma_d^{-1} (yd-z_{M+1:M+N_d}) 
+    ```
+
+input:
+
+    - z:       dual state
+    - yy:      measurement data (length(yy)=``M``)
+    - yd:      regularization data (length(yd)=``N_d``)
+    - Γyinv:   inverse of the measurement data covariance matrix
+    - Γdinv:   inverse of the covariance matrix of the regularization
+
+  output:
+
+    - evaluation of F(z)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad.jl#L7-L29">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.G_quad" href="#XPSinv.G_quad"><code>XPSinv.G_quad</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">G_quad(x::Array{Cdouble,1})
+
+computes the indicator function of the positive quadrant ``(\mathbb{R}^+)^N``. It returns
+0 if x is in the positive quadrant and ``\infty`` otherwise
+
+input:
+
+    - x: primal state vector</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad.jl#L35-L44">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.F_convex_conjugate_quad" href="#XPSinv.F_convex_conjugate_quad"><code>XPSinv.F_convex_conjugate_quad</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">F_convex_conjugate_quad(u::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2})
+
+Computes the convex conjugate of
+    ```math
+    F(z) = (yy-z_{1:M})^T \Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \Gamma_d^{-1} (yd-z_{M+1:M+N_d})
+    ```
+defined by:
+    ```math
+    F_{\star}(u) = \sup_z u^Tz - F(z)
+    ```
+which, in the quadratically-regularized Gaussian case is given by:
+    ```math
+    \sum_{i=1}^{M+N_d} u_i y_i + \frac{1}{4} u_{1:M}^T \Gamma_y u_{1:M} + \frac{1}{4} u_{M+1:M+N_d}^T \Gamma_d u_{M+1:M+N_d}
+    ```
+where M (length(yy)) the dimension of the measurment data and N_d (length(yd)) the dimension of the regularization data
+
+input:
+
+    - u:       dual state
+    - yy:      measurement data (length(yy)=``M``)
+    - yd:      regularization data (length(yy)=``N_d``)
+    - Γy:      measurement data covariance matrix
+    - Γd:      covariance matrix of the regularization
+
+  output:
+
+    - evaluation of the convex conjugate of F⋆ in u</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad.jl#L56-L84">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.prox_F_conj_quad" href="#XPSinv.prox_F_conj_quad"><code>XPSinv.prox_F_conj_quad</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">prox_F_conj_quad(x::Array{Cdouble},yy::Array{Cdouble,1},yd::Array{Cdouble,1},σ::Cdouble,Py::Array{Cdouble,2},Dy::Array{Cdouble,1},Pd::Array{Cdouble,2},Dd::Array{Cdouble,1})
+
+Γy = Py*diagm(Dy)*Py&#39;
+Γd = Pd*diagm(Dd)*Pd&#39;
+
+computes the proximal of σF⋆ evaluated in x, with F being defined by:
+    ```math
+    F(z) = (yy-z_{1:M})^T \Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \Gamma_d^{-1} (yd-z_{M+1:M+N_d})
+    ```
+and the proximal by:
+    ```math
+    \text{prox}_{\sigma F_{\star}}(x) = \arg\min_u {\sigma F_{\star}(u) + \frac{1}{2}*||u-x||^2}
+    ```
+M (length(yy)) the dimension of the measurment data and N_d (length(yd)) the dimension of the regularization data.
+
+input:
+
+    - x:       dual state (length(x)=``M+N_d``)
+    - yy:      measurement data (length(yy)=``M``)
+    - yd:      regularization data (length(yd)=``N_d``)
+    - ``\sigma``: proximal parameter
+    - Py,Dy:   eigen decomposition matrices of the measurement data covariance matrix (``\Gamma_y`` = Py*diagm(Dy)*Py&#39;)
+    - Pd,Dd:   eigen decomposition matrices of the covariance matrix of the regularization (``\Gamma_d`` = Pd*diagm(Dd)*Pd&#39;)
+
+    output:
+
+      - proximal of the convex conjugate of the cost function F</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad.jl#L91-L120">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.prox_G_quad" href="#XPSinv.prox_G_quad"><code>XPSinv.prox_G_quad</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">computes the proximal of G, the positive quadrant indicator function,
+    ```math
+    \text{prox}_G(x) = \arg\min_u {G(u) + \frac{1}{2}*||u-x||^2}
+    ```
+input:
+
+  - x: primal state vector</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad.jl#L129-L137">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.F_quad_un" href="#XPSinv.F_quad_un"><code>XPSinv.F_quad_un</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">F_quad_un(z::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},Γyinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2},ΓHΓyinv::Array{Cdouble,2})
+
+Computes the value of the cost function for a quadratically-regularized gaussian cost
+function. The M first elements of the array z are the expectations of the
+Gaussian distribution related to measurement, the ``N_d`` next entries are the 
+expectation of the regularization and the last N entries are related to the marginalization
+of the model&#39;s error. The overall cost is quadratic and looks like:
+    ```math
+    F(z) = (yy-z_{1:M})^T \Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \Gamma_d^{-1} (yd-z_{M+1:M+N_d}) + z_{M+N_d+1:M+N_d+N}^T \Gamma_{H,y} z_{M+N_d+1:M+N_d+N}
+    ```
+
+input:
+
+  - z:       dual state
+  - yy:      measurement data (length(yy)=``M``)
+  - yd:      regularization data (length(yd)=``N_d``)
+  - Γyinv:   inverse of the measurement data covariance matrix
+  - Γdinv:   inverse of the covariance matrix of the regularization
+  - ΓHΓyinv: operator-to-noise covariance matrix
+
+output:
+
+  - evaluation of F(z)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad_uncertainty.jl#L7-L31">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.G_quad_un" href="#XPSinv.G_quad_un"><code>XPSinv.G_quad_un</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">G_quad_un(x::Array{Cdouble,1})
+
+computes the indicator function of the positive quadrant ``(\mathbb{R}^+)^N``. It returns
+0 if x is in the positive quadrant and ``\infty`` otherwise
+
+input:
+
+    - x: primal state vector</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad_uncertainty.jl#L38-L47">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.F_convex_conjugate_quad_un" href="#XPSinv.F_convex_conjugate_quad_un"><code>XPSinv.F_convex_conjugate_quad_un</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">F_convex_conjugate_quad_un(u::Array{Cdouble,1},yy::Array{Cdouble,1},yd::Array{Cdouble,1},Γy::Array{Cdouble,2},Γd::Array{Cdouble,2},ΓHΓyinv::Array{Cdouble,2})
+
+Computes the convex conjugate of
+    ```math
+    F(z) = (yy-z_{1:M})^T \Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \Gamma_d^{-1} (yd-z_{M+1:M+N_d}) + z_{M+N_d+1:M+N_d+N}^T \Gamma_{H,y} z_{M+N_d+1:M+N_d+N}
+    ```
+defined by:
+    ```math
+    F_{\star}(u) = \sup_z u^Tz - F(z)
+    ```
+which, in the quadratically-regularized Gaussian case is given by:
+    ```math
+    \sum_{i=1}^{M+N_d+N} u_i y_i + \frac{1}{4} u_{1:M}^T \Gamma_y u_{1:M} + \frac{1}{4} u_{M+1:M+N_d}^T \Gamma_d u_{M+1:M+N_d} + \frac{1}{4} u_{M+N_d+1:M+N_d+N}^T \Gamma_{H,y}^{-1} u_{M+N_D+1:M+N_d+N}
+    ```
+where N is the dimension of the primal space
+
+input:
+
+    - u:       dual state
+    - yy:      measurement data (length(yy)=``M``)
+    - yd:      regularization data (length(yd)=``N_d``)
+    - Γy:      measurement data covariance matrix
+    - Γd:      covariance matrix of the regularization
+    - ΓHΓyinv: operator-to-noise covariance matrix
+
+  output:
+
+    - evaluation of the convex conjugate of F⋆ in u</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad_uncertainty.jl#L62-L91">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.prox_F_conj_quad_un" href="#XPSinv.prox_F_conj_quad_un"><code>XPSinv.prox_F_conj_quad_un</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">prox_F_conj_quad_un(x::Array{Cdouble},yy::Array{Cdouble,1},yd::Array{Cdouble,1},σ::Cdouble,Py::Array{Cdouble,2},Dy::Array{Cdouble,1},Pd::Array{Cdouble,2},Dd::Array{Cdouble,1},Ph::Array{Cdouble,2},Dh::Array{Cdouble,1})
+
+Γy = Py*diagm(Dy)*Py&#39;
+Γd = Pd*diagm(Dd)*Pd&#39;
+ΓHΓyinv = Ph*diagm(Dh)*Ph&#39;
+
+computes the proximal of σF⋆ evaluated in x, with F being defined by:
+    ```math
+    F(z) = (yy-z_{1:M})^T \Gamma_y^{-1} (yy-z_{1:M}) + (yd-z_{M+1:M+N_d})^T \Gamma_d^{-1} (yd-z_{M+1:M+N_d}) + z_{M+N_d+1:M+N_d+N}^T \Gamma_{H,y} z_{M+N_d+1:M+N_d+N}
+    ```
+and the proximal by:
+    ```math
+    \text{prox}_{\sigma F_{\star}}(x) = \arg\min_u {\sigma F_{\star}(u) + \frac{1}{2}*||u-x||^2}
+    ```
+where N is the dimension of the primal space, M (length(yy)) the dimension of the measurment data and N_d (length(yd)) the dimension of the regularization data
+
+input:
+
+- x:       dual state (length(x)=``M+N_d+N``)
+- yy:      measurement data (length(yy)=``M``)
+- yd:      regularization data (length(yd)=``N_d``)
+- ``\sigma``: proximal parameter
+- Py,Dy:   eigen decomposition matrices of the measurement data covariance matrix (``\Gamma_y`` = Py*diagm(Dy)*Py&#39;)
+- Pd,Dd:   eigen decomposition matrices of the covariance matrix of the regularization (``\Gamma_d`` = Pd*diagm(Dd)*Pd&#39;)
+- Ph,Dh:   eigen decomposition matrices of the operator-to-noise covariance matrix (``\Gamma_{H,y}`` = Ph*diagm(Dh)*Ph&#39;)
+
+output:
+
+  - proximal of the convex conjugate of the cost function F</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad_uncertainty.jl#L99-L130">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="XPSinv.prox_G_quad_un" href="#XPSinv.prox_G_quad_un"><code>XPSinv.prox_G_quad_un</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">computes the proximal of G, the positive quadrant indicator function,
+    ```math
+    \text{prox}_G(x) = \arg\min_u {G(u) + \frac{1}{2}*||u-x||^2}
+    ```
+input:
+
+    - x: primal state vector</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/blob/5c3ec1e1bcfabcac23d8c250f07272c5530c8f5d/packages/XPSinv/src/cp_quad_uncertainty.jl#L141-L149">source</a></section></article></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 8 May 2023 14:33">Monday 8 May 2023</span>. Using Julia version 1.8.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
