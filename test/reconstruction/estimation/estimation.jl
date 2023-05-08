@@ -80,7 +80,7 @@ for (mod_str,mod_fol) in zip(MODEL_TYPE_LIST,MODEL_FOLD_LIST)
     for (mod_err,mod_err_fold) in zip(MODEL_ERROR_LIST,MODEL_ERROR_FOLD)
         for (dat_noise,σnoise) in zip(NOISE_LEVEL_LIST,noise_sigma)
             # paths: load and save
-            global model_folder = string("../data/",mod_fol)                         # the common depth discretization should be in this folder
+            global model_folder = string("../../../data/",mod_fol)                         # the common depth discretization should be in this folder
             global model_folder_lowres = string(model_folder,"lowres/")              # load the low resolution models from this folder
             global model_folder_lowres_un = string(model_folder_lowres,mod_err_fold) # 
             global data_folder  = string(model_folder,profile_flag,"/",dat_noise)    # load the data from this folder
