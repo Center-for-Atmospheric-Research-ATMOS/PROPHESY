@@ -1,42 +1,60 @@
 using Test
-# using LinearAlgebra
+using LinearAlgebra
 using XPSinv
 
 
 
 function test_D0th()
     # D0th
-    true
+    sum(D0th(10))==10.0
 end
 
 function test_D1st()
     # D1st
-    true
+    sum(D1st(10))==0.0
 end
 
 function test_D2nd()
     # D2nd
-    true
+    sum(D2nd(10))==0.0
 end
 
 function test_D3rd()
     # D3rd
-    true
+    sum(D3rd(10))==0.0
 end
 
 function test_D4th()
     # D4th
-    true
+    sum(D4th(10))==0.0
 end
 
 function test_reg_inv()
+    N = 20;
+    H = diagm(N-3,N,0 => ones(Cdouble,N-3),  1 => 0.5ones(Cdouble,N-3),  2 => 0.25ones(Cdouble,N-3),  3 => 0.125ones(Cdouble,N-3));
+    D = D3rd(N);
+    τ = 1.0;
     # reg_inv
-    true
+    H_inv_reg = reg_inv(H,D;τ=τ)
+    
+    #results
+    ((N,N-3)==size(H_inv_reg)) & (!isnan(sum(H_inv_reg))) & (!isinf(sum(H_inv_reg)))
 end
 
 function test_pseudo_inv()
+    N = 25;
+    H = diagm(N-3,N,0 => ones(Cdouble,N-3),  1 => 0.5ones(Cdouble,N-3),  2 => 0.25ones(Cdouble,N-3),  3 => 0.125ones(Cdouble,N-3));
+    n_singular = 5;
+    th_singular = 0.1;
     # pseudo_inv
-    true
+    H_approx,H_inv = pseudo_inv(H,n_singular;th_singular=th_singular);
+    
+    # conditions
+    cond1 = ((size(H)==size(H_approx)) & (!isnan(sum(H_approx))) & (!isinf(sum(H_approx))))
+    cond2 = (((size(H,2),size(H,1))==size(H_inv)) & (!isnan(sum(H_inv))) & (!isinf(sum(H_inv))))
+
+    # results
+    cond1 & cond2
 end
 
 @testset "Utils functions" begin

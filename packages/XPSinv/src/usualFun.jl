@@ -42,9 +42,10 @@ function pseudo_inv(H::Array{Cdouble,2},n_singular::Int64;th_singular::Cdouble=0
     # bound away from 0
     Nke,N = size(H);
     W  = zeros(Cdouble,N,Nke);
-    W[1:n_singular,1:n_singular] = diagm(th_singular*maximum(F.S) .+ F.S[1:n_singular]);
+    F.S[F.S.<(th_singular*maximum(F.S))] .= th_singular*maximum(F.S);
+    W[1:n_singular,1:n_singular] = diagm(F.S[1:n_singular]); 
     Winv  = zeros(Cdouble,N,Nke);
-    Winv[1:n_singular,1:n_singular] = diagm(1.0./(th_singular*maximum(F.S) .+ F.S[1:n_singular]));
+    Winv[1:n_singular,1:n_singular] = diagm(1.0 ./F.S[1:n_singular]);
 
     # approximations of H and its pseudo inverse respectively
     (F.U*W')*F.Vt , ((F.U*Winv')*F.Vt)'
