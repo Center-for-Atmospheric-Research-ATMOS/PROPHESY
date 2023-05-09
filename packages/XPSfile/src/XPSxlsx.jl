@@ -61,24 +61,47 @@ function dataAndFit_xlsx2df_missing(fileName::String;
     Ndata = length(xf_raw_data_sheet_names);
     dictAllData = Dict();
     for xf_name in xf_raw_data_sheet_names
-        local x = XLSX.getdata(xf_data[xf_name])[2:end,:]
-        local col_sym = string.(XLSX.gettable(xf_data[xf_name])[2])
-        local dataPairs = Array{Pair{String,Vector{Union{Missing, Float64}}}}(undef,length(col_sym))
-        for j in 1:length(col_sym)
-            local y = Array{Union{Missing, Float64}, 1}(undef,length(x[:,j]));
-            for i in 1:length(x[:,j])
-                if (typeof(x[i,j])!=Missing)
-                    if (typeof(x[i,j])<:AbstractString)
-                        y[i] = parse(Cdouble,x[i,j])
+        # valid for XLSX@v0.7.10 and under
+        # local x = XLSX.getdata(xf_data[xf_name])[2:end,:]
+        # local col_sym = string.(XLSX.gettable(xf_data[xf_name])[2]) # valid for XLSX@v0.7.10 and under
+        # local dataPairs = Array{Pair{String,Vector{Union{Missing, Float64}}}}(undef,length(col_sym))
+        # for j in 1:length(col_sym)
+        #     local y = Array{Union{Missing, Float64}, 1}(undef,length(x[:,j]));
+        #     for i in 1:length(x[:,j])
+        #         if (typeof(x[i,j])!=Missing)
+        #             if (typeof(x[i,j])<:AbstractString)
+        #                 y[i] = parse(Cdouble,x[i,j])
+        #             else
+        #                 y[i] = convert(Cdouble,x[i,j])
+        #             end
+        #         else
+        #             y[i] = missing
+        #         end
+        #     end
+        #     dataPairs[j] = (col_sym[j] => y)
+        # end
+
+        # valid for XLSX@v0.8.0 and above
+        local G = DataFrame(XLSX.gettable(xf_data[xf_name]))
+        local dataPairs = Array{Pair{String,Vector{Union{Cdouble,Missing}}}}(undef,ncol(G));
+        for j in 1:ncol(G)
+            local y = Array{Union{Missing, Float64}, 1}(undef,nrow(G));
+            local a_col = G[!,Symbol(names(G)[j])]
+            for i in 1:nrow(G) 
+                local x = a_col[i]
+                if (typeof(x)!=Missing)
+                    if (typeof(x)<:AbstractString)
+                        y[i] = parse(Cdouble,x)
                     else
-                        y[i] = convert(Cdouble,x[i,j])
+                        y[i] = convert(Cdouble,x)
                     end
                 else
-                    y[i] = missing
+                    y[i] =  missing
                 end
             end
-            dataPairs[j] = (col_sym[j] => y)
+            dataPairs[j] = (names(G)[j] => y)
         end
+
         df = DataFrame(dataPairs);
         dictAllData[Symbol(string("hν_",match.(regEph,xf_name).match[2:end-2]))] = df
     end
