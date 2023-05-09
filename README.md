@@ -2,13 +2,9 @@
 <!--[![XPSpack CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml/badge.svg?branch=beta)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml)-->
 
 [![XPSpack CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSpack.yml)
-
 [![ATTIRE CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_ATTIRE.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_ATTIRE.yml)
-
 [![XPSsampling CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSsampling.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSsampling.yml)
-
 [![XPSinv CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSinv.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSinv.yml)
-
 [![XPSfile CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSfile.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSfile.yml)
 
 # XPS data simulation and inversion: PROPHESY
