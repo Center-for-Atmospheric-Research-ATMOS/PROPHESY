@@ -9,12 +9,9 @@ color_array = ["tab:blue"; "tab:orange"; "tab:green"; "tab:red"; "tab:purple"; "
 # data manipulation (loading, writing, etc)
 using XPSfile
 using DataFrames
-using Query
 
 # scientific package from the official Julia repositories
-using LinearAlgebra
 using StatsBase
-using Interpolations
 
 # modeling XPS
 using XPSpack # experiment model (geometry factor and cross section estimation)
@@ -207,7 +204,6 @@ end
 
 df_α =  DataFrame( "α_gt"=> α_gt_mean, "α_ratio" =>  α_ratio_mean, "x_offset" => xc_off[1:5:end]);
 if SAVE_DATA
-    # XLSX.writetable(string(data_folder,"/alignment_list.xlsx"), collect(eachcol(df_α)), names(df_α));
     if USING_GT_PROFILE
         XLSX.writetable(string(data_folder,"/alignment_list_new_eal_gt.xlsx"), collect(eachcol(df_α)), names(df_α));
     else
