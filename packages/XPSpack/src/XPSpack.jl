@@ -27,6 +27,9 @@ This is the [`XPSpack`](@ref), which contains
 * [`XPSpack.cross_section_spread_function`](@ref)
 * [`XPSpack.cross_section_spread_function_sample`](@ref)
 * [`XPSpack.noiseAndParameterEstimation`](@ref)
+* [`XPSpack.τ_root`](@ref)
+* [`XPSpack.ρ_T_smooth`](@ref)
+* [`XPSpack.cylinder_gain_smooth_H`](@ref)
 """
 module XPSpack
 
@@ -45,27 +48,27 @@ export baseline_removal, EM_peaks, cross_section_spread_function, cross_section_
 export logistic
 
 # possible geometry of the sample
-export fingerGeom, planeGeom, cylinderGeom
+export fingerGeom, planeGeom, cylinderGeom # not used: should be deprecated
 # distance and geometry factors
 export d_plane_P, d_sphere_P, plane_gain_H, finger_gain_H
-export cylinder_gain_H,alignmentParameter, d_cylinder_P, d_cylinder_P_simple
+export cylinder_gain_H, d_cylinder_P, d_cylinder_P_simple
 export cov_H_cylinder
-export sphere_gain_H,d_sphere_P,alignmentParameterSphere
+export sphere_gain_H,d_sphere_P
 export beamProfile
 
-# deprecation before merging beta to main
-# objects modelling experiment and device
-# export XPSacq # acquisition parameters
-# export Ψ_lin_peaks # implemented in XPSmeas.jl # used in main branch in: data_gen_exp_5.jl, SDS_water.jl, data_generation_exp.jl 
+# smooth edge model
+export cylinder_gain_smooth_H, ρ_T_smooth, τ_root
 
 # function for noise estimation
-export noiseAndParameterEstimation
+export alignmentParameter, alignmentParameterSphere, noiseAndParameterEstimation
 
 # include the implementation of the exported functions and objects
 include("penetration_depth.jl")
 include("cross_section.jl")
-include("XPSmeas.jl")  # implement most function exported so far
-include("XPSutils.jl") # common algorithms used for data processing
-
+include("XPSmeas.jl") # measurement models
+include("smooth_edge.jl")
+include("XPSalignment.jl") # alignment parameter calculations
+include("XPSutils.jl") # common algorithms used for data processin
+include("geom_struct.jl") # implements fingerGeom, planeGeom, cylinderGeom (should be deprecated)
 
 end # module

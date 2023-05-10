@@ -246,31 +246,6 @@ function cross_section_spread_function_sample(I_nbl::Array{Cdouble,1},Kes::Array
 end
 
 
-"""
-   noiseAndParameterEstimation(σ_χ::Array{Cdouble,1},H::Array{Cdouble,1},I_data::Array{Cdouble,1},I_bg::Array{Cdouble,1},ρ::Array{Cdouble,1})
-
-   returns the mean estimate of the multiplicative factor in the measurement model (including the alignment factor) and the samples τ_{ℓ,k} used to compute the mean
-   and an estimate of the noise perturbations.
-
-   σ_χ is the cross section density
-   H is the geometrical factor
-   I_data is the raw data (including the background)
-   I_bg is the background
-   ρ is a rough profile (potentially the bulk concentration in the volume and 0 outside)
-"""
-function noiseAndParameterEstimation(σ_χ::Array{Cdouble,1},H::Array{Cdouble,1},I_data::Array{Cdouble,1},I_bg::Array{Cdouble,1},ρ::Array{Cdouble,1})
-   # estimate the noise using the measurement model (this could be computed from curve fits directly)
-   F  = svd(σ_χ*H')
-   noise_data = F.U[:,2:end]*(F.U[:,2:end]'*(I_data-I_bg));
-   # estimate the signal of interest
-   σ_data = I_data-(I_bg+noise_data)
-   # compute the multiplicative factor estimates τ_{ℓ,k}
-   τ_estimates = σ_data[σ_χ.>0.1*maximum(σ_χ)]./(σ_χ[σ_χ.>0.1*maximum(σ_χ)]*(H'*ρ));
-
-   # return the mean value of the estimates, the estimated noise and the estimates
-   mean(τ_estimates),noise_data,τ_estimates
-end
-
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # logistic function

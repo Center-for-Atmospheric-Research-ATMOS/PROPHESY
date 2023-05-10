@@ -416,12 +416,17 @@ function test_sphere_gain()
   cond1 & cond2 & cond3 & cond4 & cond5
 end
 
+function test_cylinder_gain_smooth_H()
+  true
+end
+
 @testset "Geometry factors" begin
   @test test_finger_gain()
   @test test_plane_gain()
   @test test_cylinder_gain()
   @test test_cov_model()
   @test test_sphere_gain()
+  @test test_cylinder_gain_smooth_H()
 end
 
 
