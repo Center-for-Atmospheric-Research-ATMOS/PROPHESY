@@ -1,3 +1,11 @@
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSsampling module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 """
     acceptSample(ρ_cur::Array{Cdouble,1},ρ_prop::Array{Cdouble,1},y::Array{Cdouble,1},yd::Array{Cdouble,1},ΓIinv::Array{Cdouble,2},Γdinv::Array{Cdouble,2},H::Array{Cdouble,2},D::Array{Cdouble,2})
 

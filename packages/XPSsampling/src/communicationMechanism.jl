@@ -1,3 +1,11 @@
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSsampling module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 function transmissionMechanismSmooth(x_curr::Array{Cdouble,1},Γsqrt::Array{Cdouble,2})
     x_curr + Γsqrt*randn(Cdouble,length(x_curr))
 end

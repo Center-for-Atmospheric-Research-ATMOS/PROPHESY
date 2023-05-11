@@ -1,4 +1,12 @@
 
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSpack module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 """
     beamProfile: structure describing the extent of the spread in space of the photon beam
     The beam density is taken to be a cross section of the parallel beam (orthogonal to the propagation direction)

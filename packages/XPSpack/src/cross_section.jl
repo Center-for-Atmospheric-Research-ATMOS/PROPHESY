@@ -1,3 +1,11 @@
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSpack module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 # load the interpolation points from file
 include("C1s.jl")
 # σ_C1s_interp = extrapolate(interpolate((σ_C1s[:,1],), σ_C1s[:,2], Gridded(Linear())),Flat()) # Line()

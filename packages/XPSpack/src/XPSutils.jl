@@ -1,3 +1,11 @@
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSpack module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 """
    baseline correction from Baek 2015 (it's an application of IRLS)
    Baek SJ, Park A, Ahn YJ, Choo J. Baseline correction using asymmetrically reweighted penalized least squares smoothing. Analyst. 2015;140(1):250-7.

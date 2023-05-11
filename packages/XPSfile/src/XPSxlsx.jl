@@ -1,3 +1,11 @@
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSfile module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 function dataAndFit_xlsx2df(fileName::String;
     regData::Regex=r"Eph ?= ?",regFit::Regex=r"[Ff]itt?ing(_| )?results?",regEph::Regex=r"=[0-9]*eV",sortBy::Symbol=Symbol("Photon energy"),thenSortBy::Symbol=Symbol("Binding energy"))
 

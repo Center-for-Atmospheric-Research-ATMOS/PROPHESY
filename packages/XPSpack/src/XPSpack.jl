@@ -1,3 +1,16 @@
+#
+# XPSpack.jl --
+#
+# XPSpack.jl is a module for modelling XPS experiment and parameter estimation 
+# 
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSpack module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 # push!(LOAD_PATH,"/path/to/package/XPSpack/")
 # sudo nano /opt/julias/julia-1.3.1/etc/julia/startup.jl
 # or nano ~/.julia/julia-1.8.0/etc/julia/startup.jl

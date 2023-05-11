@@ -1,17 +1,11 @@
-#
-# XPSmeas.jl --
-#
-# XPSmeas.jl is a module aiming at modelling XPS measurement, e.g. simulation
-# of PE spectra, and inverting data, e.g. concentration profiles.
-#
-#
 #------------------------------------------------------------------------------
 #
-# This file is part of the XPSpack module which is licensed under the MIT "Expat" License:
+# This file is part of the XPSpack module which is licensed under CC-BY 4.0 license.
 #
-# Copyright (C) 2021-2022,  Matthew Ozon.
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
 #
 #------------------------------------------------------------------------------
+
 """
 
 # XPSmeas.jl --

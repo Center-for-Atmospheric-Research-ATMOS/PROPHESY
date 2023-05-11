@@ -1,3 +1,18 @@
+#
+# XPSsampling.jl --
+#
+# XPSsampling.jl is a module for sampling a posteriori probability distribution
+# in the case of quadratic formulation with positivity constraint and 
+# marginalization of measurement model error
+# 
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSsampling module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 # Sampling the a posteriori to estimate the uncertainty
 #  - P(ρ|I,H): the probability density of the state ρ conditionally to the data I and the model H
 #  - P(ρ|I):   the marginalization of P(ρ|I,H) over the measurement model space

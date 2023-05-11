@@ -1,3 +1,10 @@
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSinv module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
 """ 
 0th order sparsity (meaning that a priori the signal should be 0 everywhere) 
 

@@ -1,5 +1,16 @@
-# push!(LOAD_PATH,"/home/mattoz/Dev/XPSinv.jl/src/")
-# sudo nano /opt/julias/julia-1.3.1/etc/julia/startup.jl
+#
+# XPSfile.jl --
+#
+# XPSfile.jl is a helper module to load data from XLSX files
+#
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSfile module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 
 """
 

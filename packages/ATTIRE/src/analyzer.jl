@@ -1,4 +1,11 @@
 
+#------------------------------------------------------------------------------
+#
+# This file is part of the ATTIRE module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
 """
 Transmission function for the scienta R4000 kinetic enegy analyzer
 

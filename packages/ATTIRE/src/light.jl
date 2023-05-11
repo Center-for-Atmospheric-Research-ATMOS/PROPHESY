@@ -1,3 +1,10 @@
+#------------------------------------------------------------------------------
+#
+# This file is part of the ATTIRE module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
 """
     model the spectral spread of the exciting source
 

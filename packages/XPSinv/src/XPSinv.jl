@@ -1,3 +1,21 @@
+#
+# XPSinv.jl --
+#
+# XPSinv.jl is a module for data inversion based on [1] in the case of quadratic 
+# formulation with positivity constraint and an uncertainty term
+# 
+# [1] A. Chambolle and T. Pock, 2011. A first-order primal-dual algorithm for convex problems with applications to imaging.
+# Journal of mathematical imaging and vision, 40(1), pp.120-145.
+# DOI: 10.1007/s10851-010-0251-1
+#
+#------------------------------------------------------------------------------
+#
+# This file is part of the XPSinv module which is licensed under CC-BY 4.0 license.
+#
+# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+#
+#------------------------------------------------------------------------------
+
 # push!(LOAD_PATH,"/home/mattoz/Dev/XPSinv.jl/src/")
 # sudo nano /opt/julias/julia-1.3.1/etc/julia/startup.jl
 
