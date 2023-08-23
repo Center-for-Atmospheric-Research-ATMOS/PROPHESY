@@ -7,6 +7,12 @@
 [![XPSinv CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSinv.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSinv.yml)
 [![XPSfile CI](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSfile.yml/badge.svg)](https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/actions/workflows/CI_XPSfile.yml)
 
+
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8007333.svg)](https://doi.org/10.5281/zenodo.8007333)
+
+
+
 # XPS data simulation and inversion: PROPHESY
   this suite of packages should contain tools for the estimation of the concentration profiles of a  chemical species across a microjet (i.e. a very small stream) probed with X-rays. The data are the spectra of the emitted photoelectrons from the core subshell in the ground state (i.e. 1s orbital).
 
