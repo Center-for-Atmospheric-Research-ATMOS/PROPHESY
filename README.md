@@ -14,7 +14,8 @@
 
 
 # XPS data simulation and inversion: PROPHESY
-  this suite of packages should contain tools for the estimation of the concentration profiles of a  chemical species across a microjet (i.e. a very small stream) probed with X-rays. The data are the spectra of the emitted photoelectrons from the core subshell in the ground state (i.e. 1s orbital).
+  
+  This suite of packages contains tools for the estimation of concentration profiles for chemical species across a microjet (i.e. a very small stream) probed with X-rays. The data are the spectra of the emitted photoelectrons from the core subshell in the ground state (i.e. 1s orbital).
 
 The suite is divided into four package for specific tasks:
 
@@ -24,42 +25,6 @@ The suite is divided into four package for specific tasks:
 - [XPSfile](packages/XPSfile/):         tools for loading data files
 - [ATTIRE](packages/ATTIRE/):           light model of the acquisition device (kinetic energy analyzer and light)
 
-
-
-# Dependence
-
-In the Project.toml files you'll find the dependences list hereafter
-
-## XPSpack
-
-- LinearAlgebra  = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-- Statistics     = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-- Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
-- Printf         = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-- Test           = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-- NMOpt          = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
-
-The package is an unregistered package that can be intalled from the github repository. In Julia RPEL, type:
-
-`] add https://github.com/matthewozon/NMOpt`
-
-## XPSinv
-
-- LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-- Statistics    = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-
-## XPSfile
-
-- XLSX       = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
-- DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-- Query      = "1a8c2f83-1ff3-5112-b086-8aa67b057ba1"
-- DataValues = "e7dc6d0d-1eca-5fa6-8ad6-5aecde8b7ea5"
-
-## ATTIRE
-
- - Distributions  = "31c24e10-a181-5473-b8eb-7969acd0382f"
- - Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
- - Test           = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 # Installation
 
@@ -79,11 +44,23 @@ Once Julia is installed, if you do not install the package through the package m
 
 where `/path/to/package/` needs to be change to your configuration.
 
-
-
 On linux systems, the startup file is likely found at `~/.julia/config/startup.jl`.
 
 
+# Example
+
+## Alignment parameter estimation
+
+[two_col_liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/files/12421464/two_col_liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf)
+
+## Sample emission model
+[cylinder_model_compare_20_microns.pdf](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/files/12421496/cylinder_model_compare_20_microns.pdf)
+
+
+## Depth profile reconstruction
+![estimates_and_uncertainties_W10_model_err_smooth_edge_global_0003](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/62651064-44a8-4b96-9dce-f2e85dc8396e)
+
+Profile reconstruction in the case of $W_{10}$ for three levels of global attenuation length uncertainty [13]
 
 
 # Refs
@@ -99,5 +76,7 @@ On linux systems, the startup file is likely found at `~/.julia/config/startup.j
 - [9] S.-J. Baek, A. Park, Y.-J. Ahn and J. Choo,  Baseline correction using asymmetrically reweighted penalized least squares smoothing Analyst, Royal Society of Chemistry, 2015, Vol. 140, p. 250-257 [DOI: 10.1039/C4AN01061B](https://www.doi.org/10.1039/C4AN01061B)
 - [10] A. P. Dempster, N. M. Laird  and D. B. Rubin,  Maximum likelihood from incomplete data via the EM algorithm, Journal of the royal statistical society: series B (methodological), Wiley Online Library, 1977, 39, 1-22 ([DOI: 10.1111/j.2517-6161.1977.tb01600.x](https://www.doi.org/10.1111/j.2517-6161.1977.tb01600.x))
 - [11] S. Thürmer, R. Seidel, M. Faubel, W. Eberhardt, J. C. Hemminger, S. E. Bradforth and B. Winter, Photoelectron angular distributions from liquid water: Effects of electron scattering Physical review letters, Physical review letters, 2013, Vol. 111, p. 173005 ([DOI: 10.1103/PhysRevLett.111.173005](https://www.doi.org/10.1103/PhysRevLett.111.173005))
-- [12] M. Ozon, K. Tumashevich and N. L. Prisle , Quantitative alignment parameter estimation for analyzing X-ray photoelectron spectra, (submitted) Journal of Synchrotron Radiation, 2023, Vol. -, p. - ([DOI: 10.1107/-](https://www.doi.org/10.1107/-))
-- [13]: M.Ozon, K. Tumashevich, J. J. Lin and N. L. Prisle , Inversion model for extracting chemically resolved depth profiles across liquid interfaces of various configurations from XPS data: PROPHESY, (submitted) Journal of Synchrotron Radiation, 2023, Vol. -, p. - ([DOI: 10.1107/-](https://www.doi.org/10.1107/-))
+- [12] M. Ozon, K. Tumashevich and N. L. Prisle, Quantitative alignment parameter estimation for analyzing X-ray photoelectron spectra, Journal of Synchrotron Radiation, 2023, Vol. 30, p. 766-779 ([DOI: 
+10.1107/S1600577523004150](https://www.doi.org/10.1107/S1600577523004150))
+- [13] M. Ozon, K. Tumashevich, J. J. Lin and N. L. Prisle,  Inversion model for extracting chemically resolved depth profiles across liquid interfaces of various configurations from XPS data: PROPHESY, 2023, Vol. 30, p. - ([DOI: 10.1107/S1600577523006124](https://www.doi.org/10.1107/S1600577523006124))
+
