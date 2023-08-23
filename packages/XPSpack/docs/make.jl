@@ -11,6 +11,4 @@ makedocs(
     doctest = true,
 )
 
-# deploydocs(
-#     repo = "<repository url>"
-# )
+# deploydocs(repo = "github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/packages/XPSpack" ,branch = "main") 

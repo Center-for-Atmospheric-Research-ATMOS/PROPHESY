@@ -20,10 +20,16 @@ XPSpack.sphere_gain_H
 XPSpack.beamProfile
 XPSpack.alignmentParameter
 XPSpack.alignmentParameterSphere
+XPSpack.alignmentParameterSmoothEdge
+XPSpack.alignmentParameterSphereSmoothEdge
 XPSpack.cov_H_cylinder
 XPSpack.baseline_removal
 XPSpack.EM_peaks
 XPSpack.cross_section_spread_function
 XPSpack.cross_section_spread_function_sample
 XPSpack.noiseAndParameterEstimation
+XPSpack.cylinder_gain_smooth_H
+XPSpack.cov_H_cylinder_smooth
+XPSpack.sphere_gain_smooth_H
+XPSpack.cov_H_sphere_smooth
 ```
