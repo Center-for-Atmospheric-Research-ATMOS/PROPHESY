@@ -1,11 +1,17 @@
+#
+# XPSmeas.jl --
+#
+# XPSmeas.jl is a module aiming at modelling XPS measurement, e.g. simulation
+# of PE spectra, and inverting data, e.g. concentration profiles.
+#
+#
 #------------------------------------------------------------------------------
 #
-# This file is part of the XPSpack module which is licensed under CC-BY 4.0 license.
+# This file is part of the XPSpack module which is licensed under the MIT "Expat" License:
 #
-# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
+# Copyright (C) 2021-2022,  Matthew Ozon.
 #
 #------------------------------------------------------------------------------
-
 """
 
 # XPSmeas.jl --
@@ -353,9 +359,8 @@ function sphere_gain_H(r::Array{Cdouble,1},φ::Array{Cdouble,1},θ::Array{Cdoubl
 end
 
 
-
 """
-    cov_H_cylinder()
+    cov_H_cylinder(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdouble,1},x0::Cdouble,y0::Cdouble,z0::Cdouble,μ0::Cdouble,λ::Array{Cdouble,1},Pλ::Array{Cdouble,1})
 
     computes the covariance matrix of the geometrical structure...
     A = ∭ ρ(r,θ,y) e^{\\frac{d_P(r,θ,y)}{λ}} r dr dθ dy ≃ Hρ
@@ -405,3 +410,4 @@ function cov_H_cylinder(r::Array{Cdouble,1},θ::Array{Cdouble,1},y::Array{Cdoubl
     # return the covariance
     HHt - μH*μH', μH # , H
 end
+
