@@ -1,11 +1,3 @@
-#------------------------------------------------------------------------------
-#
-# This file is part of the XPSpack module which is licensed under CC-BY 4.0 license.
-#
-# Copyright (C) 2022,  Matthew Ozon, Konstantin Tumashevich and Nønne L. Prisle.
-#
-#------------------------------------------------------------------------------
-
 # the geometry structures assumes that
 #  - the photon beam is along the z axis
 #  - the liquid microjet is along the y axis (or the droplet axis motion, or, if no clear axis arise naturally, any direction orthogonal to the z axis)
