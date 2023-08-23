@@ -54,7 +54,14 @@ On linux systems, the startup file is likely found at `~/.julia/config/startup.j
 [two_col_liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/files/12421464/two_col_liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf)
 
 ## Sample emission model
-[cylinder_model_compare_20_microns.pdf](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/files/12421496/cylinder_model_compare_20_microns.pdf)
+![emission_model](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/3a0a99d6-b83f-43e1-9665-7f71aab72368)
+
+Geometry factor for a cylindrical sample [13]
+
+
+
+
+
 
 
 ## Depth profile reconstruction
