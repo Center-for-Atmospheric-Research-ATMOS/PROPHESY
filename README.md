@@ -49,9 +49,27 @@ On linux systems, the startup file is likely found at `~/.julia/config/startup.j
 
 # Example
 
-## Alignment parameter estimation
+## Spectra simulation 
 
-[two_col_liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/files/12421464/two_col_liquid_vapor_area_ratio_and_noise_estimation_vs_alignment_parameter_units_gt_log.pdf)
+![o1s_spectra](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/922d2029-bf4a-4e09-a0fe-ba0e49110183)
+
+
+
+
+
+
+
+## Alignment parameter estimation
+![APE](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/b3ccbf74-ff9d-4b15-96e9-ed8901ac76eb)
+
+Alignment parameter simulation and estimation
+
+
+
+
+
+
+
 
 ## Sample emission model
 ![emission_model](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/3a0a99d6-b83f-43e1-9665-7f71aab72368)
