@@ -9,13 +9,8 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f" # for the tests
-# NMOpt = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
+NMOpt = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
+MINOTAUR = "133e5054-af73-4fd6-9159-4bf12f03d841"
 
 [compat]
 julia = "1"
-
-[extras]
-NMOpt = "ad0eafcd-0556-4673-9a02-4d69c7f573d5"
-
-[where]
-NMOpt = "https://github.com/matthewozon/NMOpt"
