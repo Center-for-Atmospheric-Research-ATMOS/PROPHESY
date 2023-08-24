@@ -9,7 +9,8 @@
 
 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8007333.svg)](https://doi.org/10.5281/zenodo.8007333)
+v0.2.0: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8007333.svg)](https://doi.org/10.5281/zenodo.8007333)
+v0.3.0: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8207701.svg)](https://doi.org/10.5281/zenodo.8207701)
 
 
 
