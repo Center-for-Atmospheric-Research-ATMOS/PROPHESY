@@ -16,11 +16,13 @@ This package was used and introduced in two manuscripts submitted to JSR [5,6]
 # Dependence
 
 XPSpack depends on some of the most common registered Julia packages, and one unregistered package, (see [Project.toml](Project.toml))
+
  - Statistics
  - LinearAlgebra
  - Interpolations
  - Printf
  - NMOpt is a package that implements some (Quasi) Newton methods (see [NMOpt](https://github.com/matthewozon/NMOpt))
+ - MINOTAUR is a package that implements some quadrature for composed function (see [MINOTAUR](https://github.com/matthewozon/MINOTAUR))
  
 
 # Installation
@@ -30,7 +32,7 @@ XPSpack depends on some of the most common registered Julia packages, and one un
 In the Julia REPL, type:
 
 ```
-] add https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/tree/beta/packages/XPSpack
+] add https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/tree/main/packages/XPSpack
 ```
 
 the package should be installed once Julia Pkg is done, however, if the installation fails, you may want to check the error/warning messages. If after fixing the bugs, the package still cannot be installed via Pkg, you may refer to the Manual section below.
@@ -54,6 +56,7 @@ On linux systems, the startup file is likely found at `~/.julia/config/startup.j
 In the [test](../../test/) folder, several examples of use of XPSpack are implemented:
 
  - [geometry/geom.jl](../../test/geometry/geom.jl): for several sample geometry, the geometry factors are compared
+ - [geometry/geom_smooth.jl](../../test/geometry/geom_smooth.jl): other geometry factors with smooth edge sample
  - [outsideModel/geom_vapor.jl](../../test/outsideModel/geom_vapor.jl): show an example of geometry factor that takes into account the outside of the sample where the vapor or low-density-liquid exists and produces significant photoelectronic signal.
  - [alignmentParameter](../../test/alignmentParameter/): several examples of alignment parameter estimate are showcased (requires [XPSfile](../XPSfile/))
  - [bg_removal_and_proba_density.jl](../../test/bg_removal_and_proba_density.jl): illusatration of the background removal and photionization cross-section density estimation
@@ -65,5 +68,5 @@ In the [test](../../test/) folder, several examples of use of XPSpack are implem
 - [2] S.-J. Baek, A. Park, Y.-J. Ahn and J. Choo,  Baseline correction using asymmetrically reweighted penalized least squares smoothing Analyst, Royal Society of Chemistry, 2015, Vol. 140, p. 250-257 [DOI: 10.1039/C4AN01061B](https://www.doi.org/10.1039/C4AN01061B)
 - [3] A. P. Dempster, N. M. Laird  and D. B. Rubin,  Maximum likelihood from incomplete data via the EM algorithm, Journal of the royal statistical society: series B (methodological), Wiley Online Library, 1977, 39, 1-22 ([DOI: 10.1111/j.2517-6161.1977.tb01600.x](https://www.doi.org/10.1111/j.2517-6161.1977.tb01600.x))
 - [4] S. Thürmer, R. Seidel, M. Faubel, W. Eberhardt, J. C. Hemminger, S. E. Bradforth and B. Winter, Photoelectron angular distributions from liquid water: Effects of electron scattering Physical review letters, Physical review letters, 2013, Vol. 111, p. 173005 ([DOI: 10.1103/PhysRevLett.111.173005](https://www.doi.org/10.1103/PhysRevLett.111.173005))
-- [5] M. Ozon, K. Tumashevich and N. L. Prisle , Quantitative alignment parameter estimation for analyzing X-ray photoelectron spectra, (submitted) Journal of Synchrotron Radiation, 2023, Vol. -, p. - ([DOI: 10.1107/-](https://www.doi.org/10.1107/-))
-- [6]: M.Ozon, K. Tumashevich, J. J. Lin and N. L. Prisle , Inversion model for extracting chemically resolved depth profiles across liquid interfaces of various configurations from XPS data: PROPHESY, (submitted) Journal of Synchrotron Radiation, 2023, Vol. -, p. - ([DOI: 10.1107/-](https://www.doi.org/10.1107/-))
+- [5] M. Ozon, K. Tumashevich and N. L. Prisle, Quantitative alignment parameter estimation for analyzing X-ray photoelectron spectra, Journal of Synchrotron Radiation, 2023, Vol. 30, p. 766-779 ([DOI: 10.1107/S1600577523004150](https://www.doi.org/10.1107/S1600577523004150))
+- [6] M. Ozon, K. Tumashevich, J. J. Lin and N. L. Prisle,  Inversion model for extracting chemically resolved depth profiles across liquid interfaces of various configurations from XPS data: PROPHESY, 2023, Vol. 30, p. - ([DOI: 10.1107/S1600577523006124](https://www.doi.org/10.1107/S1600577523006124))

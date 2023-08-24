@@ -6,7 +6,7 @@ The package XPSsampling is part of the PROPHESY suite. It is a package which imp
  - covariance 
  - Metropolis-Hasting sampling algorithm [1,2]
 
-The inversion model, based on the maximization of an a posteriori probability density, carries intrinsic uncertainty. The model is not infinitely sharp, so, the reconstruction lies within an acceptable distance from the true concentration profile. Furthermore, the measurement model is parametric, meaning that it depends on the value of parameters such as the attenuation length. From sample drawn from the a posteriori model, it is possible to approximate the marginal mean and covariance for some parameters. In a manuscript submitted to JSR [3] we show an example of marginalization over the attenuation length parameter and the consequences on the profile reconstructions.
+The inversion model, based on the maximization of an a posteriori probability density, carries intrinsic uncertainty. The model is not infinitely sharp, so, the reconstruction lies within an acceptable distance from the true concentration profile. Furthermore, the measurement model is parametric, meaning that it depends on the value of parameters such as the attenuation length. From sample drawn from the a posteriori model, it is possible to approximate the marginal mean and covariance for some parameters. In a JSR paper [3] we show an example of marginalization over the attenuation length parameter and the consequences on the profile reconstructions.
 
 # Dependence
 
@@ -19,7 +19,7 @@ XPSsampling is standalone, no external package are used  (see [Project.toml](Pro
 In the Julia REPL, type:
 
 ```
-] add https://github.com/Center-for-Atmospheric-Research-ATMOS/XPS-depth-inv/tree/beta/packages/XPSsampling
+] add https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/tree/main/packages/XPSsampling
 ```
 
 the package should be installed once Julia Pkg is done, however, if the installation fails, you may want to check the error/warning messages. If after fixing the bugs, the package still cannot be installed via Pkg, you may refer to the Manual section below.
@@ -50,4 +50,4 @@ In the [test](../../test/) folder, several examples of use of XPSsampling are im
 
 - [1] N. Metropolis et S. Ulam, The Monte Carlo method,  Journal of the American Statistical Association, vol. 44, no 247, 1949, p. 335–341, [DOI: 10.2307/2280232](https://www.doi.org/10.2307/2280232)
 - [2] W.K. Hastings, Monte Carlo Sampling Methods Using Markov Chains and Their Applications, Biometrika, vol. 57, no 1, 1970, p. 97–109, [DOI: 10.2307/2334940](https://www.doi.org/10.2307/2334940)
-- [3]: M.Ozon, K. Tumashevich, J. J. Lin and N. L. Prisle , Inversion model for extracting chemically resolved depth profiles across liquid interfaces of various configurations from XPS data: PROPHESY, (submitted) Journal of Synchrotron Radiation, 2023, Vol. -, p. - ([DOI: 10.1107/-](https://www.doi.org/10.1107/-))
+- [3] M. Ozon, K. Tumashevich, J. J. Lin and N. L. Prisle,  Inversion model for extracting chemically resolved depth profiles across liquid interfaces of various configurations from XPS data: PROPHESY, 2023, Vol. 30, p. - ([DOI: 10.1107/S1600577523006124](https://www.doi.org/10.1107/S1600577523006124))

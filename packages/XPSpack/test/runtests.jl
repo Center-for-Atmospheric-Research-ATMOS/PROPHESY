@@ -417,7 +417,159 @@ function test_sphere_gain()
 end
 
 function test_cylinder_gain_smooth_H()
-  true
+  # point location of the analyzer aperture
+  x0 = 5000.0 #00.0;
+  y0 = 0.0;
+  z0 = 0.0 # 00.0;
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0     = 10.0;   # cylinder diameter
+  Δr     = 0.5e-3; # transition length of the total concentration
+  κ      = 8.0;
+  # spatial discretization
+  Nr = 101;
+  Nθ = 151;
+  Ny = 21;
+  θ0 = atan(x0,z0);
+  L = 50.0 ;
+  r = collect(LinRange(μ0-5λ_meas,μ0+κ*Δr,Nr)); # radial coordinates
+  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));  # polar angles
+  y = collect(LinRange(-L/2.0,L/2.0,Ny));       # axial coordinates
+
+  # geometry factors and integrals discretization: signal coming from the part of the sample facing the aperture of the kinetic energy analyzer
+  H_r,H_rθy,Arn,Aθj,Ayk = cylinder_gain_smooth_H(r,θ,y,x0,y0,z0,μ0,Δr,λ_meas;κ=κ,Nτ=50);
+
+  # conditions 
+  cond1 = (Nr==length(H_r)) & (!isnan(sum(H_r))) & (!isinf(sum(H_r))) & (all(H_r.>=0.0))
+  cond2 = (Nr==size(H_rθy,1)) & (Nθ==size(H_rθy,2)) & (Ny==size(H_rθy,3)) & (!isnan(sum(H_rθy))) & (!isinf(sum(H_rθy))) & (all(H_rθy.>=0.0))
+  cond3 = (Nr==length(Arn)) & (!isnan(sum(Arn))) & (!isinf(sum(Arn)))
+  cond4 = (Nθ==length(Aθj)) & (!isnan(sum(Aθj))) & (!isinf(sum(Aθj)))
+  cond5 = (Ny==length(Ayk)) & (!isnan(sum(Ayk))) & (!isinf(sum(Ayk)))
+
+  # results
+  cond1 & cond2 & cond3 & cond4 & cond5
+end
+
+function test_cov_H_cylinder_smooth()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0
+  z0 = 0.0
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0 = 10.0;       # cylinder diameter
+  Δr     = 0.5e-3; # transition length of the total concentration
+  κ      = 8.0;
+  # spatial discretization
+  Nr = 101;
+  Nθ = 151;
+  Ny = 21;
+  θ0 = atan(x0,z0)
+  L = 50.0 
+  r = collect(LinRange(μ0-5λ_meas,μ0+κ*Δr,Nr)); # radial coordinates
+  θ = collect(LinRange(θ0-π/2.0,θ0+π/2.0,Nθ));  # polar angles
+  y = collect(LinRange(-L/2.0,L/2.0,Ny));       # axial coordinates
+
+  # attenuation length probability distribution
+  Nλ = 25;
+  λ = collect(LinRange(0.75λ_meas,1.25λ_meas,Nλ));
+  σλ2 = (0.075λ_meas)^2;
+  Pλ = (1.0/sqrt(2π*σλ2))*exp.(-((λ.-λ_meas).^2)./(2σλ2));
+
+  # compute mean and covariance of the model with respect to the probability distribution of attenuation length
+  ΓH, μH = cov_H_cylinder_smooth(r,θ,y,x0,y0,z0,μ0,Δr,λ,Pλ;κ=κ,Nτ=50);
+
+  # conditions 
+  cond1 = (Nr==length(μH)) & (!isnan(sum(μH))) & (!isinf(sum(μH))) & (all(μH.>=0.0))
+  cond2 = ((Nr,Nr)==size(ΓH)) & (!isnan(sum(ΓH))) & (!isinf(sum(ΓH)))
+  λH = eigvals(ΓH) # all eigen values should be positive for a covariance matrix (but it's a numerical approximation)
+  cond3 = (all(λH.>=0.0))
+  if (!cond3)
+    # maybe it is only computational approximation problem
+    λmin,λmax = extrema(λH)
+    if (abs(λmin/λmax)<1.0e-10)
+      cond3 = true
+    end
+  end
+
+  # results
+  cond1 & cond2 & cond3
+end
+
+function test_sphere_gain_smooth_H()
+  # point location of the analyzer aperture
+  x0 = 5000.0 #00.0;
+  y0 = 0.0;
+  z0 = 0.0 # 00.0;
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0     = 10.0;   # cylinder diameter
+  Δr     = 0.5e-3; # transition length of the total concentration
+  κ      = 8.0;
+  # spatial discretization
+  Nr = 101;
+  Nθ = 251;
+  Nφ = 152;
+  r = collect(LinRange(μ0-5λ_meas,μ0+κ*Δr,Nr)); # radial coordinates
+  φ = collect(LinRange(0.0,π,Nφ));              # polar angles (∈[0,π])
+  θ = collect(LinRange(0.0,2π,Nθ));             # azimuth angles (∈[0,2π])
+
+  # geometry factors and integrals discretization: signal coming from the part of the sample facing the aperture of the kinetic energy analyzer
+  H_r,H_rφθ,Arn,Aφj,Aθk = sphere_gain_smooth_H(r,φ,θ,x0,y0,z0,μ0,Δr,λ_meas;κ=κ,Nτ=50);
+
+  # conditions 
+  cond1 = (Nr==length(H_r)) & (!isnan(sum(H_r))) & (!isinf(sum(H_r))) & (all(H_r.>=0.0))
+  cond2 = ((Nr,Nφ,Nθ)==size(H_rφθ)) & (!isnan(sum(H_rφθ))) & (!isinf(sum(H_rφθ))) & (all(H_rφθ.>=0.0))
+  cond3 = (Nr==length(Arn)) & (!isnan(sum(Arn))) & (!isinf(sum(Arn)))
+  cond4 = (Nφ==length(Aφj)) & (!isnan(sum(Aφj))) & (!isinf(sum(Aφj)))
+  cond5 = (Nθ==length(Aθk)) & (!isnan(sum(Aθk))) & (!isinf(sum(Aθk)))
+
+  # results
+  cond1 & cond2 & cond3 & cond4 & cond5
+end
+
+function test_cov_H_sphere_smooth()
+  # point location of the analyzer aperture
+  x0 = 5000.0
+  y0 = 0.0
+  z0 = 0.0
+  # sample characteristic values
+  λ_meas = 1.5e-3; # attenuation length
+  μ0     = 10.0;   # cylinder diameter
+  Δr     = 0.5e-3; # transition length of the total concentration
+  κ      = 8.0;
+  # spatial discretization
+  Nr = 101;
+  Nθ = 51;
+  Nφ = 52;
+  r = collect(LinRange(μ0-5λ_meas,μ0+κ*Δr,Nr)); # radial coordinates
+  φ = collect(LinRange(0.0,π,Nφ));              # polar angles (∈[0,π])
+  θ = collect(LinRange(0.0,2π,Nθ));             # azimuth angles (∈[0,2π])
+
+  # attenuation length probability distribution
+  Nλ = 25;
+  λ = collect(LinRange(0.75λ_meas,1.25λ_meas,Nλ));
+  σλ2 = (0.075λ_meas)^2;
+  Pλ = (1.0/sqrt(2π*σλ2))*exp.(-((λ.-λ_meas).^2)./(2σλ2));
+
+  # compute mean and covariance of the model with respect to the probability distribution of attenuation length
+  ΓH, μH = cov_H_sphere_smooth(r,φ,θ,x0,y0,z0,μ0,Δr,λ,Pλ;κ=κ,Nτ=50);
+
+  # conditions 
+  cond1 = (Nr==length(μH)) & (!isnan(sum(μH))) & (!isinf(sum(μH))) & (all(μH.>=0.0))
+  cond2 = ((Nr,Nr)==size(ΓH)) & (!isnan(sum(ΓH))) & (!isinf(sum(ΓH)))
+  λH = eigvals(ΓH) # all eigen values should be positive for a covariance matrix (but it's a numerical approximation)
+  cond3 = (all(λH.>=0.0))
+  if (!cond3)
+    # maybe it is only computational approximation problem
+    λmin,λmax = extrema(λH)
+    if (abs(λmin/λmax)<1.0e-10)
+      cond3 = true
+    end
+  end
+
+  # results
+  cond1 & cond2 & cond3
 end
 
 @testset "Geometry factors" begin
@@ -427,6 +579,9 @@ end
   @test test_cov_model()
   @test test_sphere_gain()
   @test test_cylinder_gain_smooth_H()
+  @test test_cov_H_cylinder_smooth()
+  @test test_sphere_gain_smooth_H()
+  @test test_cov_H_sphere_smooth()
 end
 
 
