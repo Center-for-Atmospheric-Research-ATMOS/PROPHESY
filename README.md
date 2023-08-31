@@ -53,8 +53,10 @@ On linux systems, the startup file is likely found at `~/.julia/config/startup.j
 
 ## Spectra simulation 
 
-![o1s_spectra](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/922d2029-bf4a-4e09-a0fe-ba0e49110183)
+<!--![o1s_spectra](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/922d2029-bf4a-4e09-a0fe-ba0e49110183)-->
 
+
+![o1s_spectra](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/3154206f-d219-4a3e-8f7d-ef9817f75e97)
 
 
 
@@ -62,7 +64,10 @@ On linux systems, the startup file is likely found at `~/.julia/config/startup.j
 
 
 ## Alignment parameter estimation
-![APE](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/b3ccbf74-ff9d-4b15-96e9-ed8901ac76eb)
+<!--![APE](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/b3ccbf74-ff9d-4b15-96e9-ed8901ac76eb)-->
+![APE](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/68b3fe56-fe2b-4e43-ae49-57a44c4f268d)
+
+
 
 Alignment parameter simulation and estimation
 
@@ -74,7 +79,10 @@ Alignment parameter simulation and estimation
 
 
 ## Sample emission model
-![emission_model](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/3a0a99d6-b83f-43e1-9665-7f71aab72368)
+<!--![emission_model](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/3a0a99d6-b83f-43e1-9665-7f71aab72368)-->
+![emission_model](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/b5d1adb7-26b4-4083-bf06-e60c2d6bf60a)
+
+
 
 Geometry factor for a cylindrical sample [13]
 
@@ -85,7 +93,10 @@ Geometry factor for a cylindrical sample [13]
 
 
 ## Depth profile reconstruction
-![estimates_and_uncertainties_W10_model_err_smooth_edge_global_0003](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/62651064-44a8-4b96-9dce-f2e85dc8396e)
+<!--![estimates_and_uncertainties_W10_model_err_smooth_edge_global_0003](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/62651064-44a8-4b96-9dce-f2e85dc8396e)-->
+![estimates_and_uncertainties_W10_model_err_smooth_edge_global_0003](https://github.com/Center-for-Atmospheric-Research-ATMOS/PROPHESY/assets/7929598/f7818ed3-d2a0-4483-b0b8-9697ead3367f)
+
+
 
 Profile reconstruction in the case of $W_{10}$ for three levels of global attenuation length uncertainty [13]
 
